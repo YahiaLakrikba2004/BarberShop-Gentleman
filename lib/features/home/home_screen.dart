@@ -158,8 +158,8 @@ class HomeScreen extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
+                              ),
                             ),
-                          ),
                             
                             const SizedBox(height: 8),
                             
@@ -178,11 +178,9 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                             
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 32),
                             
-                          
-                            
-                        
+
                             
                             // CTA Button
                             BounceInUp(

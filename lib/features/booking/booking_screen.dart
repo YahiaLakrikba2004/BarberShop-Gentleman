@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../models/user_model.dart';
 import '../../models/barber_model.dart';
 import '../../models/service_model.dart';
 import '../../models/appointment_model.dart';
@@ -19,6 +20,11 @@ class BookingScreen extends ConsumerStatefulWidget {
 
 class _BookingScreenState extends ConsumerState<BookingScreen> {
   int _currentStep = 0;
+  UserModel? _selectedCustomer;
+  bool _isGuestBooking = false;
+  String _guestName = '';
+  String _guestPhone = '';
+  String _searchQuery = '';
   BarberModel? _selectedBarber;
   ServiceModel? _selectedService;
   DateTime _selectedDate = DateTime.now();
@@ -26,6 +32,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(currentUserProfileProvider);
+    final user = userAsync.value;
+    final isPrivileged = user?.role == UserRole.admin || user?.role == UserRole.barber;
+    
+    // If not privileged, ensure selectedCustomer is current user (or null until confirmed)
+    // But for logic simplicity, we'll handle the "target user" in _confirmBooking
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Prenota Appuntamento'),
@@ -34,7 +47,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       body: Column(
         children: [
           // Progress Indicator
-          _buildProgressIndicator(),
+          _buildProgressIndicator(isPrivileged),
           const Divider(height: 1),
           
           // Content with Animation
@@ -58,30 +71,31 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               },
               child: KeyedSubtree(
                 key: ValueKey<int>(_currentStep),
-                child: _buildStepContent(),
+                child: _buildStepContent(isPrivileged),
               ),
             ),
           ),
           
           // Navigation Buttons
-          _buildNavigationButtons(),
+          _buildNavigationButtons(isPrivileged),
         ],
       ),
     );
   }
 
-  Widget _buildProgressIndicator() {
+  Widget _buildProgressIndicator(bool isPrivileged) {
+    final steps = isPrivileged 
+        ? ['Cliente', 'Barbiere', 'Servizio', 'Orario', 'Conferma']
+        : ['Barbiere', 'Servizio', 'Orario', 'Conferma'];
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       child: Row(
         children: [
-          _buildStepCircle(0, 'Barbiere'),
-          _buildProgressLine(0),
-          _buildStepCircle(1, 'Servizio'),
-          _buildProgressLine(1),
-          _buildStepCircle(2, 'Orario'),
-          _buildProgressLine(2),
-          _buildStepCircle(3, 'Conferma'),
+          for (int i = 0; i < steps.length; i++) ...[
+            _buildStepCircle(i, steps[i]),
+            if (i < steps.length - 1) _buildProgressLine(i),
+          ],
         ],
       ),
     );
@@ -144,19 +158,190 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  Widget _buildStepContent() {
-    switch (_currentStep) {
-      case 0:
-        return _buildBarberSelection();
-      case 1:
-        return _buildServiceSelection();
-      case 2:
-        return _buildTimeSelection();
-      case 3:
-        return _buildConfirmation();
-      default:
-        return const SizedBox();
+  Widget _buildStepContent(bool isPrivileged) {
+    int adjustedStep = _currentStep;
+    if (!isPrivileged) {
+      // If not privileged, step 0 maps to BarberSelection (which is index 1 in privileged flow logic if we were sharing indices, 
+      // but here we just shift the logic)
+      // Let's map steps based on flow:
+      // Privileged: 0:Customer, 1:Barber, 2:Service, 3:Time, 4:Confirm
+      // Client:     0:Barber,   1:Service, 2:Time,   3:Confirm
+      
+      // So if not privileged, we shift the "content" index by 1 to match the "Barber" starting point of privileged flow?
+      // No, it's easier to just switch on current step and return appropriate widget.
+      
+      switch (_currentStep) {
+        case 0: return _buildBarberSelection();
+        case 1: return _buildServiceSelection();
+        case 2: return _buildTimeSelection();
+        case 3: return _buildConfirmation(isPrivileged);
+        default: return const SizedBox();
+      }
+    } else {
+      switch (_currentStep) {
+        case 0: return _buildCustomerSelection();
+        case 1: return _buildBarberSelection();
+        case 2: return _buildServiceSelection();
+        case 3: return _buildTimeSelection();
+        case 4: return _buildConfirmation(isPrivileged);
+        default: return const SizedBox();
+      }
     }
+  }
+
+  Widget _buildCustomerSelection() {
+    if (_isGuestBooking) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Dati Cliente Occasionale',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Nome e Cognome *',
+                        prefixIcon: Icon(Icons.person),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) => setState(() => _guestName = value),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Telefono (opzionale)',
+                        prefixIcon: Icon(Icons.phone),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      onChanged: (value) => setState(() => _guestPhone = value),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () => setState(() {
+                _isGuestBooking = false;
+                _guestName = '';
+                _guestPhone = '';
+              }),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Torna alla lista clienti'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final usersAsync = ref.watch(allUsersProvider);
+    
+    return usersAsync.when(
+      data: (users) {
+        final filteredUsers = users.where((user) {
+          final query = _searchQuery.toLowerCase();
+          return user.name.toLowerCase().contains(query) || 
+                 user.email.toLowerCase().contains(query);
+        }).toList();
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cerca cliente...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).cardColor,
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() {
+                      _isGuestBooking = true;
+                      _selectedCustomer = null;
+                    }),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Prenota per Cliente Occasionale'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredUsers.length,
+                itemBuilder: (context, index) {
+                  final user = filteredUsers[index];
+                  final isSelected = _selectedCustomer?.id == user.id;
+                  
+                  return Card(
+                    elevation: isSelected ? 4 : 1,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: ListTile(
+                      onTap: () => setState(() => _selectedCustomer = user),
+                      leading: CircleAvatar(
+                        backgroundColor: isSelected 
+                            ? Theme.of(context).colorScheme.primary 
+                            : Theme.of(context).colorScheme.surfaceVariant,
+                        child: Text(
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            color: isSelected 
+                                ? Theme.of(context).colorScheme.onPrimary 
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        user.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(user.email),
+                      trailing: isSelected 
+                          ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Errore: $e')),
+    );
   }
 
   Widget _buildBarberSelection() {
@@ -414,7 +599,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  Widget _buildConfirmation() {
+  Widget _buildConfirmation(bool isPrivileged) {
     if (_selectedBarber == null || _selectedService == null || _selectedSlot == null) {
       return const Center(child: Text('Informazioni mancanti.'));
     }
@@ -430,6 +615,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ),
           const SizedBox(height: 24),
           
+          if (isPrivileged)
+            _buildSummaryCard(
+              icon: Icons.person_outline,
+              title: 'Cliente',
+              content: _isGuestBooking ? '$_guestName (Occasionale)' : _selectedCustomer!.name,
+            ),
+
           _buildSummaryCard(
             icon: Icons.person,
             title: 'Barbiere',
@@ -529,7 +721,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildNavigationButtons(bool isPrivileged) {
+    final maxSteps = isPrivileged ? 4 : 3;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -555,8 +749,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           Expanded(
             flex: 2,
             child: FilledButton(
-              onPressed: _canProceed() ? _onNext : null,
-              child: Text(_currentStep == 3 ? 'Conferma Prenotazione' : 'Avanti'),
+              onPressed: _canProceed(isPrivileged) ? () => _onNext(maxSteps) : null,
+              child: Text(_currentStep == maxSteps ? 'Conferma Prenotazione' : 'Avanti'),
             ),
           ),
         ],
@@ -564,23 +758,29 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
-  bool _canProceed() {
-    switch (_currentStep) {
-      case 0:
-        return _selectedBarber != null;
-      case 1:
-        return _selectedService != null;
-      case 2:
-        return _selectedSlot != null;
-      case 3:
-        return true;
-      default:
-        return false;
+  bool _canProceed(bool isPrivileged) {
+    if (isPrivileged) {
+      switch (_currentStep) {
+        case 0: return _isGuestBooking ? _guestName.isNotEmpty : _selectedCustomer != null;
+        case 1: return _selectedBarber != null;
+        case 2: return _selectedService != null;
+        case 3: return _selectedSlot != null;
+        case 4: return true;
+        default: return false;
+      }
+    } else {
+      switch (_currentStep) {
+        case 0: return _selectedBarber != null;
+        case 1: return _selectedService != null;
+        case 2: return _selectedSlot != null;
+        case 3: return true;
+        default: return false;
+      }
     }
   }
 
-  void _onNext() {
-    if (_currentStep < 3) {
+  void _onNext(int maxSteps) {
+    if (_currentStep < maxSteps) {
       setState(() => _currentStep++);
     } else {
       _confirmBooking();
@@ -588,18 +788,34 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Future<void> _confirmBooking() async {
-    final user = ref.read(currentUserProfileProvider).value;
-    if (user == null) {
+    final currentUser = ref.read(currentUserProfileProvider).value;
+    if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Devi effettuare il login per prenotare.')),
       );
       return;
     }
 
+    String customerId;
+    String customerName;
+    String? customerPhone;
+
+    if (_isGuestBooking) {
+      customerId = 'guest_${const Uuid().v4()}';
+      customerName = _guestName;
+      customerPhone = _guestPhone.isNotEmpty ? _guestPhone : null;
+    } else {
+      final targetUser = _selectedCustomer ?? currentUser;
+      customerId = targetUser.id;
+      customerName = targetUser.name;
+      customerPhone = targetUser.phoneNumber;
+    }
+
     final appointment = AppointmentModel(
       id: const Uuid().v4(),
-      customerId: user.id,
-      customerName: user.name,
+      customerId: customerId,
+      customerName: customerName,
+      customerPhoneNumber: customerPhone,
       barberId: _selectedBarber!.id,
       barberName: _selectedBarber!.name,
       serviceId: _selectedService!.id,
@@ -614,8 +830,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Prenotazione confermata con successo!'),
+          SnackBar(
+            content: Text('Prenotazione confermata per $customerName!'),
             backgroundColor: Colors.green,
           ),
         );

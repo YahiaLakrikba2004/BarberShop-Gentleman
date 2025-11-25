@@ -81,6 +81,18 @@ class FirestoreService {
     });
   }
 
+  Stream<List<AppointmentModel>> getAllAppointmentsForBarber(String barberId) {
+    return _firestore
+        .collection('appointments')
+        .where('barberId', isEqualTo: barberId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => AppointmentModel.fromMap(doc.data(), doc.id))
+          .toList();
+    });
+  }
+  
   Stream<List<AppointmentModel>> getAppointmentsForBarber(
       String barberId, DateTime date) {
     final startOfDay = DateTime(date.year, date.month, date.day);
@@ -124,6 +136,10 @@ final serviceListProvider = StreamProvider<List<ServiceModel>>((ref) {
 
 final barberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, ({String barberId, DateTime date})>((ref, params) {
   return ref.watch(firestoreServiceProvider).getAppointmentsForBarber(params.barberId, params.date);
+});
+
+final allBarberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, String>((ref, barberId) {
+  return ref.watch(firestoreServiceProvider).getAllAppointmentsForBarber(barberId);
 });
 
 final userAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, String>((ref, userId) {

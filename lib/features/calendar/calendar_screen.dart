@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:calendar_view/calendar_view.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../models/appointment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../models/user_model.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -14,9 +15,15 @@ class CalendarScreen extends ConsumerStatefulWidget {
   ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
+enum CalendarViewType { day, week, month }
+
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
-  DateTime _selectedDay = DateTime.now();
-  DateTime _focusedDay = DateTime.now();
+  final EventController _eventController = EventController();
+  final GlobalKey<WeekViewState> _weekViewKey = GlobalKey<WeekViewState>();
+  final GlobalKey<DayViewState> _dayViewKey = GlobalKey<DayViewState>();
+  final GlobalKey<MonthViewState> _monthViewKey = GlobalKey<MonthViewState>();
+  CalendarViewType _currentView = CalendarViewType.week;
+  DateTime _focusedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +46,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             );
           }
 
-          if (user.role.name == 'barber') {
-            return _buildBarberView(user.id);
-          } else {
-            return _buildClientView(user.id);
-          }
+          return _buildCalendarView(user);
         },
         loading: () => const Center(
           child: CircularProgressIndicator(
@@ -60,55 +63,482 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildClientView(String userId) {
-    final appointmentsAsync = ref.watch(userAppointmentsProvider(userId));
+  Widget _buildCalendarView(UserModel user) {
+    final allAppointmentsAsync = user.role == UserRole.client
+        ? ref.watch(userAppointmentsProvider(user.id))
+        : user.role == UserRole.admin
+            ? ref.watch(allAppointmentsProvider)
+            : ref.watch(allBarberAppointmentsProvider(user.id));
 
-    return appointmentsAsync.when(
-      data: (appointments) {
-        if (appointments.isEmpty) {
-          return Center(
-            child: FadeIn(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 80,
-                    color: Color(0xFFD4AF37).withOpacity(0.3),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Nessun appuntamento',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Prenota il tuo primo appuntamento',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return allAppointmentsAsync.when(
+      data: (allAppointments) {
+        // Convert to CalendarEventData
+        final events = allAppointments.map((apt) {
+          return CalendarEventData(
+            title: apt.customerName,
+            description: '${apt.serviceName}\n${apt.customerPhoneNumber ?? ""}',
+            date: apt.date,
+            startTime: apt.date,
+            endTime: apt.endTime,
+            color: const Color(0xFFD4AF37),
           );
-        }
+        }).toList();
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: appointments.length,
-          itemBuilder: (context, index) {
-            final appointment = appointments[index];
-            return FadeInUp(
-              delay: Duration(milliseconds: index * 100),
-              child: _buildAppointmentCard(appointment),
-            );
-          },
+        // Add events to controller
+        _eventController.removeWhere((event) => true);
+        _eventController.addAll(events);
+
+        return FadeIn(
+          child: CalendarControllerProvider(
+            controller: _eventController,
+            child: Column(
+              children: [
+                // View selector buttons
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: const Color(0xFFD4AF37).withOpacity(0.2),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _ViewSelectorButton(
+                        title: 'Giorno',
+                        icon: Icons.view_day,
+                        isSelected: _currentView == CalendarViewType.day,
+                        onTap: () => setState(() => _currentView = CalendarViewType.day),
+                      ),
+                      _ViewSelectorButton(
+                        title: 'Settimana',
+                        icon: Icons.view_week,
+                        isSelected: _currentView == CalendarViewType.week,
+                        onTap: () => setState(() => _currentView = CalendarViewType.week),
+                      ),
+                      _ViewSelectorButton(
+                        title: 'Mese',
+                        icon: Icons.calendar_month,
+                        isSelected: _currentView == CalendarViewType.month,
+                        onTap: () => setState(() => _currentView = CalendarViewType.month),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _currentView == CalendarViewType.day
+                      ? DayView(
+                          key: _dayViewKey,
+                          controller: _eventController,
+                          initialDay: _focusedDate,
+                          onPageChange: (date, page) => _focusedDate = date,
+                          backgroundColor: const Color(0xFF181818),
+                          headerStyle: HeaderStyle(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF181818),
+                            ),
+                            headerTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          dateStringBuilder: (date, {secondaryDate}) {
+                            return DateFormat('d MMMM yyyy', 'it').format(date);
+                          },
+                          dayTitleBuilder: (date) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              color: const Color(0xFF181818),
+                              child: Center(
+                                child: Text(
+                                  DateFormat('EEEE d MMMM', 'it').format(date).toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Color(0xFFD4AF37),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          timeLineBuilder: (date) {
+                            return Container(
+                              padding: const EdgeInsets.only(right: 12),
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                DateFormat('H a').format(date),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            );
+                          },
+                          hourIndicatorSettings: HourIndicatorSettings(
+                            color: Colors.white.withOpacity(0.1),
+                            height: 1,
+                            offset: 0,
+                          ),
+                          liveTimeIndicatorSettings: const LiveTimeIndicatorSettings(
+                            color: Color(0xFFEA4335),
+                            height: 2,
+                            showTime: true,
+                            showBullet: true,
+                          ),
+                          onEventTap: (events, date) {
+                            if (events.isNotEmpty) {
+                              _showAppointmentDetails(context, events.first);
+                            }
+                          },
+                          eventTileBuilder: (date, events, boundary, start, end) {
+                            if (events.isEmpty) return const SizedBox();
+                            final event = events.first;
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD4AF37),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      event.title,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        event.description?.split('\n').first ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 11,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          heightPerMinute: 1.5,
+                          startHour: 8,
+                          endHour: 22,
+                          showLiveTimeLineInAllDays: true,
+                        )
+                      : _currentView == CalendarViewType.month
+                          ? MonthView(
+                              key: _monthViewKey,
+                              controller: _eventController,
+                              initialMonth: _focusedDate,
+                              borderColor: Colors.white.withOpacity(0.1),
+                              headerStyle: HeaderStyle(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF181818),
+                                ),
+                                headerTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              headerBuilder: (date) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                  color: const Color(0xFF181818),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        DateFormat('MMMM yyyy', 'it').format(date).toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                                        onPressed: () => _monthViewKey.currentState?.previousPage(),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_right, color: Colors.white),
+                                        onPressed: () => _monthViewKey.currentState?.nextPage(),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              weekDayBuilder: (day) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  color: const Color(0xFF181818),
+                                  child: Center(
+                                    child: Text(
+                                      ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'][day],
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              cellBuilder: (date, events, isToday, isInMonth, hideDaysNotInMonth) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentView = CalendarViewType.day;
+                                      _focusedDate = date;
+                                    });
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF181818),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.1),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          alignment: Alignment.topCenter,
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
+                                              color: isToday ? const Color(0xFFD4AF37) : Colors.transparent,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              '${date.day}',
+                                              style: TextStyle(
+                                                color: isToday ? Colors.black : (isInMonth ? Colors.white : Colors.white24),
+                                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        if (events.isNotEmpty)
+                                          Expanded(
+                                            child: Center(
+                                              child: Wrap(
+                                                spacing: 4,
+                                                runSpacing: 4,
+                                                alignment: WrapAlignment.center,
+                                                children: events.take(4).map((event) {
+                                                  return Container(
+                                                    width: 6,
+                                                    height: 6,
+                                                    decoration: const BoxDecoration(
+                                                      color: Color(0xFFD4AF37),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              onPageChange: (date, pageIndex) => _focusedDate = date,
+                              onEventTap: (event, date) {
+                                _showAppointmentDetails(context, event);
+                              },
+                            )
+                          : WeekView(
+                              key: _weekViewKey,
+                              controller: _eventController,
+                              initialDay: _focusedDate,
+                              onPageChange: (date, page) => _focusedDate = date,
+                              backgroundColor: const Color(0xFF181818),
+                              headerStyle: HeaderStyle(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF181818),
+                                ),
+                                headerTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              weekTitleHeight: 70,
+                              weekPageHeaderBuilder: (startDate, endDate) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                  color: const Color(0xFF181818),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        DateFormat('MMMM yyyy', 'it').format(startDate).toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_left, color: Colors.white),
+                                        onPressed: () => _weekViewKey.currentState?.previousPage(),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.chevron_right, color: Colors.white),
+                                        onPressed: () => _weekViewKey.currentState?.nextPage(),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              weekDayBuilder: (date) {
+                                final isToday = date.day == DateTime.now().day &&
+                                    date.month == DateTime.now().month &&
+                                    date.year == DateTime.now().year;
+                                    
+                                return Container(
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF181818),
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        DateFormat('EEE', 'it').format(date).toUpperCase(),
+                                        style: TextStyle(
+                                          color: isToday ? const Color(0xFFD4AF37) : Colors.white70,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: isToday ? const Color(0xFFD4AF37) : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${date.day}',
+                                          style: TextStyle(
+                                            color: isToday ? Colors.black : Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              timeLineBuilder: (date) {
+                                return Container(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    DateFormat('H a').format(date),
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.7),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                );
+                              },
+                              hourIndicatorSettings: HourIndicatorSettings(
+                                color: Colors.white.withOpacity(0.1),
+                                height: 1,
+                                offset: 0,
+                              ),
+                              liveTimeIndicatorSettings: const LiveTimeIndicatorSettings(
+                                color: Color(0xFFEA4335),
+                                height: 2,
+                                showTime: true,
+                                showBullet: true,
+                              ),
+                              onEventTap: (events, date) {
+                                if (events.isNotEmpty) {
+                                  _showAppointmentDetails(context, events.first);
+                                }
+                              },
+                              eventTileBuilder: (date, events, boundary, start, end) {
+                                if (events.isEmpty) return const SizedBox();
+                                
+                                final event = events.first;
+                                
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          event.title,
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
+                                            style: const TextStyle(
+                                              color: Colors.black87,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              heightPerMinute: 1.5,
+                              startHour: 8,
+                              endHour: 22,
+                              showLiveTimeLineInAllDays: true,
+                              scrollOffset: 0,
+                            ),
+                ),
+              ],
+            ),
+          ),
         );
       },
       loading: () => const Center(
@@ -124,231 +554,101 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
     );
   }
-
-  Widget _buildBarberView(String barberId) {
-    final appointmentsAsync = ref.watch(
-      barberAppointmentsProvider((barberId: barberId, date: _selectedDay)),
-    );
-
-    return Column(
-      children: [
-        // Calendar
-        FadeInDown(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Color(0xFFD4AF37).withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Color(0xFFD4AF37).withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Color(0xFFD4AF37),
-                  shape: BoxShape.circle,
-                ),
-                defaultTextStyle: TextStyle(color: Colors.white),
-                weekendTextStyle: TextStyle(color: Colors.white70),
-                outsideTextStyle: TextStyle(color: Colors.white30),
-              ),
-              headerStyle: HeaderStyle(
-                titleTextStyle: TextStyle(
-                  color: Color(0xFFD4AF37),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                formatButtonVisible: false,
-                leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFFD4AF37)),
-                rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFFD4AF37)),
-              ),
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekdayStyle: TextStyle(color: Colors.white70),
-                weekendStyle: TextStyle(color: Colors.white70),
-              ),
+  void _showAppointmentDetails(BuildContext context, CalendarEventData event) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(
+            top: BorderSide(
+              color: const Color(0xFFD4AF37).withOpacity(0.5),
+              width: 1,
             ),
           ),
         ),
-
-        // Appointments for selected day
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: Color(0xFFD4AF37),
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                DateFormat('EEEE d MMMM', 'it').format(_selectedDay),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFD4AF37),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person, color: Color(0xFFD4AF37)),
                 ),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cliente',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildDetailRow(Icons.cut, 'Servizio', event.description?.split('\n').first ?? 'N/A'),
+            const SizedBox(height: 16),
+            _buildDetailRow(Icons.access_time, 'Orario', 
+              '${DateFormat('HH:mm').format(event.startTime!)} - ${DateFormat('HH:mm').format(event.endTime!)}'),
+            const SizedBox(height: 16),
+            _buildDetailRow(Icons.calendar_today, 'Data', 
+              DateFormat('EEEE d MMMM yyyy', 'it').format(event.date)),
+            if (event.description != null && event.description!.contains('\n')) ...[
+              const SizedBox(height: 16),
+              _buildDetailRow(Icons.phone, 'Telefono', event.description!.split('\n').last),
             ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        Expanded(
-          child: appointmentsAsync.when(
-            data: (appointments) {
-              if (appointments.isEmpty) {
-                return Center(
-                  child: FadeIn(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.event_busy,
-                          size: 60,
-                          color: Color(0xFFD4AF37).withOpacity(0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Nessun appuntamento',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: appointments.length,
-                itemBuilder: (context, index) {
-                  final appointment = appointments[index];
-                  return FadeInLeft(
-                    delay: Duration(milliseconds: index * 100),
-                    child: _buildAppointmentCard(appointment),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
-              ),
-            ),
-            error: (err, stack) => Center(
-              child: Text(
-                'Errore: $err',
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAppointmentCard(AppointmentModel appointment) {
-    final timeFormat = DateFormat('HH:mm');
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Color(0xFFD4AF37).withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Color(0xFFD4AF37).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Color(0xFFD4AF37), width: 1),
-              ),
-              child: Icon(
-                Icons.access_time,
-                color: Color(0xFFD4AF37),
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    appointment.serviceName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFD4AF37),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    timeFormat.format(appointment.date),
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${appointment.durationMinutes} min • ${appointment.price.toStringAsFixed(0)}€',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _getStatusColor(appointment.status).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _getStatusColor(appointment.status),
-                  width: 1,
                 ),
-              ),
-              child: Text(
-                _getStatusText(appointment.status),
-                style: TextStyle(
-                  color: _getStatusColor(appointment.status),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                child: const Text(
+                  'Chiudi',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -358,29 +658,87 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Color _getStatusColor(AppointmentStatus status) {
-    switch (status) {
-      case AppointmentStatus.confirmed:
-        return Color(0xFF4CAF50);
-      case AppointmentStatus.pending:
-        return Color(0xFFFF9800);
-      case AppointmentStatus.cancelled:
-        return Color(0xFFF44336);
-      case AppointmentStatus.completed:
-        return Color(0xFF2196F3);
-    }
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFFD4AF37), size: 20),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 12,
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
+}
 
-  String _getStatusText(AppointmentStatus status) {
-    switch (status) {
-      case AppointmentStatus.confirmed:
-        return 'CONFERMATO';
-      case AppointmentStatus.pending:
-        return 'IN ATTESA';
-      case AppointmentStatus.cancelled:
-        return 'ANNULLATO';
-      case AppointmentStatus.completed:
-        return 'COMPLETATO';
-    }
+class _ViewSelectorButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ViewSelectorButton({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? const Color(0xFFD4AF37) 
+                : const Color(0xFFD4AF37).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFFD4AF37).withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon, 
+                color: isSelected ? Colors.black : const Color(0xFFD4AF37), 
+                size: 24
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.black : const Color(0xFFD4AF37),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

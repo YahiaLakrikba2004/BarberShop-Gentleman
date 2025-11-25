@@ -16,7 +16,7 @@ A complete Flutter application for a barber shop booking system.
 1. Create a new Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
 2. Enable **Authentication** (Email/Password provider).
 3. Enable **Firestore Database**.
-4. Add an Android app to the project and download `google-services.json` to `android/app/`.
+4. Add an Android app to the project and download `google-services.json` to `android/app/`. 
 5. Add an iOS app to the project and download `GoogleService-Info.plist` to `ios/Runner/`.
 6. (Optional) For Web, add a Web app and update `lib/firebase_options.dart` (run `flutterfire configure`).
 

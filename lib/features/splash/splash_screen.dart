@@ -108,23 +108,6 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 60),
-              
-              // Loading Indicator
-              FadeIn(
-                delay: const Duration(milliseconds: 1000),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFFD4AF37),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

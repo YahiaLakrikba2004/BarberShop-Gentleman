@@ -7,6 +7,7 @@ class AppointmentModel extends Equatable {
   final String id;
   final String customerId;
   final String customerName;
+  final String? customerPhoneNumber;
   final String barberId;
   final String barberName;
   final String serviceId;
@@ -20,6 +21,7 @@ class AppointmentModel extends Equatable {
     required this.id,
     required this.customerId,
     required this.customerName,
+    this.customerPhoneNumber,
     required this.barberId,
     required this.barberName,
     required this.serviceId,
@@ -35,6 +37,7 @@ class AppointmentModel extends Equatable {
       id: id,
       customerId: map['customerId'] ?? '',
       customerName: map['customerName'] ?? '',
+      customerPhoneNumber: map['customerPhoneNumber'],
       barberId: map['barberId'] ?? '',
       barberName: map['barberName'] ?? '',
       serviceId: map['serviceId'] ?? '',
@@ -53,6 +56,7 @@ class AppointmentModel extends Equatable {
     return {
       'customerId': customerId,
       'customerName': customerName,
+      'customerPhoneNumber': customerPhoneNumber,
       'barberId': barberId,
       'barberName': barberName,
       'serviceId': serviceId,
@@ -71,6 +75,7 @@ class AppointmentModel extends Equatable {
         id,
         customerId,
         customerName,
+        customerPhoneNumber,
         barberId,
         barberName,
         serviceId,

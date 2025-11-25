@@ -27,6 +27,7 @@ dependencies:
   flutter_svg: ^2.0.10
   lottie: ^3.1.2
   flutter_staggered_animations: ^1.1.1
+  calendar_view: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +35,17 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   build_runner: ^2.4.7
   riverpod_generator: ^2.3.9
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/icon_premium.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0A0A0A"
+  adaptive_icon_foreground: "assets/images/icon_premium.png"
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
