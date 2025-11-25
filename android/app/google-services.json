@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "635305520200",
+    "project_id": "barbershop-gentleman",
+    "storage_bucket": "barbershop-gentleman.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635305520200:android:2dd15d19739e761ef73c7d",
+        "android_client_info": {
+          "package_name": "com.example.barber_shop_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635305520200:android:682bd67f3c6b7815f73c7d",
+        "android_client_info": {
+          "package_name": "com.flutter.TheGentleman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
