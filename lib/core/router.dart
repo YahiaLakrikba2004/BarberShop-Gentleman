@@ -6,6 +6,7 @@ import '../features/home/home_screen.dart';
 import '../features/booking/booking_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/admin/admin_dashboard.dart';
+import '../features/profile/profile_screen.dart';
 import '../services/auth_service.dart';
 import 'main_layout.dart';
 
@@ -57,6 +58,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MainLayout(
           currentIndex: 3,
           child: AdminDashboard(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const MainLayout(
+          currentIndex: 2, // Profile is now the 3rd tab (index 2) for customers
+          child: ProfileScreen(),
         ),
       ),
     ],

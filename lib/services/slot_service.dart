@@ -15,6 +15,27 @@ class SlotService {
     required List<AppointmentModel> existingAppointments,
   }) {
     final List<DateTime> slots = [];
+
+    // 1. Check Availability Status
+    if (barber.availabilityStatus != BarberAvailability.available) {
+      return [];
+    }
+
+    // 2. Check Days Off
+    if (barber.daysOff.contains(date.weekday)) {
+      return [];
+    }
+
+    // 3. Check Unavailable Dates
+    // Normalize date to remove time part for comparison
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    for (var unavailableDate in barber.unavailableDates) {
+      final unavailableDateOnly = DateTime(unavailableDate.year, unavailableDate.month, unavailableDate.day);
+      if (dateOnly.isAtSameMomentAs(unavailableDateOnly)) {
+        return [];
+      }
+    }
+    
     
     // Start and End times for the barber
     final DateTime startOfDay = DateTime(date.year, date.month, date.day, barber.startHour);

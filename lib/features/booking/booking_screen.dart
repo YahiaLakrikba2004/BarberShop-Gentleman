@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:carousel_slider/carousel_slider.dart' hide CarouselController;
 import '../../models/user_model.dart';
 import '../../models/barber_model.dart';
 import '../../models/service_model.dart';
@@ -217,7 +218,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     const SizedBox(height: 16),
                     TextField(
                       decoration: const InputDecoration(
-                        labelText: 'Telefono (opzionale)',
+                        labelText: 'Telefono',
                         prefixIcon: Icon(Icons.phone),
                         border: OutlineInputBorder(),
                       ),
@@ -320,6 +321,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             color: isSelected 
                                 ? Theme.of(context).colorScheme.onPrimary 
                                 : Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -345,100 +347,212 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildBarberSelection() {
-    final barbersAsync = ref.watch(barberListProvider);
-    return barbersAsync.when(
-      data: (barbers) {
-        if (barbers.isEmpty) {
-          return const Center(
-            child: Text('Nessun barbiere disponibile. Contatta l\'amministratore.'),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: barbers.length,
-          itemBuilder: (context, index) {
-            final barber = barbers[index];
-            final isSelected = _selectedBarber?.id == barber.id;
-            
-            return AnimatedScale(
-              scale: isSelected ? 1.02 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              child: Card(
-                elevation: isSelected ? 4 : 1,
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: isSelected 
-                        ? Theme.of(context).colorScheme.primary 
-                        : Colors.transparent,
-                    width: 2,
+    final barbers = ref.watch(barberListProvider).maybeWhen(
+      data: (list) => list,
+      orElse: () => [],
+    );
+    
+    final allBarbers = barbers;
+
+    if (allBarbers.isEmpty) {
+      return const Center(
+        child: Text(
+          'Nessun barbiere disponibile.',
+          style: TextStyle(color: Colors.white60),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7, // Taller for full body/portrait look
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: allBarbers.length,
+      itemBuilder: (context, index) {
+        final barber = allBarbers[index];
+        final isSelected = _selectedBarber?.id == barber.id;
+        final isAvailable = barber.availabilityStatus == BarberAvailability.available;
+        
+        // Days off text removed as per request
+
+        return GestureDetector(
+          onTap: isAvailable ? () => setState(() => _selectedBarber = barber) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: isSelected 
+                  ? Border.all(color: const Color(0xFFD4AF37), width: 3) 
+                  : Border.all(color: Colors.transparent, width: 0),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withOpacity(0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : [],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // 1. Background Image (Full Card)
+                  barber.imageUrl.isNotEmpty
+                      ? (barber.imageUrl.startsWith('assets/')
+                          ? Image.asset(barber.imageUrl, fit: BoxFit.cover)
+                          : Image.network(barber.imageUrl, fit: BoxFit.cover))
+                      : Container(color: const Color(0xFF2A2A2A)),
+
+                  // 2. Gradient Overlay for Text Readability
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.2),
+                          Colors.black.withOpacity(0.8),
+                          Colors.black.withOpacity(0.95),
+                        ],
+                        stops: const [0.4, 0.6, 0.85, 1.0],
+                      ),
+                    ),
                   ),
-                ),
-                child: InkWell(
-                  onTap: () => setState(() => _selectedBarber = barber),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
+
+                  // 3. Unavailable Overlay (Darken if not available)
+                  if (!isAvailable)
+                    Container(
+                      color: Colors.black.withOpacity(0.7),
+                    ),
+
+                  // 4. Content
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.person,
-                            size: 36,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                barber.name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                barber.specialties.join(' • '),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Orario: ${barber.startHour}:00 - ${barber.endHour}:00',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 12,
-                                ),
+                        Text(
+                          barber.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,
+                                blurRadius: 4,
                               ),
                             ],
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (isSelected)
-                          Icon(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
+                        const SizedBox(height: 4),
+                        Text(
+                          barber.specialties.take(2).join(' • '),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Info Row: Hours & Days Off
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 12,
+                              color: const Color(0xFFD4AF37),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${barber.startHour}-${barber.endHour}',
+                              style: const TextStyle(
+                                color: Color(0xFFD4AF37),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                ),
+
+                  // 5. Status Badge (Top Right)
+                  if (!isAvailable)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: barber.availabilityStatus == BarberAvailability.sick 
+                              ? Colors.red 
+                              : barber.availabilityStatus == BarberAvailability.vacation 
+                                  ? Colors.orange 
+                                  : Colors.grey,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          barber.availabilityStatus == BarberAvailability.sick 
+                              ? 'MALATTIA' 
+                              : barber.availabilityStatus == BarberAvailability.vacation 
+                                  ? 'FERIE' 
+                                  : 'NON DISPONIBILE',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                  // 6. Selection Checkmark (Top Right - if available and selected)
+                  if (isSelected)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFD4AF37),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Errore: $e')),
     );
   }
 
@@ -761,7 +875,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   bool _canProceed(bool isPrivileged) {
     if (isPrivileged) {
       switch (_currentStep) {
-        case 0: return _isGuestBooking ? _guestName.isNotEmpty : _selectedCustomer != null;
+        case 0: return _isGuestBooking ? (_guestName.isNotEmpty && _guestPhone.isNotEmpty) : _selectedCustomer != null;
         case 1: return _selectedBarber != null;
         case 2: return _selectedService != null;
         case 3: return _selectedSlot != null;
@@ -876,32 +990,83 @@ class _SlotsGrid extends ConsumerWidget {
             );
 
         if (slots.isEmpty) {
-          return Card(
-            child: Padding(
+          // Determine reason for unavailability
+          String title = 'Nessuno slot disponibile';
+          String message = 'Prova a selezionare un\'altra data';
+          IconData icon = Icons.event_busy;
+          Color color = Colors.grey;
+
+          if (barber.availabilityStatus == BarberAvailability.sick) {
+            title = '${barber.name} è in Malattia';
+            message = 'Ci scusiamo per il disagio. Riprova più avanti.';
+            icon = Icons.local_hospital;
+            color = Colors.red;
+          } else if (barber.availabilityStatus == BarberAvailability.vacation) {
+            title = '${barber.name} è in Ferie';
+            message = 'Tornerà presto operativo!';
+            icon = Icons.flight_takeoff;
+            color = Colors.orange;
+          } else if (barber.daysOff.contains(date.weekday)) {
+            title = 'Giorno di Riposo';
+            message = '${barber.name} non lavora il ${DateFormat('EEEE', 'it').format(date)}.';
+            icon = Icons.weekend;
+            color = Colors.blueGrey;
+          } else if (barber.availabilityStatus == BarberAvailability.dayOff) {
+             title = 'Non Disponibile';
+             message = '${barber.name} non è disponibile in questa data.';
+             icon = Icons.event_busy;
+             color = Colors.grey;
+          }
+
+          return Center(
+            child: Container(
               padding: const EdgeInsets.all(32),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 64,
-                    color: Colors.grey.shade400,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: color.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
-                  const SizedBox(height: 16),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 48,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
-                    'Nessuno slot disponibile per questa data',
+                    title,
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: color,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
-                    'Prova a selezionare un\'altra data',
+                    message,
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
+                      fontSize: 16,
+                      color: Colors.white70,
+                      height: 1.5,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

@@ -47,7 +47,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 context.go('/booking');
                 break;
               case 2:
-                context.go('/calendar');
+                if (user?.role.name == 'client') {
+                  context.go('/profile');
+                } else {
+                  context.go('/calendar');
+                }
                 break;
               case 3:
                 if (user?.role.name == 'admin') {
@@ -73,14 +77,26 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               selectedIcon: Icon(Icons.calendar_today, color: Color(0xFFD4AF37)),
               label: 'Prenota',
             ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.event_note_outlined,
-                color: widget.currentIndex == 2 ? Color(0xFFD4AF37) : Colors.white60,
+            // Third Tab: Profile for Clients, Calendar for Staff
+            if (user?.role.name == 'client')
+              NavigationDestination(
+                icon: Icon(
+                  Icons.person_outline,
+                  color: widget.currentIndex == 2 ? Color(0xFFD4AF37) : Colors.white60,
+                ),
+                selectedIcon: Icon(Icons.person, color: Color(0xFFD4AF37)),
+                label: 'Profilo',
+              )
+            else
+              NavigationDestination(
+                icon: Icon(
+                  Icons.event_note_outlined,
+                  color: widget.currentIndex == 2 ? Color(0xFFD4AF37) : Colors.white60,
+                ),
+                selectedIcon: Icon(Icons.event_note, color: Color(0xFFD4AF37)),
+                label: 'Appuntamenti',
               ),
-              selectedIcon: Icon(Icons.event_note, color: Color(0xFFD4AF37)),
-              label: 'Appuntamenti',
-            ),
+            // Fourth Tab: Admin only
             if (user?.role.name == 'admin')
               NavigationDestination(
                 icon: Icon(

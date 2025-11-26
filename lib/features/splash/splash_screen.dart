@@ -1,117 +1,184 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
-import 'dart:async';
+import '../../core/ui/hexagon_painter.dart';
 
-class SplashScreen extends StatefulWidget {
-  final VoidCallback onComplete;
-  
-  const SplashScreen({super.key, required this.onComplete});
+class SplashScreen extends ConsumerStatefulWidget {
+  final VoidCallback? onComplete;
+
+  const SplashScreen({super.key, this.onComplete});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
+  late AnimationController _drawController;
+  late AnimationController _iconController;
+  late AnimationController _textController;
+  
+  late Animation<double> _drawAnimation;
+  late Animation<double> _iconScaleAnimation;
+  late Animation<double> _textFadeAnimation;
+  late Animation<Offset> _textSlideAnimation;
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 2), widget.onComplete);
+    
+    // 1. Line Drawing Animation (Border)
+    _drawController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _drawAnimation = CurvedAnimation(parent: _drawController, curve: Curves.easeInOut);
+
+    // 2. Icon Scale Animation
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _iconScaleAnimation = CurvedAnimation(parent: _iconController, curve: Curves.elasticOut);
+
+    // 3. Text Animation
+    _textController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _textFadeAnimation = CurvedAnimation(parent: _textController, curve: Curves.easeIn);
+    _textSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
+    );
+
+    _startSequence();
+  }
+
+  Future<void> _startSequence() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    await _drawController.forward();
+    await _iconController.forward();
+    await _textController.forward();
+    
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (mounted) {
+      if (widget.onComplete != null) {
+        widget.onComplete!();
+      } else {
+        context.go('/');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _drawController.dispose();
+    _iconController.dispose();
+    _textController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0A0A),
-              Color(0xFF1A1A1A),
-              Color(0xFF0A0A0A),
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated Logo
-              ZoomIn(
-                duration: const Duration(milliseconds: 800),
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Color(0xFFD4AF37),
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFFD4AF37).withOpacity(0.4),
-                        blurRadius: 30,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.content_cut,
-                    size: 80,
-                    color: Color(0xFFD4AF37),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 40),
-              
-              // Animated Title
-              FadeInUp(
-                delay: const Duration(milliseconds: 400),
-                child: Shimmer.fromColors(
-                  baseColor: Color(0xFFD4AF37),
-                  highlightColor: Color(0xFFFFF8DC),
-                  period: const Duration(seconds: 2),
-                  child: Text(
-                    'GENTLEMAN',
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                      color: Color(0xFFD4AF37),
-                      shadows: [
-                        Shadow(
-                          color: Color(0xFFB8860B),
-                          blurRadius: 15,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated Logo Container
+            SizedBox(
+              width: 160,
+              height: 160,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Drawing Border
+                  AnimatedBuilder(
+                    animation: _drawAnimation,
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: HexagonPainter(
+                          progress: _drawAnimation.value,
+                          color: const Color(0xFFD4AF37),
                         ),
-                      ],
+                        size: const Size(160, 160),
+                      );
+                    },
+                  ),
+                  
+                  // Central Icon
+                  ScaleTransition(
+                    scale: _iconScaleAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD4AF37).withOpacity(0.1),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: const FaIcon(
+                        FontAwesomeIcons.scissors,
+                        color: Color(0xFFD4AF37),
+                        size: 50,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 40),
+            
+            // Text Animations
+            FadeTransition(
+              opacity: _textFadeAnimation,
+              child: SlideTransition(
+                position: _textSlideAnimation,
+                child: Column(
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: const Color(0xFFD4AF37),
+                      highlightColor: const Color(0xFFF7E7CE),
+                      period: const Duration(seconds: 3),
+                      child: const Text(
+                        'GENTLEMAN',
+                        style: TextStyle(
+                          fontFamily: 'Playfair Display',
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'BARBER SHOP',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.6),
+                        letterSpacing: 8,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              
-              const SizedBox(height: 8),
-              
-              // Subtitle
-              FadeInUp(
-                delay: const Duration(milliseconds: 600),
-                child: Text(
-                  'BARBER SHOP',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFB8860B),
-                    letterSpacing: 8,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+

@@ -39,6 +39,7 @@ class AuthService {
     required String email,
     required String password,
     required String name,
+    UserRole role = UserRole.client,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -50,7 +51,7 @@ class AuthService {
         id: userCredential.user!.uid,
         email: email,
         name: name,
-        role: UserRole.client, // Default role
+        role: role,
       );
       await _firestoreService.createUser(newUser);
     }

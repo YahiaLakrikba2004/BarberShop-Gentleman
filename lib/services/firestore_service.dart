@@ -42,7 +42,11 @@ class FirestoreService {
     });
   }
 
-  // Barbers
+  // Update barber availability and daysOff
+  Future<void> updateBarberAvailability(String barberId, Map<String, dynamic> data) async {
+    await _firestore.collection('barbers').doc(barberId).update(data);
+  }
+
   Stream<List<BarberModel>> getBarbers() {
     return _firestore.collection('barbers').snapshots().map((snapshot) {
       return snapshot.docs
@@ -58,6 +62,10 @@ class FirestoreService {
           .map((doc) => ServiceModel.fromMap(doc.data(), doc.id))
           .toList();
     });
+  }
+
+  Future<void> createService(ServiceModel service) async {
+    await _firestore.collection('services').doc(service.id).set(service.toMap());
   }
 
   // Appointments

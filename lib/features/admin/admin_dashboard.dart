@@ -5,6 +5,7 @@ import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/seed_service.dart';
 import 'user_management_screen.dart';
+import 'barber_management_screen.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -27,6 +28,18 @@ class AdminDashboard extends ConsumerWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const UserManagementScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'Gestione Barbieri',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BarberManagementScreen(),
                 ),
               );
             },

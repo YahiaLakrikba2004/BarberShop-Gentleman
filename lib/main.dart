@@ -6,6 +6,7 @@ import 'core/router.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';
 import 'features/splash/splash_screen.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,11 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_showSplash) {
+    // Warm up auth state and router
+    final authState = ref.watch(authStateProvider);
+    
+    // Keep splash screen if manually showing OR if auth is still loading
+    if (_showSplash || authState.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
