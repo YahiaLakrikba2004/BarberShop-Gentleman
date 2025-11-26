@@ -51,34 +51,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
+        leading: FadeInLeft(
+          duration: const Duration(milliseconds: 800),
+          child: Container(
+            margin: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4AF37).withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/icon_premium.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
         title: const Text('GENTLEMAN BARBER SHOP'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            height: 1.0,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Color(0xFFD4AF37), // Luxury Gold
+                  Colors.transparent,
+                ],
+                stops: [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_upload),
-            tooltip: 'Carica Dati Demo',
-            onPressed: () async {
-              await ref.read(seedServiceProvider).seedData();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Dati demo caricati con successo!'),
-                    backgroundColor: const Color(0xFFD4AF37),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-          ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.instagram),
-            tooltip: 'Instagram',
-            onPressed: () async {
-              final uri = Uri.parse('https://www.instagram.com/the_gentlemen_barberstyle/');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
+
           // Profile/Logout logic moved to Bottom Navigation for Clients
           // For Barbers/Admins, we might still want a logout button here since they don't have a profile tab
           if (user != null && user.role.name != 'client')
@@ -486,10 +500,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                             // Address
                             _ContactRow(
                               icon: Icons.location_on,
-                              title: 'Via della Barberia, 123',
-                              subtitle: 'Centro Città, Roma',
+                              title: 'Via Borgo Eniano, 50',
+                              subtitle: '35044 Montagnana PD, Italy',
                               onTap: () async {
-                                final uri = Uri.parse('https://maps.google.com/?q=Via+della+Barberia+123+Roma');
+                                final uri = Uri.parse('https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                                 }
@@ -500,10 +514,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                             // Phone
                             _ContactRow(
                               icon: Icons.phone,
-                              title: '+39 333 123 4567',
+                              title: '+39 351 482 3048',
                               subtitle: 'Chiamaci per info',
                               onTap: () async {
-                                final uri = Uri.parse('tel:+393331234567');
+                                final uri = Uri.parse('tel:+393514823048');
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);
                                 }
@@ -533,11 +547,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  _HoursRow(day: 'Lun - Ven', hours: '09:00 - 20:00'),
+                                  _HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(day: 'Sabato', hours: '09:00 - 18:00'),
+                                  _HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(day: 'Domenica', hours: 'Chiuso', isClosed: true),
+                                  _HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
+                                  const SizedBox(height: 8),
+                                  _HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
                                 ],
                               ),
                             ),

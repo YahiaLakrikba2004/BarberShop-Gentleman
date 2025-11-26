@@ -71,6 +71,7 @@ class SeedService {
           email: member['email'] as String,
           password: member['password'] as String,
           name: member['name'] as String,
+          phoneNumber: '0000000000', // Dummy phone for seed data
           role: member['role'] as UserRole,
         );
         

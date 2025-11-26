@@ -2,27 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'firebase_options.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
-import 'firebase_options.dart';
 import 'features/splash/splash_screen.dart';
 import 'services/auth_service.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    debugPrint("Firebase initialization failed: $e");
-  }
-
-  // Initialize Italian locale for date formatting
+  // Register background handler
+  FirebaseMessaging.onBackgroundMessage(NotificationService.firebaseMessagingBackgroundHandler);
+  
   await initializeDateFormatting('it_IT', null);
-
-  runApp(const ProviderScope(child: BarberShopApp()));
+  
+  runApp(
+    ProviderScope(
+      overrides: [
+      ],
+      child: const BarberShopApp(),
+    ),
+  );
 }
 
 class BarberShopApp extends ConsumerStatefulWidget {
@@ -34,6 +40,13 @@ class BarberShopApp extends ConsumerStatefulWidget {
 
 class _BarberShopAppState extends ConsumerState<BarberShopApp> {
   bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize notifications
+    ref.read(notificationServiceProvider).initialize();
+  }
 
   @override
   Widget build(BuildContext context) {

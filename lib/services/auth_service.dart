@@ -39,6 +39,7 @@ class AuthService {
     required String email,
     required String password,
     required String name,
+    required String phoneNumber,
     UserRole role = UserRole.client,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -52,6 +53,7 @@ class AuthService {
         email: email,
         name: name,
         role: role,
+        phoneNumber: phoneNumber,
       );
       await _firestoreService.createUser(newUser);
     }
@@ -59,5 +61,15 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      // Delete from Firestore first
+      await _firestoreService.deleteUser(user.uid);
+      // Delete from Firebase Auth
+      await user.delete();
+    }
   }
 }

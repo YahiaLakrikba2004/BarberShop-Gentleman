@@ -25,6 +25,14 @@ class FirestoreService {
     });
   }
 
+  Future<void> updateUser(UserModel user) async {
+    await _firestore.collection('users').doc(user.id).update(user.toMap());
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await _firestore.collection('users').doc(userId).delete();
+  }
+
   Stream<UserModel?> getUserStream(String uid) {
     return _firestore.collection('users').doc(uid).snapshots().map((snapshot) {
       if (snapshot.exists) {

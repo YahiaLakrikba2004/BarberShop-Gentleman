@@ -8,6 +8,8 @@ class UserModel extends Equatable {
   final String name;
   final UserRole role;
   final String? phoneNumber;
+  final String? imageUrl;
+  final String? fcmToken;
 
   const UserModel({
     required this.id,
@@ -15,7 +17,29 @@ class UserModel extends Equatable {
     required this.name,
     required this.role,
     this.phoneNumber,
+    this.imageUrl,
+    this.fcmToken,
   });
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? name,
+    UserRole? role,
+    String? phoneNumber,
+    String? imageUrl,
+    String? fcmToken,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      imageUrl: imageUrl ?? this.imageUrl,
+      fcmToken: fcmToken ?? this.fcmToken,
+    );
+  }
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
     return UserModel(
@@ -27,6 +51,8 @@ class UserModel extends Equatable {
         orElse: () => UserRole.client,
       ),
       phoneNumber: map['phoneNumber'],
+      imageUrl: map['imageUrl'],
+      fcmToken: map['fcmToken'],
     );
   }
 
@@ -34,11 +60,13 @@ class UserModel extends Equatable {
     return {
       'email': email,
       'name': name,
-      'role': role.name, // Store as string 'client', 'barber', 'admin'
+      'role': role.name,
       'phoneNumber': phoneNumber,
+      'imageUrl': imageUrl,
+      'fcmToken': fcmToken,
     };
   }
 
   @override
-  List<Object?> get props => [id, email, name, role, phoneNumber];
+  List<Object?> get props => [id, email, name, role, phoneNumber, imageUrl, fcmToken];
 }

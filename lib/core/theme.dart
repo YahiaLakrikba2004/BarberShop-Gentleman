@@ -47,11 +47,12 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: GoogleFonts.playfairDisplay(
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: FontWeight.bold,
         color: luxuryGold,
-        letterSpacing: 2,
+        letterSpacing: 1.5,
       ),
+      iconTheme: const IconThemeData(color: luxuryGold),
     ),
     cardTheme: CardThemeData(
       elevation: 1,
@@ -140,15 +141,16 @@ class AppTheme {
     scaffoldBackgroundColor: barberBlack,
     appBarTheme: AppBarTheme(
       backgroundColor: barberBlack,
-      foregroundColor: barberWhite,
+      foregroundColor: luxuryGold,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.roboto(
-        fontSize: 20,
+      titleTextStyle: GoogleFonts.playfairDisplay(
+        fontSize: 22,
         fontWeight: FontWeight.bold,
-        color: barberWhite,
-        letterSpacing: 1.2,
+        color: luxuryGold,
+        letterSpacing: 1.5,
       ),
+      iconTheme: const IconThemeData(color: luxuryGold),
     ),
     cardTheme: CardThemeData(
       elevation: 1,

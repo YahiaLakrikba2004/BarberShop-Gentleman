@@ -942,6 +942,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
     try {
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1008,7 +1009,7 @@ class _SlotsGrid extends ConsumerWidget {
             color = Colors.orange;
           } else if (barber.daysOff.contains(date.weekday)) {
             title = 'Giorno di Riposo';
-            message = '${barber.name} non lavora il ${DateFormat('EEEE', 'it').format(date)}.';
+            message = '${barber.name} non lavora ${DateFormat('EEEE', 'it').format(date)}.';
             icon = Icons.weekend;
             color = Colors.blueGrey;
           } else if (barber.availabilityStatus == BarberAvailability.dayOff) {
