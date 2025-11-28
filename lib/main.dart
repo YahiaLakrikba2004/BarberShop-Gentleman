@@ -69,7 +69,7 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
 
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Gentleman Barber Shop',
+      title: 'The Gentleman Barberstyle',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

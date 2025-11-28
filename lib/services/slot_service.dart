@@ -55,6 +55,11 @@ class SlotService {
       bool isOccupied = false;
 
       for (var appointment in existingAppointments) {
+        // Ignore cancelled appointments
+        if (appointment.status == AppointmentStatus.cancelled) {
+          continue;
+        }
+
         // Check overlap
         // Appointment starts before slot ends AND Appointment ends after slot starts
         final appointmentEnd = appointment.date.add(Duration(minutes: appointment.durationMinutes));

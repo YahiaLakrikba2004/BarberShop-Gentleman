@@ -21,11 +21,13 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _mainController;
   late AnimationController _particleController;
+  late AnimationController _pulseController;
   late Animation<double> _drawAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotateAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _loadingAnimation;
+  late Animation<double> _pulseAnimation;
 
   final List<Particle> _particles = [];
   final math.Random _random = math.Random();
@@ -43,6 +45,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
     // 1. Hexagon Drawing (0% - 40%)
     _drawAnimation = CurvedAnimation(
@@ -123,6 +134,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   void dispose() {
     _mainController.dispose();
     _particleController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -139,9 +151,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 center: Alignment.center,
-                radius: 1.5,
+                radius: 1.2,
                 colors: [
-                  Color(0xFF1A1A1A),
+                  Color(0xFF222222), // Slightly lighter center for spotlight
                   Color(0xFF000000),
                 ],
               ),
@@ -188,12 +200,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                         },
                       ),
                       
-                      // Icon
+                      // Icon with Pulse
                       AnimatedBuilder(
-                        animation: _mainController,
+                        animation: Listenable.merge([_mainController, _pulseController]),
                         builder: (context, child) {
+                          // Only pulse when scale is near 1.0 (fully visible)
+                          final pulseScale = _scaleAnimation.value > 0.9 ? _pulseAnimation.value : 1.0;
+                          
                           return Transform.scale(
-                            scale: _scaleAnimation.value,
+                            scale: _scaleAnimation.value * pulseScale,
                             child: Transform.rotate(
                               angle: _rotateAnimation.value * math.pi,
                               child: Container(
@@ -204,8 +219,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFFD4AF37).withOpacity(0.2 * _scaleAnimation.value),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
+                                      blurRadius: 30 * pulseScale,
+                                      spreadRadius: 5 * pulseScale,
                                     ),
                                   ],
                                   border: Border.all(
@@ -213,10 +228,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                     width: 1,
                                   ),
                                 ),
-                                child: const FaIcon(
-                                  FontAwesomeIcons.scissors,
-                                  color: Color(0xFFD4AF37),
-                                  size: 60,
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/icon_premium.png',
+                                    fit: BoxFit.cover,
+                                    width: 80,
+                                    height: 80,
+                                  ),
                                 ),
                               ),
                             ),
@@ -239,7 +257,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                         highlightColor: const Color(0xFFFFF8DC),
                         period: const Duration(seconds: 2),
                         child: const Text(
-                          'GENTLEMAN',
+                          'THE GENTLEMAN',
                           style: TextStyle(
                             fontFamily: 'Playfair Display',
                             fontSize: 42,
@@ -249,20 +267,51 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'BARBER SHOP',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: const Color(0xFFD4AF37).withOpacity(0.8),
-                            letterSpacing: 8,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      
+                      // Refined Subtitle with Decorative Lines
+                      SizedBox(
+                        width: 250,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Color(0xFFD4AF37).withOpacity(0.5),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'BARBER STYLE',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: const Color(0xFFD4AF37),
+                                  letterSpacing: 8,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFFD4AF37).withOpacity(0.5),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:carousel_slider/carousel_slider.dart' hide CarouselController;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 import '../../services/seed_service.dart';
 
@@ -21,6 +22,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
   late AnimationController _logoController;
   late Animation<double> _drawAnimation;
+  int _currentCarouselIndex = 0;
 
   @override
   void initState() {
@@ -51,6 +53,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0A0A0A),
+        surfaceTintColor: Colors.transparent,
         leading: FadeInLeft(
           duration: const Duration(milliseconds: 800),
           child: Container(
@@ -74,7 +78,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ),
           ),
         ),
-        title: const Text('GENTLEMAN BARBER SHOP'),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'The Gentleman Barberstyle',
+            style: GoogleFonts.greatVibes(
+              fontSize: 30,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 1.5,
+              color: const Color(0xFFD4AF37),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFD4AF37).withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 0),
+                ),
+              ],
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
@@ -92,9 +114,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           ),
         ),
         actions: [
-
-          // Profile/Logout logic moved to Bottom Navigation for Clients
-          // For Barbers/Admins, we might still want a logout button here since they don't have a profile tab
           if (user != null && user.role.name != 'client')
             IconButton(
               icon: const Icon(Icons.logout),
@@ -117,7 +136,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             FadeIn(
               duration: const Duration(milliseconds: 500),
               child: Container(
-                height: 450,
+                // Removed fixed height to prevent overflow
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -159,12 +179,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                             FadeInDown(
                               delay: const Duration(milliseconds: 200),
                               child: Container(
-                                width: 100,
+                                width: 80, // Reduced width
                                 height: 1,
                                 color: Color(0xFFD4AF37),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16), // Reduced spacing
                             
                             // Animated Logo
                             SizedBox(
@@ -192,7 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                     delay: const Duration(milliseconds: 1000),
                                     duration: const Duration(milliseconds: 800),
                                     child: Container(
-                                      padding: const EdgeInsets.all(15),
+                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         boxShadow: [
@@ -203,10 +223,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                           ),
                                         ],
                                       ),
-                                      child: const FaIcon(
-                                        FontAwesomeIcons.scissors,
-                                        color: Color(0xFFD4AF37),
-                                        size: 40,
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/images/icon_premium.png', // Reverted to existing asset
+                                          fit: BoxFit.cover,
+                                          width: 80,
+                                          height: 80,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -214,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               ),
                             ),
                             
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
                             
                             // Main title with shimmer
                             FadeInUp(
@@ -224,7 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 highlightColor: Color(0xFFFFF8DC),
                                 period: const Duration(milliseconds: 1500),
                                 child: Text(
-                                  'GENTLEMAN',
+                                  'THE GENTLEMAN',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 48,
@@ -248,7 +271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                             FadeInUp(
                               delay: const Duration(milliseconds: 300),
                               child: Text(
-                                'BARBER SHOP',
+                                'BARBERSTYLE',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 20,
@@ -259,39 +282,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               ),
                             ),
                             
-                            const SizedBox(height: 32),
-                            
-
+                            const SizedBox(height: 24),
                             
                             // CTA Button
                             BounceInUp(
                               delay: const Duration(milliseconds: 500),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color(0xFFD4AF37).withOpacity(0.4),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: FilledButton.icon(
-                                  onPressed: () => context.push('/booking'),
-                                  icon: const Icon(Icons.calendar_today, size: 20),
-                                  label: const Text('PRENOTA ORA'),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 48,
-                                      vertical: 20,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 3,
-                                    ),
-                                  ),
-                                ),
+                              child: _PremiumAnimatedButton(
+                                onPressed: () => context.push('/booking'),
                               ),
                             ),
                             
@@ -314,7 +311,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 ),
               ),
             ),
-
             // Image Carousel Section
             _buildImageCarousel(),
 
@@ -374,7 +370,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     children: [
                       FadeInLeft(
                         delay: const Duration(milliseconds: 300),
-                        child: _PremiumServiceCard(
+                        child: const _PremiumServiceCard(
                           icon: Icons.content_cut,
                           title: 'Taglio Capelli',
                           description: 'Taglio classico o moderno con lavaggio e styling professionale',
@@ -384,7 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       ),
                       FadeInUp(
                         delay: const Duration(milliseconds: 400),
-                        child: _PremiumServiceCard(
+                        child: const _PremiumServiceCard(
                           icon: Icons.face,
                           title: 'Regolazione Barba',
                           description: 'Modellatura e rifinitura barba con panno caldo e oli essenziali',
@@ -394,7 +390,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       ),
                       FadeInRight(
                         delay: const Duration(milliseconds: 500),
-                        child: _PremiumServiceCard(
+                        child: const _PremiumServiceCard(
                           icon: Icons.auto_awesome,
                           title: 'Taglio + Barba',
                           description: 'Pacchetto completo per un look impeccabile e curato',
@@ -470,7 +466,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'GENTLEMAN',
+                                  'THE GENTLEMAN',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -479,7 +475,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                   ),
                                 ),
                                 Text(
-                                  'BARBER SHOP',
+                                  'BARBERSTYLE',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.white60,
@@ -491,7 +487,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                           ],
                         ),
                       ),
-
+                      
                       // Content
                       Padding(
                         padding: const EdgeInsets.all(24),
@@ -600,6 +596,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       'assets/images/gallery/haircut2.png',
       'assets/images/gallery/haircut3.png',
       'assets/images/gallery/haircut4.png',
+      'assets/images/gallery/haircut5.png',
     ];
 
     return Container(
@@ -613,10 +610,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               children: [
                 Text(
                   'I NOSTRI LAVORI',
-                  style: TextStyle(
+                  style: GoogleFonts.cinzel(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFD4AF37),
+                    color: const Color(0xFFD4AF37),
                     letterSpacing: 4,
                   ),
                 ),
@@ -624,7 +621,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 Container(
                   width: 80,
                   height: 3,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
@@ -657,6 +654,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               autoPlayCurve: Curves.fastOutSlowIn,
               enlargeCenterPage: true,
               viewportFraction: 0.8,
+              onPageChanged: (index, reason) {
+                setState(() {
+                  _currentCarouselIndex = index;
+                });
+              },
             ),
             items: galleryImages.map((imagePath) {
               return Builder(
@@ -667,12 +669,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Color(0xFFD4AF37).withOpacity(0.3),
+                        color: const Color(0xFFD4AF37).withOpacity(0.3),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Color(0xFFD4AF37).withOpacity(0.2),
+                          color: const Color(0xFFD4AF37).withOpacity(0.2),
                           blurRadius: 20,
                           spreadRadius: 2,
                         ),
@@ -680,13 +682,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: Image.asset(
-                        imagePath,
-                        fit: BoxFit.cover,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFF1A1A1A),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.image_not_supported_outlined,
+                                      color: const Color(0xFFD4AF37).withOpacity(0.5),
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Immagine non disponibile',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.5),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          // Gradient Overlay for Premium Feel
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.3),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          // Animated Indicators
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: galleryImages.asMap().entries.map((entry) {
+              return GestureDetector(
+                onTap: () {}, // Carousel controller could be added here
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: _currentCarouselIndex == entry.key ? 24.0 : 8.0,
+                  height: 8.0,
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: _currentCarouselIndex == entry.key
+                        ? const Color(0xFFD4AF37)
+                        : const Color(0xFFD4AF37).withOpacity(0.2),
+                    boxShadow: _currentCarouselIndex == entry.key
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFFD4AF37).withOpacity(0.5),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : null,
+                  ),
+                ),
               );
             }).toList(),
           ),
@@ -717,200 +791,230 @@ class _PremiumServiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 320,
+      height: 240, // Increased height to prevent overflow
       decoration: BoxDecoration(
-        color: Color(0xFF0A0A0A),
-        border: Border.all(
-          color: featured ? Color(0xFFD4AF37) : Color(0xFFD4AF37).withOpacity(0.3),
-          width: featured ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: featured
-            ? [
-                BoxShadow(
-                  color: Color(0xFFD4AF37).withOpacity(0.2),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: Stack(
-        children: [
-          if (featured)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFFD4AF37),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'POPOLARE',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0A0A0A),
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFD4AF37).withOpacity(0.1),
-                    border: Border.all(color: Color(0xFFD4AF37), width: 1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 32,
-                    color: Color(0xFFD4AF37),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD4AF37),
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 16),
-                Divider(color: Color(0xFFD4AF37).withOpacity(0.2), height: 1),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Prezzo',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.white60,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          price,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1A1A1A),
-                        border: Border.all(color: Color(0xFFD4AF37).withOpacity(0.3)),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.access_time, size: 13, color: Color(0xFFD4AF37)),
-                          const SizedBox(width: 5),
-                          Text(
-                            duration,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: featured 
+                ? const Color(0xFFD4AF37).withOpacity(0.2) 
+                : Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ServiceCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final int delay;
-
-  const _ServiceCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.delay,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ZoomIn(
-      delay: Duration(milliseconds: delay),
-      child: Container(
-        width: 110,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Color(0xFF0A0A0A),
-          border: Border.all(color: Color(0xFFD4AF37).withOpacity(0.3), width: 1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 40,
-              color: Color(0xFFD4AF37),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFD4AF37),
-                letterSpacing: 1,
-                fontSize: 14,
+      child: Stack(
+        children: [
+          // Gradient Border Container
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: featured
+                    ? [
+                        const Color(0xFFD4AF37),
+                        const Color(0xFFF7E7CE),
+                        const Color(0xFFD4AF37),
+                      ]
+                    : [
+                        const Color(0xFFD4AF37).withOpacity(0.5),
+                        Colors.transparent,
+                        const Color(0xFFD4AF37).withOpacity(0.2),
+                      ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.white60,
-                letterSpacing: 0.5,
+            child: Padding(
+              padding: const EdgeInsets.all(1.5), // Border width
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(23),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF1A1A1A),
+                      const Color(0xFF0A0A0A),
+                    ],
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(23),
+                  child: Stack(
+                    children: [
+                      // Background Watermark Icon
+                      Positioned(
+                        right: -20,
+                        bottom: -20,
+                        child: Icon(
+                          icon,
+                          size: 150,
+                          color: const Color(0xFFD4AF37).withOpacity(0.03),
+                        ),
+                      ),
+                      
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Header: Icon and Duration
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    icon,
+                                    size: 24,
+                                    color: const Color(0xFFD4AF37),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.access_time,
+                                        size: 12,
+                                        color: Colors.white54,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        duration,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            // Title and Description
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title.toUpperCase(),
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD4AF37),
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.6),
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            
+                            // Footer: Price and "Book" hint
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'PREZZO',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: const Color(0xFFD4AF37).withOpacity(0.6),
+                                        letterSpacing: 1.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      price,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (featured)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFD4AF37),
+                                          Color(0xFFB8860B),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFFD4AF37).withOpacity(0.4),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Text(
+                                      'BEST SELLER',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1048,6 +1152,131 @@ class _SocialButton extends StatelessWidget {
           ],
         ),
         child: FaIcon(icon, color: Color(0xFFD4AF37), size: 20),
+      ),
+    );
+  }
+}
+
+class _PremiumAnimatedButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _PremiumAnimatedButton({required this.onPressed});
+
+  @override
+  State<_PremiumAnimatedButton> createState() => _PremiumAnimatedButtonState();
+}
+
+class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton> with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late AnimationController _glowController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onPressed();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_controller, _glowController]),
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFB8860B), // Dark Gold
+                  Color(0xFFF7E7CE), // Light Gold
+                  Color(0xFFD4AF37), // Standard Gold
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4AF37).withOpacity(0.2 + (0.3 * _glowAnimation.value)),
+                  blurRadius: 15 + (10 * _glowAnimation.value),
+                  spreadRadius: 1 + (1 * _glowAnimation.value),
+                  offset: const Offset(0, 0),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(2.0), // Border Width
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF2A2A2A), // Lighter Black (Top Light)
+                      Color(0xFF000000), // Pure Black
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          color: Color(0xFFD4AF37),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'PRENOTA ORA',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                            color: const Color(0xFFD4AF37),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

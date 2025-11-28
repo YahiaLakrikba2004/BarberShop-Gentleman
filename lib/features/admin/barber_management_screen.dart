@@ -11,9 +11,12 @@ class BarberManagementScreen extends ConsumerWidget {
     final barbersAsync = ref.watch(barberListProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
         title: const Text('Gestione Barbieri'),
         centerTitle: true,
+        backgroundColor: const Color(0xFF0A0A0A),
+        surfaceTintColor: Colors.transparent,
       ),
       body: barbersAsync.when(
         data: (barbers) {
@@ -43,63 +46,143 @@ class _BarberManagementCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.grey[900]!, Colors.grey[850]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: barber.imageUrl.isNotEmpty
-                      ? (barber.imageUrl.startsWith('assets/')
-                          ? AssetImage(barber.imageUrl) as ImageProvider
-                          : NetworkImage(barber.imageUrl))
-                      : null,
-                  child: barber.imageUrl.isEmpty ? const Icon(Icons.person) : null,
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFD4AF37), width: 2), // Gold border
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withOpacity(0.3),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 32,
+                    backgroundImage: barber.imageUrl.isNotEmpty
+                        ? (barber.imageUrl.startsWith('assets/')
+                            ? AssetImage(barber.imageUrl) as ImageProvider
+                            : NetworkImage(barber.imageUrl))
+                        : null,
+                    backgroundColor: Colors.grey[800],
+                    child: barber.imageUrl.isEmpty
+                        ? const Icon(Icons.person, color: Colors.white70, size: 30)
+                        : null,
+                  ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         barber.name,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                      Text(
-                        'Orario: ${barber.startHour}:00 - ${barber.endHour}:00',
-                        style: const TextStyle(color: Colors.grey),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 14, color: Color(0xFFD4AF37)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${barber.startHour}:00 - ${barber.endHour}:00',
+                            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const Divider(height: 24),
-            const Text('Stato Disponibilità:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: BarberAvailability.values.map((status) {
-                final isSelected = barber.availabilityStatus == status;
-                return ChoiceChip(
-                  label: Text(_getStatusLabel(status)),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      _updateStatus(ref, barber, status);
-                    }
-                  },
-                  selectedColor: _getStatusColor(status),
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey,
+            const SizedBox(height: 16),
+            Divider(color: Colors.white.withOpacity(0.1), height: 1),
+            const SizedBox(height: 16),
+            const Text(
+              'Stato Disponibilità',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+                fontSize: 14,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatusButton(
+                        label: 'Disponibile',
+                        isSelected: barber.availabilityStatus == BarberAvailability.available,
+                        color: Colors.green.shade600,
+                        onTap: () => _updateStatus(ref, barber, BarberAvailability.available),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _StatusButton(
+                        label: 'Malattia',
+                        isSelected: barber.availabilityStatus == BarberAvailability.sick,
+                        color: Colors.red.shade600,
+                        onTap: () => _updateStatus(ref, barber, BarberAvailability.sick),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _StatusButton(
+                        label: 'Ferie',
+                        isSelected: barber.availabilityStatus == BarberAvailability.vacation,
+                        color: Colors.orange.shade600,
+                        onTap: () => _updateStatus(ref, barber, BarberAvailability.vacation),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: 160,
+                  child: _StatusButton(
+                    label: 'Non Disponibile',
+                    isSelected: barber.availabilityStatus == BarberAvailability.dayOff,
+                    color: Colors.grey.shade600,
+                    onTap: () => _updateStatus(ref, barber, BarberAvailability.dayOff),
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
           ],
         ),
@@ -107,26 +190,71 @@ class _BarberManagementCard extends ConsumerWidget {
     );
   }
 
-  String _getStatusLabel(BarberAvailability status) {
-    switch (status) {
-      case BarberAvailability.available: return 'Disponibile';
-      case BarberAvailability.sick: return 'Malattia';
-      case BarberAvailability.vacation: return 'Ferie';
-      case BarberAvailability.dayOff: return 'Non Disponibile';
-    }
-  }
-
-  Color _getStatusColor(BarberAvailability status) {
-    switch (status) {
-      case BarberAvailability.available: return Colors.green;
-      case BarberAvailability.sick: return Colors.red;
-      case BarberAvailability.vacation: return Colors.orange;
-      case BarberAvailability.dayOff: return Colors.grey;
-    }
-  }
-
   Future<void> _updateStatus(WidgetRef ref, BarberModel barber, BarberAvailability status) async {
     final updatedBarber = barber.copyWith(availabilityStatus: status);
     await ref.read(firestoreServiceProvider).updateBarberAvailability(barber.id, updatedBarber.toMap());
   }
 }
+
+class _StatusButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _StatusButton({
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.white.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSelected) ...[
+              const Icon(Icons.check_circle, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+

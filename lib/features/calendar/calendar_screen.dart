@@ -73,14 +73,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return allAppointmentsAsync.when(
       data: (allAppointments) {
         // Convert to CalendarEventData
-        final events = allAppointments.map((apt) {
-          return CalendarEventData(
+        final events = allAppointments.where((apt) => apt.status != AppointmentStatus.cancelled).map((apt) {
+          return CalendarEventData<AppointmentModel>(
             title: apt.customerName,
             description: '${apt.serviceName}\n${apt.customerPhoneNumber ?? ""}',
             date: apt.date,
             startTime: apt.date,
             endTime: apt.endTime,
             color: const Color(0xFFD4AF37),
+            event: apt,
           );
         }).toList();
 
@@ -634,23 +635,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               _buildDetailRow(Icons.phone, 'Telefono', event.description!.split('\n').last),
             ],
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showCancelDialog(context, event.event as AppointmentModel);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.red.withOpacity(0.5)),
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Annulla',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'Chiudi',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Chiudi',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -684,6 +709,53 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _showCancelDialog(BuildContext context, AppointmentModel appointment) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+        ),
+        title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Sei sicuro di voler annullare l\'appuntamento di ${appointment.customerName}?\nL\'operazione non può essere annullata.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No, mantieni', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(firestoreServiceProvider).updateAppointmentStatus(
+                  appointment.id, 
+                  AppointmentStatus.cancelled
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Appuntamento annullato con successo')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Errore: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Sì, annulla', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }

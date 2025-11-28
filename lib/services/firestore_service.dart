@@ -84,6 +84,16 @@ class FirestoreService {
         .set(appointment.toMap());
   }
 
+  Future<void> updateAppointmentStatus(String appointmentId, AppointmentStatus status) async {
+    await _firestore.collection('appointments').doc(appointmentId).update({
+      'status': status.name,
+    });
+  }
+
+  Future<void> deleteAppointment(String appointmentId) async {
+    await _firestore.collection('appointments').doc(appointmentId).delete();
+  }
+
   Stream<List<AppointmentModel>> getAppointmentsForUser(String userId) {
     return _firestore
         .collection('appointments')

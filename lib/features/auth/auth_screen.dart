@@ -50,14 +50,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
           _passwordController.text.trim(),
         );
       } else {
-        if (_phoneController.text.trim().isEmpty) {
-          throw Exception('Il numero di telefono è obbligatorio');
-        }
+        // Validation
+        final name = _nameController.text.trim();
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+        final phone = _phoneController.text.trim();
+
+        if (name.isEmpty) throw Exception('Il nome è obbligatorio');
+        if (email.isEmpty || !email.contains('@')) throw Exception('Inserisci un\'email valida');
+        if (password.length < 6) throw Exception('La password deve avere almeno 6 caratteri');
+        if (phone.isEmpty) throw Exception('Il numero di telefono è obbligatorio');
+        if (phone.length < 9) throw Exception('Inserisci un numero di telefono valido');
+
         await authService.signUpWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          name: _nameController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
+          email: email,
+          password: password,
+          name: name,
+          phoneNumber: phone,
         );
       }
       if (mounted) context.go('/');

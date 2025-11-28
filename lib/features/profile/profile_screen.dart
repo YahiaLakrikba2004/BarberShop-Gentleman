@@ -635,7 +635,7 @@ class _AppointmentsList extends ConsumerWidget {
   }
 }
 
-class _AppointmentTicket extends StatelessWidget {
+class _AppointmentTicket extends ConsumerWidget {
   final AppointmentModel appointment;
   final bool isHistory;
 
@@ -644,8 +644,55 @@ class _AppointmentTicket extends StatelessWidget {
     required this.isHistory,
   });
 
+  Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+        ),
+        title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Sei sicuro di voler annullare questo appuntamento? L\'operazione non può essere annullata.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No, mantieni', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(firestoreServiceProvider).updateAppointmentStatus(
+                  appointment.id, 
+                  AppointmentStatus.cancelled
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Appuntamento annullato con successo')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Errore: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Sì, annulla', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateFormat = DateFormat('d MMM y', 'it');
     final timeFormat = DateFormat('HH:mm');
 
@@ -700,7 +747,7 @@ class _AppointmentTicket extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (!isHistory)
+                          if (!isHistory && appointment.status != AppointmentStatus.cancelled)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
@@ -714,6 +761,24 @@ class _AppointmentTicket extends StatelessWidget {
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFFD4AF37),
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            )
+                          else if (appointment.status == AppointmentStatus.cancelled)
+                             Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                              ),
+                              child: const Text(
+                                'CANCELLED',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
                                   letterSpacing: 1,
                                 ),
                               ),
@@ -770,6 +835,26 @@ class _AppointmentTicket extends StatelessWidget {
                           ),
                         ],
                       ),
+                      
+                      // Cancel Button
+                      if (!isHistory && appointment.status != AppointmentStatus.cancelled) ...[
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () => _showCancelDialog(context, ref),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.red.withOpacity(0.5)),
+                              foregroundColor: Colors.red,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('ANNULLA APPUNTAMENTO'),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

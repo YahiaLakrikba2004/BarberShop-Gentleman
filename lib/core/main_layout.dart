@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/auth_service.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -27,85 +29,114 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       body: widget.child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: const Color(0xFF0A0A0A),
           border: Border(
             top: BorderSide(
-              color: Color(0xFFD4AF37).withOpacity(0.3),
+              color: const Color(0xFFD4AF37).withOpacity(0.3),
               width: 1,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD4AF37).withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
         ),
-        child: NavigationBar(
-          backgroundColor: Color(0xFF0A0A0A),
-          selectedIndex: widget.currentIndex,
-          indicatorColor: Color(0xFFD4AF37).withOpacity(0.2),
-          onDestinationSelected: (index) {
-            switch (index) {
-              case 0:
-                context.go('/');
-                break;
-              case 1:
-                context.go('/booking');
-                break;
-              case 2:
-                if (user?.role.name == 'client') {
-                  context.go('/profile');
-                } else {
-                  context.go('/calendar');
-                }
-                break;
-              case 3:
-                if (user?.role.name == 'admin') {
-                  context.go('/admin');
-                }
-                break;
-            }
-          },
-          destinations: [
-            NavigationDestination(
-              icon: Icon(
-                Icons.home_outlined,
-                color: widget.currentIndex == 0 ? Color(0xFFD4AF37) : Colors.white60,
-              ),
-              selectedIcon: Icon(Icons.home, color: Color(0xFFD4AF37)),
-              label: 'Home',
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                  label: 'Home',
+                  onTap: () => context.go('/'),
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.calendar_today_outlined,
+                  selectedIcon: Icons.calendar_today,
+                  label: 'Prenota',
+                  onTap: () => context.go('/booking'),
+                ),
+                if (user?.role.name == 'client')
+                  _buildNavItem(
+                    index: 2,
+                    icon: Icons.person_outline,
+                    selectedIcon: Icons.person,
+                    label: 'Profilo',
+                    onTap: () => context.go('/profile'),
+                  )
+                else
+                  _buildNavItem(
+                    index: 2,
+                    icon: Icons.event_note_outlined,
+                    selectedIcon: Icons.event_note,
+                    label: 'Agenda',
+                    onTap: () => context.go('/calendar'),
+                  ),
+                if (user?.role.name == 'admin')
+                  _buildNavItem(
+                    index: 3,
+                    icon: Icons.admin_panel_settings_outlined,
+                    selectedIcon: Icons.admin_panel_settings,
+                    label: 'Admin',
+                    onTap: () => context.go('/admin'),
+                  ),
+              ],
             ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.calendar_today_outlined,
-                color: widget.currentIndex == 1 ? Color(0xFFD4AF37) : Colors.white60,
-              ),
-              selectedIcon: Icon(Icons.calendar_today, color: Color(0xFFD4AF37)),
-              label: 'Prenota',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = widget.currentIndex == index;
+    final goldColor = const Color(0xFFD4AF37);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? goldColor.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected 
+              ? Border.all(color: goldColor.withOpacity(0.2), width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : icon,
+              color: isSelected ? goldColor : Colors.white60,
+              size: 24,
             ),
-            // Third Tab: Profile for Clients, Calendar for Staff
-            if (user?.role.name == 'client')
-              NavigationDestination(
-                icon: Icon(
-                  Icons.person_outline,
-                  color: widget.currentIndex == 2 ? Color(0xFFD4AF37) : Colors.white60,
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: goldColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-                selectedIcon: Icon(Icons.person, color: Color(0xFFD4AF37)),
-                label: 'Profilo',
-              )
-            else
-              NavigationDestination(
-                icon: Icon(
-                  Icons.event_note_outlined,
-                  color: widget.currentIndex == 2 ? Color(0xFFD4AF37) : Colors.white60,
-                ),
-                selectedIcon: Icon(Icons.event_note, color: Color(0xFFD4AF37)),
-                label: 'Appuntamenti',
               ),
-            // Fourth Tab: Admin only
-            if (user?.role.name == 'admin')
-              NavigationDestination(
-                icon: Icon(
-                  Icons.admin_panel_settings_outlined,
-                  color: widget.currentIndex == 3 ? Color(0xFFD4AF37) : Colors.white60,
-                ),
-                selectedIcon: Icon(Icons.admin_panel_settings, color: Color(0xFFD4AF37)),
-                label: 'Admin',
-              ),
+            ],
           ],
         ),
       ),
