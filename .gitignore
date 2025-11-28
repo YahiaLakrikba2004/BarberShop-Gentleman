@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment Variables
+.env
+
+# Firebase Keys
+android/app/google-services.json
+android/google-services.json
+ios/Runner/GoogleService-Info.plist

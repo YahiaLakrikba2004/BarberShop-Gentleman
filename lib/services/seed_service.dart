@@ -143,4 +143,32 @@ class SeedService {
       await _firestoreService.createService(service);
     }
   }
+
+  Future<void> fixBarberSchedules() async {
+    final barbers = [
+      {'name': 'Armin', 'daysOff': [3, 7]},
+      {'name': 'Andrei', 'daysOff': [1, 7]},
+      {'name': 'Hamza', 'daysOff': [1, 2]},
+    ];
+
+    final currentBarbers = await _firestoreService.getBarbers().first;
+
+    for (var barberData in barbers) {
+      final name = barberData['name'] as String;
+      final daysOff = barberData['daysOff'] as List<int>;
+
+      try {
+        final barber = currentBarbers.firstWhere(
+          (b) => b.name.toLowerCase().contains(name.toLowerCase()),
+        );
+        
+        await _firestoreService.updateBarberAvailability(barber.id, {
+          'daysOff': daysOff,
+        });
+        print('Updated schedule for $name');
+      } catch (e) {
+        print('Barber $name not found or error updating: $e');
+      }
+    }
+  }
 }

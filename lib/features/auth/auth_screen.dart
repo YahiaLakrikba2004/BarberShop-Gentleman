@@ -85,7 +85,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final goldColor = const Color(0xFFD4AF37);
+    final goldColor = const Color(0xFFFFFFFF);
     final darkBlack = const Color(0xFF0A0A0A);
     final inputFill = const Color(0xFF1E1E1E);
 
@@ -149,17 +149,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                       ),
                       child: ClipOval(
                         child: Padding(
-                          padding: const EdgeInsets.all(2.0),
+                          padding: const EdgeInsets.all(1.0),
                           child: Image.asset(
                             'assets/images/icon_premium.png',
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Title
                 FadeInDown(
@@ -171,7 +171,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: goldColor,
+                          color: Colors.white,
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -296,7 +296,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with SingleTickerProvid
                         TextSpan(
                           text: _isLogin ? 'Registrati' : 'Accedi',
                           style: TextStyle(
-                            color: goldColor,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             decoration: TextDecoration.underline,
                           ),

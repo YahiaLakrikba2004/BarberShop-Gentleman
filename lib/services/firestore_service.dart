@@ -23,14 +23,47 @@ class FirestoreService {
     await _firestore.collection('users').doc(userId).update({
       'role': newRole.name,
     });
+
+    // If promoted to Barber, create a corresponding Barber profile
+    if (newRole == UserRole.barber) {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final barber = BarberModel(
+          id: userId, // Link ID
+          name: userData['name'] ?? 'Barbiere',
+          imageUrl: userData['imageUrl'] ?? '',
+          specialties: ['Taglio', 'Barba'], // Default specialties
+          startHour: 9,
+          endHour: 20,
+        );
+        await _firestore.collection('barbers').doc(userId).set(barber.toMap());
+      }
+    } else {
+      // If demoted from Barber (or role changed to something else), remove the Barber profile
+      // We attempt to delete it regardless of whether it exists, as delete is idempotent-ish in this context
+      // (or we can check existence, but delete is cheaper/easier)
+      await _firestore.collection('barbers').doc(userId).delete();
+    }
   }
 
   Future<void> updateUser(UserModel user) async {
     await _firestore.collection('users').doc(user.id).update(user.toMap());
+
+    // Also update the linked barber profile if it exists (since IDs are shared)
+    final barberDoc = await _firestore.collection('barbers').doc(user.id).get();
+    if (barberDoc.exists) {
+      await _firestore.collection('barbers').doc(user.id).update({
+        'name': user.name,
+        'imageUrl': user.imageUrl,
+      });
+    }
   }
 
   Future<void> deleteUser(String userId) async {
     await _firestore.collection('users').doc(userId).delete();
+    // Also delete from barbers collection if it exists (safe to call even if not exists)
+    await _firestore.collection('barbers').doc(userId).delete();
   }
 
   Stream<UserModel?> getUserStream(String uid) {
@@ -53,6 +86,19 @@ class FirestoreService {
   // Update barber availability and daysOff
   Future<void> updateBarberAvailability(String barberId, Map<String, dynamic> data) async {
     await _firestore.collection('barbers').doc(barberId).update(data);
+  }
+
+  Future<void> updateBarber(BarberModel barber) async {
+    await _firestore.collection('barbers').doc(barber.id).update(barber.toMap());
+    
+    // Also update the linked user profile if it exists (since IDs are shared)
+    final userDoc = await _firestore.collection('users').doc(barber.id).get();
+    if (userDoc.exists) {
+      await _firestore.collection('users').doc(barber.id).update({
+        'name': barber.name,
+        'imageUrl': barber.imageUrl,
+      });
+    }
   }
 
   Stream<List<BarberModel>> getBarbers() {
@@ -127,14 +173,12 @@ class FirestoreService {
     return _firestore
         .collection('appointments')
         .where('barberId', isEqualTo: barberId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('date', isLessThan: Timestamp.fromDate(endOfDay))
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => AppointmentModel.fromMap(doc.data(), doc.id))
-          .where((appointment) {
-            return appointment.date.isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
-                   appointment.date.isBefore(endOfDay);
-          })
           .toList();
     });
   }

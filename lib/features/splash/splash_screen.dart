@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/ui/hexagon_painter.dart';
 import '../../core/ui/particle_painter.dart';
@@ -148,7 +147,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
         children: [
           // Background Gradient (Spotlight Effect)
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: RadialGradient(
                 center: Alignment.center,
                 radius: 1.2,
@@ -168,7 +167,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
               return CustomPaint(
                 painter: ParticlePainter(
                   particles: _particles,
-                  color: Color(0xFFD4AF37),
+                  color: const Color(0xFFFFFFFF), // White particles
                 ),
                 size: size,
               );
@@ -193,7 +192,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                           return CustomPaint(
                             painter: HexagonPainter(
                               progress: _drawAnimation.value,
-                              color: const Color(0xFFD4AF37),
+                              color: const Color(0xFFFFFFFF), // White Hexagon
                             ),
                             size: const Size(180, 180),
                           );
@@ -218,13 +217,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                   color: Colors.black,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFFD4AF37).withOpacity(0.2 * _scaleAnimation.value),
+                                      color: const Color(0xFFFFFFFF).withOpacity(0.2 * _scaleAnimation.value),
                                       blurRadius: 30 * pulseScale,
                                       spreadRadius: 5 * pulseScale,
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: const Color(0xFFD4AF37).withOpacity(0.5),
+                                    color: const Color(0xFFFFFFFF).withOpacity(0.5),
                                     width: 1,
                                   ),
                                 ),
@@ -253,8 +252,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                   child: Column(
                     children: [
                       Shimmer.fromColors(
-                        baseColor: const Color(0xFFD4AF37),
-                        highlightColor: const Color(0xFFFFF8DC),
+                        baseColor: const Color(0xFFFFFFFF),
+                        highlightColor: const Color(0xFFF5F5F5),
                         period: const Duration(seconds: 2),
                         child: const Text(
                           'THE GENTLEMAN',
@@ -280,7 +279,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                   gradient: LinearGradient(
                                     colors: [
                                       Colors.transparent,
-                                      Color(0xFFD4AF37).withOpacity(0.5),
+                                      const Color(0xFFFFFFFF).withOpacity(0.5),
                                     ],
                                   ),
                                 ),
@@ -288,11 +287,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
+                              child: const Text(
                                 'BARBER STYLE',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: const Color(0xFFD4AF37),
+                                  color: Color(0xFFFFFFFF),
                                   letterSpacing: 8,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -304,7 +303,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFFD4AF37).withOpacity(0.5),
+                                      const Color(0xFFFFFFFF).withOpacity(0.5),
                                       Colors.transparent,
                                     ],
                                   ),
@@ -342,11 +341,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                       widthFactor: _loadingAnimation.value,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37),
+                          color: const Color(0xFFFFFFFF),
                           borderRadius: BorderRadius.circular(2),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD4AF37).withOpacity(0.5),
+                              color: const Color(0xFFFFFFFF).withOpacity(0.5),
                               blurRadius: 10,
                               spreadRadius: 1,
                             ),
@@ -364,5 +363,3 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
     );
   }
 }
-
-

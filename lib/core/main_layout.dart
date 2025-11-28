@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -32,13 +33,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           color: const Color(0xFF0A0A0A),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFFD4AF37).withOpacity(0.3),
+              color: const Color(0xFFFFFFFF).withOpacity(0.3),
               width: 1,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFD4AF37).withOpacity(0.1),
+              color: const Color(0xFFFFFFFF).withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -64,15 +65,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                   label: 'Prenota',
                   onTap: () => context.go('/booking'),
                 ),
-                if (user?.role.name == 'client')
-                  _buildNavItem(
-                    index: 2,
-                    icon: Icons.person_outline,
-                    selectedIcon: Icons.person,
-                    label: 'Profilo',
-                    onTap: () => context.go('/profile'),
-                  )
-                else
+                if (user?.role != UserRole.client)
                   _buildNavItem(
                     index: 2,
                     icon: Icons.event_note_outlined,
@@ -80,7 +73,23 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     label: 'Agenda',
                     onTap: () => context.go('/calendar'),
                   ),
-                if (user?.role.name == 'admin')
+                if (user?.role == UserRole.client)
+                  _buildNavItem(
+                    index: 2,
+                    icon: Icons.person_outline,
+                    selectedIcon: Icons.person,
+                    label: 'Profilo',
+                    onTap: () => context.go('/profile'),
+                  ),
+                if (user?.role == UserRole.barber)
+                  _buildNavItem(
+                    index: 3,
+                    icon: Icons.person_outline,
+                    selectedIcon: Icons.person,
+                    label: 'Profilo',
+                    onTap: () => context.go('/profile'),
+                  ),
+                if (user?.role == UserRole.admin)
                   _buildNavItem(
                     index: 3,
                     icon: Icons.admin_panel_settings_outlined,
@@ -104,7 +113,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     required VoidCallback onTap,
   }) {
     final isSelected = widget.currentIndex == index;
-    final goldColor = const Color(0xFFD4AF37);
+    final goldColor = const Color(0xFFFFFFFF);
 
     return InkWell(
       onTap: onTap,

@@ -21,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
     final user = userAsync.value;
 
     if (user == null) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
     }
 
     return DefaultTabController(
@@ -34,7 +34,7 @@ class ProfileScreen extends ConsumerWidget {
             style: GoogleFonts.playfairDisplay(
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
-              color: const Color(0xFFD4AF37),
+              color: const Color(0xFFFFFFFF),
             ),
           ),
           centerTitle: true,
@@ -42,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
           elevation: 0,
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings_outlined, color: Color(0xFFD4AF37)),
+              icon: const Icon(Icons.settings_outlined, color: Color(0xFFFFFFFF)),
               onPressed: () => _showSettingsModal(context, ref, user),
             ),
           ],
@@ -67,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   border: Border(
                     bottom: BorderSide(
-                      color: const Color(0xFFD4AF37).withOpacity(0.1),
+                      color: const Color(0xFFFFFFFF).withOpacity(0.1),
                     ),
                   ),
                 ),
@@ -84,22 +84,15 @@ class ProfileScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFF1A1A1A),
-                              border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                              border: Border.all(color: const Color(0xFFFFFFFF), width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFD4AF37).withOpacity(0.2),
+                                  color: const Color(0xFFFFFFFF).withOpacity(0.2),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
                               ],
-                              image: user.imageUrl != null && user.imageUrl!.isNotEmpty
-                                  ? DecorationImage(
-                                      image: user.imageUrl!.startsWith('http')
-                                          ? NetworkImage(user.imageUrl!)
-                                          : MemoryImage(base64Decode(user.imageUrl!)) as ImageProvider,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
+                              image: _getUserImage(user.imageUrl),
                             ),
                             child: user.imageUrl == null || user.imageUrl!.isEmpty
                                 ? Center(
@@ -108,7 +101,7 @@ class ProfileScreen extends ConsumerWidget {
                                       style: GoogleFonts.playfairDisplay(
                                         fontSize: 40,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFD4AF37),
+                                        color: const Color(0xFFFFFFFF),
                                       ),
                                     ),
                                   )
@@ -120,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37),
+                                color: const Color(0xFFFFFFFF),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: const Color(0xFF0A0A0A), width: 2),
                               ),
@@ -153,7 +146,7 @@ class ProfileScreen extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.email_outlined, size: 16, color: const Color(0xFFD4AF37)),
+                            Icon(Icons.email_outlined, size: 16, color: const Color(0xFFFFFFFF)),
                             const SizedBox(width: 8),
                             Text(
                               user.email,
@@ -170,7 +163,7 @@ class ProfileScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.phone_outlined, size: 16, color: const Color(0xFFD4AF37)),
+                              Icon(Icons.phone_outlined, size: 16, color: const Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 user.phoneNumber!,
@@ -194,9 +187,9 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               color: const Color(0xFF0A0A0A),
               child: const TabBar(
-                indicatorColor: Color(0xFFD4AF37),
+                indicatorColor: Color(0xFFFFFFFF),
                 indicatorSize: TabBarIndicatorSize.label,
-                labelColor: Color(0xFFD4AF37),
+                labelColor: Color(0xFFFFFFFF),
                 unselectedLabelColor: Colors.grey,
                 labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
                 tabs: [
@@ -210,8 +203,8 @@ class ProfileScreen extends ConsumerWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  _AppointmentsList(userId: user.id, isHistory: false),
-                  _AppointmentsList(userId: user.id, isHistory: true),
+                  _AppointmentsList(userId: user.id, userRole: user.role, isHistory: false),
+                  _AppointmentsList(userId: user.id, userRole: user.role, isHistory: true),
                 ],
               ),
             ),
@@ -271,7 +264,7 @@ class ProfileScreen extends ConsumerWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(
-            top: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.3), width: 1),
+            top: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.3), width: 1),
           ),
           boxShadow: [
             BoxShadow(
@@ -282,93 +275,95 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              // Drag Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                // Drag Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFFFF).withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'IMPOSTAZIONI',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFD4AF37),
-                  letterSpacing: 1.5,
+                const SizedBox(height: 24),
+                Text(
+                  'IMPOSTAZIONI',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFFFFFF),
+                    letterSpacing: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Account Section
-              _buildSettingsSectionTitle('ACCOUNT'),
-              _buildSettingsTile(
-                icon: Icons.edit_outlined,
-                title: 'Modifica Profilo',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showEditProfileDialog(context, ref, user);
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Legal Section
-              _buildSettingsSectionTitle('INFO LEGALI'),
-              _buildSettingsTile(
-                icon: Icons.privacy_tip_outlined,
-                title: 'Privacy Policy',
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Apertura Privacy Policy...')),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 24),
-              Divider(color: Colors.white.withOpacity(0.1), height: 1),
-              const SizedBox(height: 24),
-              
-              // Actions
-              _buildSettingsTile(
-                icon: Icons.logout,
-                title: 'Esci',
-                color: Colors.white,
-                isDestructive: false,
-                onTap: () {
-                  Navigator.pop(context);
-                  ref.read(authServiceProvider).signOut();
-                },
-              ),
-              _buildSettingsTile(
-                icon: Icons.delete_forever_outlined,
-                title: 'Elimina Account',
-                color: const Color(0xFFDC143C),
-                isDestructive: true,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteAccountDialog(context, ref);
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              Text(
-                'Versione 1.0.0',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.2),
-                  fontSize: 12,
+                const SizedBox(height: 32),
+                
+                // Account Section
+                _buildSettingsSectionTitle('ACCOUNT'),
+                _buildSettingsTile(
+                  icon: Icons.edit_outlined,
+                  title: 'Modifica Profilo',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showEditProfileDialog(context, ref, user);
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                
+                const SizedBox(height: 16),
+                
+                // Legal Section
+                _buildSettingsSectionTitle('INFO LEGALI'),
+                _buildSettingsTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  onTap: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Apertura Privacy Policy...')),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                const SizedBox(height: 24),
+                
+                // Actions
+                _buildSettingsTile(
+                  icon: Icons.logout,
+                  title: 'Esci',
+                  color: Colors.white,
+                  isDestructive: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    ref.read(authServiceProvider).signOut();
+                  },
+                ),
+                _buildSettingsTile(
+                  icon: Icons.delete_forever_outlined,
+                  title: 'Elimina Account',
+                  color: const Color(0xFFDC143C),
+                  isDestructive: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showDeleteAccountDialog(context, ref);
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                Text(
+                  'Versione 1.0.0',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.2),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -397,7 +392,7 @@ class ProfileScreen extends ConsumerWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    Color color = const Color(0xFFD4AF37),
+    Color color = const Color(0xFFFFFFFF),
     bool isDestructive = false,
   }) {
     return Material(
@@ -449,20 +444,20 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.3)),
+          side: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
         ),
-        title: Text('Modifica Profilo', style: GoogleFonts.playfairDisplay(color: const Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
+        title: Text('Modifica Profilo', style: GoogleFonts.playfairDisplay(color: const Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               style: const TextStyle(color: Colors.white),
-              cursorColor: const Color(0xFFD4AF37),
+              cursorColor: const Color(0xFFFFFFFF),
               decoration: InputDecoration(
                 labelText: 'Nome',
                 labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFD4AF37)),
+                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFFFFFFF)),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2C),
                 border: OutlineInputBorder(
@@ -471,7 +466,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                  borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                 ),
               ),
             ),
@@ -480,11 +475,11 @@ class ProfileScreen extends ConsumerWidget {
               controller: phoneController,
               style: const TextStyle(color: Colors.white),
               keyboardType: TextInputType.phone,
-              cursorColor: const Color(0xFFD4AF37),
+              cursorColor: const Color(0xFFFFFFFF),
               decoration: InputDecoration(
                 labelText: 'Telefono',
                 labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFFD4AF37)),
+                prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFFFFFFFF)),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2C),
                 border: OutlineInputBorder(
@@ -493,7 +488,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                  borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                 ),
               ),
             ),
@@ -514,7 +509,7 @@ class ProfileScreen extends ConsumerWidget {
                 if (context.mounted) Navigator.pop(context);
               }
             },
-            child: const Text('Salva', style: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
+            child: const Text('Salva', style: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -563,16 +558,20 @@ class ProfileScreen extends ConsumerWidget {
 
 class _AppointmentsList extends ConsumerWidget {
   final String userId;
+  final UserRole userRole;
   final bool isHistory;
 
   const _AppointmentsList({
     required this.userId,
+    required this.userRole,
     required this.isHistory,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appointmentsAsync = ref.watch(userAppointmentsProvider(userId));
+    final appointmentsAsync = userRole == UserRole.barber
+        ? ref.watch(allBarberAppointmentsProvider(userId))
+        : ref.watch(userAppointmentsProvider(userId));
 
     return appointmentsAsync.when(
       data: (appointments) {
@@ -594,42 +593,51 @@ class _AppointmentsList extends ConsumerWidget {
           }
         });
 
-        if (filteredAppointments.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isHistory ? Icons.history : Icons.calendar_today,
-                  size: 64,
-                  color: Colors.grey.withOpacity(0.1),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isHistory
-                      ? 'Nessun appuntamento passato'
-                      : 'Nessun appuntamento in programma',
-                  style: TextStyle(
-                    color: Colors.grey.withOpacity(0.3),
-                    fontSize: 16,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+        return Column(
+          children: [
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: filteredAppointments.length,
-          itemBuilder: (context, index) {
-            final appointment = filteredAppointments[index];
-            return _AppointmentTicket(appointment: appointment, isHistory: isHistory);
-          },
+            Expanded(
+              child: filteredAppointments.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isHistory ? Icons.history : Icons.calendar_today,
+                            size: 64,
+                            color: Colors.grey.withOpacity(0.1),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            isHistory
+                                ? 'Nessun appuntamento passato'
+                                : 'Nessun appuntamento in programma',
+                            style: TextStyle(
+                              color: Colors.grey.withOpacity(0.3),
+                              fontSize: 16,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: filteredAppointments.length,
+                      itemBuilder: (context, index) {
+                        final appointment = filteredAppointments[index];
+                        return _AppointmentTicket(
+                          appointment: appointment,
+                          isHistory: isHistory,
+                          isBarber: userRole == UserRole.barber,
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       error: (e, _) => Center(child: Text('Errore: $e')),
     );
   }
@@ -638,10 +646,12 @@ class _AppointmentsList extends ConsumerWidget {
 class _AppointmentTicket extends ConsumerWidget {
   final AppointmentModel appointment;
   final bool isHistory;
+  final bool isBarber;
 
   const _AppointmentTicket({
     required this.appointment,
     required this.isHistory,
+    this.isBarber = false,
   });
 
   Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
@@ -718,7 +728,7 @@ class _AppointmentTicket extends ConsumerWidget {
               Container(
                 width: 6,
                 decoration: BoxDecoration(
-                  color: isHistory ? Colors.grey : const Color(0xFFD4AF37),
+                  color: isHistory ? Colors.grey : const Color(0xFFFFFFFF),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
@@ -751,16 +761,16 @@ class _AppointmentTicket extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37).withOpacity(0.1),
+                                color: const Color(0xFFFFFFFF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.3)),
+                                border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
                               ),
                               child: const Text(
                                 'CONFIRMED',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFFD4AF37),
+                                  color: Color(0xFFFFFFFF),
                                   letterSpacing: 1,
                                 ),
                               ),
@@ -791,7 +801,7 @@ class _AppointmentTicket extends ConsumerWidget {
                           Icon(Icons.person_outline, size: 16, color: Colors.white.withOpacity(0.5)),
                           const SizedBox(width: 8),
                           Text(
-                            appointment.barberName,
+                            isBarber ? appointment.customerName : appointment.barberName,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.7),
                               fontSize: 14,
@@ -807,7 +817,7 @@ class _AppointmentTicket extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.calendar_today_outlined, size: 16, color: const Color(0xFFD4AF37)),
+                              Icon(Icons.calendar_today_outlined, size: 16, color: const Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 dateFormat.format(appointment.date).toUpperCase(),
@@ -821,7 +831,7 @@ class _AppointmentTicket extends ConsumerWidget {
                           ),
                           Row(
                             children: [
-                              Icon(Icons.access_time, size: 16, color: const Color(0xFFD4AF37)),
+                              Icon(Icons.access_time, size: 16, color: const Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 timeFormat.format(appointment.date),
@@ -865,4 +875,26 @@ class _AppointmentTicket extends ConsumerWidget {
       ),
     );
   }
+}
+
+DecorationImage? _getUserImage(String? imageUrl) {
+  if (imageUrl == null || imageUrl.isEmpty) return null;
+  
+  ImageProvider? imageProvider;
+  if (imageUrl.startsWith('assets/')) {
+    imageProvider = AssetImage(imageUrl);
+  } else if (imageUrl.startsWith('http')) {
+    imageProvider = NetworkImage(imageUrl);
+  } else {
+    try {
+      imageProvider = MemoryImage(base64Decode(imageUrl));
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  return DecorationImage(
+    image: imageProvider,
+    fit: BoxFit.cover,
+  );
 }

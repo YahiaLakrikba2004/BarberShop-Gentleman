@@ -23,25 +23,15 @@ class AdminDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('DASHBOARD AMMINISTRATORE', style: TextStyle(letterSpacing: 1.5, fontSize: 16)),
+        title: const Text('DASHBOARD AMMINISTRATORE', style: TextStyle(letterSpacing: 1.5, fontSize: 16, color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.cloud_upload, color: Color(0xFFD4AF37)),
-            tooltip: 'Carica Dati Demo',
-            onPressed: () async {
-              await ref.read(seedServiceProvider).seedData();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Dati demo caricati!'),
-                    backgroundColor: const Color(0xFFD4AF37),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              ref.read(authServiceProvider).signOut();
             },
           ),
         ],
@@ -112,7 +102,7 @@ class AdminDashboard extends ConsumerWidget {
                                 Text(
                                   '€${stats['revenue']}',
                                   style: const TextStyle(
-                                    color: Color(0xFFD4AF37),
+                                    color: Color(0xFFFFFFFF),
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -122,10 +112,10 @@ class AdminDashboard extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37).withOpacity(0.1),
+                                color: const Color(0xFFFFFFFF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.show_chart, color: Color(0xFFD4AF37)),
+                              child: const Icon(Icons.show_chart, color: Color(0xFFFFFFFF)),
                             ),
                           ],
                         ),
@@ -278,7 +268,7 @@ class AdminDashboard extends ConsumerWidget {
                                 MaterialPageRoute(builder: (_) => const CalendarScreen()),
                               );
                             },
-                            child: const Text('Vedi Tutti', style: TextStyle(color: Color(0xFFD4AF37))),
+                            child: const Text('Vedi Tutti', style: TextStyle(color: Color(0xFFFFFFFF))),
                           ),
                         ],
                       ),
@@ -314,7 +304,7 @@ class AdminDashboard extends ConsumerWidget {
         },
         loading: () => const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
           ),
         ),
         error: (err, stack) => Center(
@@ -407,19 +397,19 @@ class _RevenueChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFFD4AF37),
+            color: const Color(0xFFFFFFFF),
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFFD4AF37).withOpacity(0.1),
+              color: const Color(0xFFFFFFFF).withOpacity(0.1),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFFD4AF37).withOpacity(0.3),
-                  const Color(0xFFD4AF37).withOpacity(0.0),
+                  const Color(0xFFFFFFFF).withOpacity(0.3),
+                  const Color(0xFFFFFFFF).withOpacity(0.0),
                 ],
               ),
             ),
@@ -461,7 +451,7 @@ class _StatusPieChart extends StatelessWidget {
             ),
           if (pending > 0)
             PieChartSectionData(
-              color: Colors.orange,
+              color: Colors.blueGrey,
               value: pending.toDouble(),
               title: '${(pending / total * 100).toStringAsFixed(0)}%',
               radius: 40,
@@ -576,7 +566,7 @@ class _QuickActionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: const Color(0xFFD4AF37), size: 32),
+            Icon(icon, color: const Color(0xFFFFFFFF), size: 32),
             const SizedBox(height: 12),
             Text(
               title,
@@ -636,7 +626,7 @@ class _AppointmentCard extends ConsumerWidget {
               gradient: LinearGradient(
                 colors: isCancelled 
                     ? [const Color(0xFF8B0000), const Color(0xFFB71C1C)] // Darker Red Gradient
-                    : [const Color(0xFFE65100), const Color(0xFFEF6C00)], // Darker Orange Gradient
+                    : [const Color(0xFF424242), const Color(0xFF616161)], // Grey Gradient
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
@@ -715,7 +705,7 @@ class _AppointmentCard extends ConsumerWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   backgroundColor: const Color(0xFF1A1A1A),
-                  title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.orange)),
+                  title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.white)),
                   content: const Text(
                     'Sei sicuro di voler annullare questo appuntamento? Il cliente verrà notificato.',
                     style: TextStyle(color: Colors.white70),
@@ -727,7 +717,7 @@ class _AppointmentCard extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Sì, annulla', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                      child: const Text('Sì, annulla', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -740,9 +730,9 @@ class _AppointmentCard extends ConsumerWidget {
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('Appuntamento annullato con successo'),
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Colors.grey[800],
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -834,7 +824,7 @@ class _AppointmentCard extends ConsumerWidget {
       case AppointmentStatus.confirmed:
         return const Color(0xFF4CAF50);
       case AppointmentStatus.pending:
-        return const Color(0xFFFF9800);
+        return Colors.blueGrey;
       case AppointmentStatus.cancelled:
         return const Color(0xFFF44336);
       case AppointmentStatus.completed:

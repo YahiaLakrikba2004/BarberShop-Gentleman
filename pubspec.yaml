@@ -22,6 +22,7 @@ dependencies:
   equatable: ^2.0.5
   cupertino_icons: ^1.0.2
   # Graphics and animations
+  animated_text_kit: ^4.2.2
   animate_do: ^3.3.4
   shimmer: ^3.0.0
   flutter_svg: ^2.0.10
@@ -35,6 +36,7 @@ dependencies:
   firebase_storage: ^12.4.10
   firebase_messaging: ^15.2.10
   fl_chart: ^0.66.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -57,3 +59,4 @@ flutter:
   assets:
     - assets/images/
     - assets/images/gallery/
+    - .env

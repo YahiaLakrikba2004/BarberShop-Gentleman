@@ -47,7 +47,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Prenota Appuntamento'),
+        title: const Text('Prenota Appuntamento', style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Column(
@@ -132,12 +132,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isActive 
-                  ? const Color(0xFFD4AF37) 
+                  ? const Color(0xFFFFFFFF) 
                   : const Color(0xFF2C2C2C),
               boxShadow: isActive
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withOpacity(0.5),
+                        color: const Color(0xFFFFFFFF).withOpacity(0.5),
                         blurRadius: 10,
                         spreadRadius: 2,
                       )
@@ -169,7 +169,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             duration: const Duration(milliseconds: 300),
             style: TextStyle(
               fontSize: 10,
-              color: isActive ? const Color(0xFFD4AF37) : Colors.white24,
+              color: isActive ? const Color(0xFFFFFFFF) : Colors.white24,
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
               letterSpacing: 0.5,
             ),
@@ -193,13 +193,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
           color: isActive 
-              ? const Color(0xFFD4AF37) 
+              ? const Color(0xFFFFFFFF) 
               : const Color(0xFF2C2C2C),
           borderRadius: BorderRadius.circular(2),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: const Color(0xFFD4AF37).withOpacity(0.5),
+                    color: const Color(0xFFFFFFFF).withOpacity(0.5),
                     blurRadius: 4,
                   )
                 ]
@@ -251,7 +251,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
@@ -268,10 +268,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withOpacity(0.1),
+                          color: const Color(0xFFFFFFFF).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.person_add, color: Color(0xFFD4AF37), size: 24),
+                        child: const Icon(Icons.person_add, color: Color(0xFFFFFFFF), size: 24),
                       ),
                       const SizedBox(width: 16),
                       const Text(
@@ -290,7 +290,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     decoration: InputDecoration(
                       labelText: 'Nome e Cognome *',
                       labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                      prefixIcon: const Icon(Icons.person, color: Color(0xFFD4AF37)),
+                      prefixIcon: const Icon(Icons.person, color: Color(0xFFFFFFFF)),
                       filled: true,
                       fillColor: const Color(0xFF2C2C2C),
                       border: OutlineInputBorder(
@@ -303,7 +303,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                        borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                       ),
                     ),
                     onChanged: (value) => setState(() => _guestName = value),
@@ -314,7 +314,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     decoration: InputDecoration(
                       labelText: 'Telefono *',
                       labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                      prefixIcon: const Icon(Icons.phone, color: Color(0xFFD4AF37)),
+                      prefixIcon: const Icon(Icons.phone, color: Color(0xFFFFFFFF)),
                       filled: true,
                       fillColor: const Color(0xFF2C2C2C),
                       border: OutlineInputBorder(
@@ -327,7 +327,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                        borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                       ),
                     ),
                     keyboardType: TextInputType.phone,
@@ -356,6 +356,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return usersAsync.when(
       data: (users) {
         final filteredUsers = users.where((user) {
+          // Filter out barbers and admins, show only clients
+          if (user.role != UserRole.client) return false;
+          
           final query = _searchQuery.toLowerCase();
           return user.name.toLowerCase().contains(query) || 
                  user.email.toLowerCase().contains(query);
@@ -372,7 +375,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     decoration: InputDecoration(
                       hintText: 'Cerca cliente...',
                       hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFFFFFFFF)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -385,7 +388,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                        borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                       ),
                     ),
                     onChanged: (value) {
@@ -401,8 +404,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     icon: const Icon(Icons.person_add),
                     label: const Text('Prenota per Cliente Occasionale'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFD4AF37),
-                      side: const BorderSide(color: Color(0xFFD4AF37)),
+                      foregroundColor: const Color(0xFFFFFFFF),
+                      side: const BorderSide(color: Color(0xFFFFFFFF)),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -430,13 +433,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         color: const Color(0xFF1A1A1A),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.1),
+                          color: isSelected ? const Color(0xFFFFFFFF) : Colors.white.withOpacity(0.1),
                           width: isSelected ? 2 : 1,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFFD4AF37).withOpacity(0.2),
+                                  color: const Color(0xFFFFFFFF).withOpacity(0.2),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 )
@@ -450,7 +453,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             height: 50,
                             decoration: BoxDecoration(
                               color: isSelected 
-                                  ? const Color(0xFFD4AF37) 
+                                  ? const Color(0xFFFFFFFF) 
                                   : const Color(0xFF2C2C2C),
                               shape: BoxShape.circle,
                             ),
@@ -490,7 +493,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFD4AF37),
+                                color: Color(0xFFFFFFFF),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -509,7 +512,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       error: (e, _) => Center(child: Text('Errore: $e', style: const TextStyle(color: Colors.red))),
     );
   }
@@ -520,7 +523,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       height: 50,
       decoration: BoxDecoration(
         color: isSelected 
-            ? const Color(0xFFD4AF37) 
+            ? const Color(0xFFFFFFFF) 
             : const Color(0xFF2C2C2C),
         shape: BoxShape.circle,
       ),
@@ -570,18 +573,31 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         // Days off text removed as per request
 
         return GestureDetector(
-          onTap: isAvailable ? () => setState(() => _selectedBarber = barber) : null,
+          onTap: isAvailable ? () {
+            setState(() {
+              _selectedBarber = barber;
+              // Find next available date if today is a day off
+              DateTime date = DateTime.now();
+              int attempts = 0;
+              while (barber.daysOff.contains(date.weekday) && attempts < 30) {
+                date = date.add(const Duration(days: 1));
+                attempts++;
+              }
+              _selectedDate = date;
+              _selectedSlot = null;
+            });
+          } : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: isSelected 
-                  ? Border.all(color: const Color(0xFFD4AF37), width: 3) 
+                  ? Border.all(color: const Color(0xFFFFFFFF), width: 3) 
                   : Border.all(color: Colors.transparent, width: 0),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withOpacity(0.4),
+                        color: const Color(0xFFFFFFFF).withOpacity(0.4),
                         blurRadius: 12,
                         spreadRadius: 2,
                       )
@@ -606,9 +622,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       }
 
                       if (imageUrl.isNotEmpty) {
-                        return imageUrl.startsWith('assets/')
-                            ? Image.asset(imageUrl, fit: BoxFit.cover)
-                            : Image.network(imageUrl, fit: BoxFit.cover);
+                        if (imageUrl.startsWith('assets/')) {
+                          return Image.asset(imageUrl, fit: BoxFit.cover, gaplessPlayback: true);
+                        } else if (imageUrl.startsWith('http')) {
+                          return Image.network(imageUrl, fit: BoxFit.cover, gaplessPlayback: true);
+                        } else {
+                          try {
+                            return Image.memory(base64Decode(imageUrl), fit: BoxFit.cover, gaplessPlayback: true);
+                          } catch (e) {
+                            return Container(color: const Color(0xFF2A2A2A));
+                          }
+                        }
                       }
                       return Container(color: const Color(0xFF2A2A2A));
                     }
@@ -679,13 +703,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             Icon(
                               Icons.access_time,
                               size: 12,
-                              color: const Color(0xFFD4AF37),
+                              color: const Color(0xFFFFFFFF),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${barber.startHour}-${barber.endHour}',
                               style: const TextStyle(
-                                color: Color(0xFFD4AF37),
+                                color: Color(0xFFFFFFFF),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -741,7 +765,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFD4AF37),
+                          color: Color(0xFFFFFFFF),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -788,7 +812,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       error: (e, _) => Center(child: Text('Errore: $e', style: const TextStyle(color: Colors.red))),
     );
   }
@@ -821,7 +845,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             child: Theme(
               data: Theme.of(context).copyWith(
                 colorScheme: const ColorScheme.dark(
-                  primary: Color(0xFFD4AF37),
+                  primary: Color(0xFFFFFFFF),
                   onPrimary: Colors.black,
                   surface: Color(0xFF1A1A1A),
                   onSurface: Colors.white,
@@ -841,7 +865,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           const SizedBox(height: 32),
           Row(
             children: [
-              const Icon(Icons.access_time, color: Color(0xFFD4AF37)),
+              const Icon(Icons.access_time, color: Color(0xFFFFFFFF)),
               const SizedBox(width: 12),
               Text(
                 'Orari per ${DateFormat('d MMMM', 'it').format(_selectedDate)}',
@@ -887,7 +911,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.3)),
+              border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.4),
@@ -903,18 +927,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withOpacity(0.1),
+                    color: const Color(0xFFFFFFFF).withOpacity(0.1),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border(bottom: BorderSide(color: const Color(0xFFD4AF37).withOpacity(0.2))),
+                    border: Border(bottom: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.2))),
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Color(0xFFD4AF37), size: 48),
+                      const Icon(Icons.check_circle_outline, color: Color(0xFFFFFFFF), size: 48),
                       const SizedBox(height: 12),
                       Text(
                         'Gentleman Barber Shop',
                         style: TextStyle(
-                          color: const Color(0xFFD4AF37),
+                          color: const Color(0xFFFFFFFF),
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
                           fontFamily: 'PlayfairDisplay',
@@ -952,7 +976,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           Text(
                             '€${_selectedService!.price.toStringAsFixed(2)}',
                             style: const TextStyle(
-                              color: Color(0xFFD4AF37),
+                              color: Color(0xFFFFFFFF),
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1050,9 +1074,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 child: FilledButton(
                   onPressed: _canProceed(isPrivileged) ? () => _onNext(maxSteps) : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
+                    backgroundColor: const Color(0xFFFFFFFF),
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor: const Color(0xFFD4AF37).withOpacity(0.3),
+                    disabledBackgroundColor: const Color(0xFFFFFFFF).withOpacity(0.3),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
@@ -1231,7 +1255,7 @@ class _SlotsGrid extends ConsumerWidget {
             color = Colors.orange;
           } else if (barber.daysOff.contains(date.weekday)) {
             title = 'Giorno di Riposo';
-            message = '${barber.name} non lavora ${DateFormat('EEEE', 'it').format(date)}.';
+            message = '${barber.name} non lavora di ${DateFormat('EEEE', 'it').format(date)}.';
             icon = Icons.weekend;
             color = Colors.blueGrey;
           } else if (barber.availabilityStatus == BarberAvailability.dayOff) {
@@ -1242,56 +1266,63 @@ class _SlotsGrid extends ConsumerWidget {
           }
 
           return Center(
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: color.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
+            child: FadeInUp(
+              duration: const Duration(milliseconds: 400),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(
                       color: color.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      blurRadius: 24,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 8),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 48,
-                      color: color,
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: color.withOpacity(0.2)),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 48,
+                        color: color,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: color,
+                    const SizedBox(height: 24),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        letterSpacing: 0.5,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                      height: 1.5,
+                    const SizedBox(height: 12),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.7),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -1514,15 +1545,15 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
           height: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: widget.isSelected ? const Color(0xFFD4AF37).withOpacity(0.2) : const Color(0xFF1A1A1A),
+            color: widget.isSelected ? const Color(0xFFFFFFFF).withOpacity(0.2) : const Color(0xFF1A1A1A),
             border: Border.all(
-              color: widget.isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.1),
+              color: widget.isSelected ? const Color(0xFFFFFFFF) : Colors.white.withOpacity(0.1),
               width: widget.isSelected ? 2 : 1,
             ),
             boxShadow: widget.isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                      color: const Color(0xFFFFFFFF).withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     )
@@ -1546,12 +1577,12 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                 if (widget.isSelected)
                   Positioned.fill(
                     child: Shimmer.fromColors(
-                      baseColor: const Color(0xFFD4AF37).withOpacity(0.1),
-                      highlightColor: const Color(0xFFD4AF37).withOpacity(0.4),
+                      baseColor: const Color(0xFFFFFFFF).withOpacity(0.1),
+                      highlightColor: const Color(0xFFFFFFFF).withOpacity(0.4),
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                          border: Border.all(color: const Color(0xFFFFFFFF), width: 2),
                         ),
                       ),
                     ),
@@ -1568,12 +1599,12 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: widget.isSelected ? const Color(0xFFD4AF37) : Colors.white.withOpacity(0.1),
+                            color: widget.isSelected ? const Color(0xFFFFFFFF) : Colors.white.withOpacity(0.1),
                           ),
                         ),
                         child: ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFFD4AF37), Color(0xFFF7E7CE)],
+                            colors: [Color(0xFFFFFFFF), Color(0xFFE0E0E0)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ).createShader(bounds),
@@ -1618,7 +1649,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFD4AF37),
+                          color: Color(0xFFFFFFFF),
                         ),
                       ),
                     ],

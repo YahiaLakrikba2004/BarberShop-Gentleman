@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,8 +41,8 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBcDZFgbP7XUifXb-zb5g-AvH1iPR2HaP4',
+  static FirebaseOptions get web => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB_API_KEY']!,
     appId: '1:635305520200:web:6c6c136aa05ff13af73c7d',
     messagingSenderId: '635305520200',
     projectId: 'barbershop-gentleman',
@@ -50,16 +51,16 @@ class DefaultFirebaseOptions {
     measurementId: 'G-75V0GQMVLC',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo',
+  static FirebaseOptions get android => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ANDROID_API_KEY']!,
     appId: '1:635305520200:android:2dd15d19739e761ef73c7d',
     messagingSenderId: '635305520200',
     projectId: 'barbershop-gentleman',
     storageBucket: 'barbershop-gentleman.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDnueMtezaIP2KxDIIYKZznAZQVz0jp7uQ',
+  static FirebaseOptions get ios => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_IOS_API_KEY']!,
     appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
     messagingSenderId: '635305520200',
     projectId: 'barbershop-gentleman',
@@ -67,8 +68,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.barberShopApp',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDnueMtezaIP2KxDIIYKZznAZQVz0jp7uQ',
+  static FirebaseOptions get macos => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_IOS_API_KEY']!,
     appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
     messagingSenderId: '635305520200',
     projectId: 'barbershop-gentleman',
@@ -76,8 +77,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.barberShopApp',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBcDZFgbP7XUifXb-zb5g-AvH1iPR2HaP4',
+  static FirebaseOptions get windows => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB_API_KEY']!,
     appId: '1:635305520200:web:fb3391bffa0a8d0bf73c7d',
     messagingSenderId: '635305520200',
     projectId: 'barbershop-gentleman',

@@ -32,7 +32,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('I MIEI APPUNTAMENTI'),
+        title: const Text('I MIEI APPUNTAMENTI', style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: userAsync.when(
@@ -50,7 +50,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         },
         loading: () => const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
           ),
         ),
         error: (err, stack) => Center(
@@ -80,7 +80,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             date: apt.date,
             startTime: apt.date,
             endTime: apt.endTime,
-            color: const Color(0xFFD4AF37),
+            color: const Color(0xFFFFFFFF),
             event: apt,
           );
         }).toList();
@@ -101,7 +101,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     color: const Color(0xFF1A1A1A),
                     border: Border(
                       bottom: BorderSide(
-                        color: const Color(0xFFD4AF37).withOpacity(0.2),
+                        color: const Color(0xFFFFFFFF).withOpacity(0.2),
                       ),
                     ),
                   ),
@@ -158,7 +158,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 child: Text(
                                   DateFormat('EEEE d MMMM', 'it').format(date).toUpperCase(),
                                   style: const TextStyle(
-                                    color: Color(0xFFD4AF37),
+                                    color: Color(0xFFFFFFFF),
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -202,7 +202,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             return Container(
                               margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37),
+                                color: const Color(0xFFFFFFFF),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Padding(
@@ -322,7 +322,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                             width: 24,
                                             height: 24,
                                             decoration: BoxDecoration(
-                                              color: isToday ? const Color(0xFFD4AF37) : Colors.transparent,
+                                              color: isToday ? const Color(0xFFFFFFFF) : Colors.transparent,
                                               shape: BoxShape.circle,
                                             ),
                                             alignment: Alignment.center,
@@ -347,7 +347,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                                     width: 6,
                                                     height: 6,
                                                     decoration: const BoxDecoration(
-                                                      color: Color(0xFFD4AF37),
+                                                      color: Color(0xFFFFFFFF),
                                                       shape: BoxShape.circle,
                                                     ),
                                                   );
@@ -430,7 +430,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       Text(
                                         DateFormat('EEE', 'it').format(date).toUpperCase(),
                                         style: TextStyle(
-                                          color: isToday ? const Color(0xFFD4AF37) : Colors.white70,
+                                          color: isToday ? const Color(0xFFFFFFFF) : Colors.white70,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -440,7 +440,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: isToday ? const Color(0xFFD4AF37) : Colors.transparent,
+                                          color: isToday ? const Color(0xFFFFFFFF) : Colors.transparent,
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
@@ -495,7 +495,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFD4AF37),
+                                    color: const Color(0xFFFFFFFF),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Padding(
@@ -544,7 +544,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       },
       loading: () => const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
         ),
       ),
       error: (err, stack) => Center(
@@ -565,7 +565,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFFD4AF37).withOpacity(0.5),
+              color: const Color(0xFFFFFFFF).withOpacity(0.5),
               width: 1,
             ),
           ),
@@ -591,10 +591,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withOpacity(0.1),
+                    color: const Color(0xFFFFFFFF).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, color: Color(0xFFD4AF37)),
+                  child: const Icon(Icons.person, color: Color(0xFFFFFFFF)),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -662,7 +662,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
+                      backgroundColor: const Color(0xFFFFFFFF),
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -686,7 +686,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFD4AF37), size: 20),
+        Icon(icon, color: const Color(0xFFFFFFFF), size: 20),
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -784,25 +784,25 @@ class _ViewSelectorButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected 
-                ? const Color(0xFFD4AF37) 
-                : const Color(0xFFD4AF37).withOpacity(0.1),
+                ? const Color(0xFFFFFFFF) 
+                : const Color(0xFFFFFFFF).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFFD4AF37).withOpacity(0.3),
+              color: const Color(0xFFFFFFFF).withOpacity(0.3),
             ),
           ),
           child: Column(
             children: [
               Icon(
                 icon, 
-                color: isSelected ? Colors.black : const Color(0xFFD4AF37), 
+                color: isSelected ? Colors.black : const Color(0xFFFFFFFF), 
                 size: 24
               ),
               const SizedBox(height: 4),
               Text(
                 title,
                 style: TextStyle(
-                  color: isSelected ? Colors.black : const Color(0xFFD4AF37),
+                  color: isSelected ? Colors.black : const Color(0xFFFFFFFF),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),

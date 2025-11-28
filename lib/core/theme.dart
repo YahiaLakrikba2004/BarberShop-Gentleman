@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Luxury Barber Shop Colors - Gold & Black
-  static const Color luxuryGold = Color(0xFFD4AF37); // Classic gold
-  static const Color darkGold = Color(0xFFB8860B); // Dark goldenrod
+  // Luxury Barber Shop Colors - White & Black (Monochrome)
+  static const Color luxuryGold = Color(0xFFFFFFFF); // White
+  static const Color darkGold = Color(0xFFBDBDBD); // Grey
+  static const Color lightGold = Color(0xFFF5F5F5); // Off-white
   static const Color richBlack = Color(0xFF0A0A0A); // Rich black
   static const Color deepBlack = Color(0xFF1A1A1A); // Deep black
   static const Color charcoal = Color(0xFF2C2C2C); // Charcoal
-  static const Color lightGold = Color(0xFFFFF8DC); // Cornsilk (light gold)
   static const Color barberRed = Color(0xFFDC143C); // Accent red
+  static const Color luxuryText = Color(0xFFFAFAFA); // Off-white for text
   
   // Compatibility colors
   static const Color barberWhite = Color(0xFFFAFAFA);

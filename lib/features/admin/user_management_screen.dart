@@ -21,10 +21,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('GESTIONE UTENTI'),
+        title: const Text('GESTIONE UTENTI', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
@@ -36,7 +37,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               decoration: InputDecoration(
                 hintText: 'Cerca utente per nome o email...',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFFFFFFF)),
                 filled: true,
                 fillColor: const Color(0xFF1A1A1A),
                 border: OutlineInputBorder(
@@ -49,7 +50,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD4AF37)),
+                  borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
                 ),
               ),
               onChanged: (value) {
@@ -79,7 +80,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           Icon(
                             Icons.search_off,
                             size: 80,
-                            color: const Color(0xFFD4AF37).withOpacity(0.3),
+                            color: const Color(0xFFFFFFFF).withOpacity(0.3),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -111,7 +112,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               },
               loading: () => const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
                 ),
               ),
               error: (err, stack) => Center(
@@ -141,7 +142,7 @@ class _UserCard extends ConsumerWidget {
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withOpacity(0.2),
+          color: const Color(0xFFFFFFFF).withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -175,7 +176,7 @@ class _UserCard extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFD4AF37),
+                          color: Color(0xFFFFFFFF),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -208,7 +209,7 @@ class _UserCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Divider(color: const Color(0xFFD4AF37).withOpacity(0.2), height: 1),
+            Divider(color: const Color(0xFFFFFFFF).withOpacity(0.2), height: 1),
             const SizedBox(height: 16),
             const Text(
               'Cambia Ruolo:',
@@ -245,12 +246,37 @@ class _UserCard extends ConsumerWidget {
                   child: _RoleButton(
                     label: 'Admin',
                     icon: Icons.admin_panel_settings,
-                    color: const Color(0xFFFF9800),
+                    color: Colors.redAccent,
                     isSelected: user.role == UserRole.admin,
                     onTap: () => _updateRole(ref, user.id, UserRole.admin, context),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: const Color(0xFFFFFFFF).withOpacity(0.2), height: 1),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showDeleteDialog(context, ref, user),
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                label: const Text(
+                  'ELIMINA UTENTE',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -265,7 +291,7 @@ class _UserCard extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Ruolo aggiornato a ${_getRoleText(newRole)}'),
-            backgroundColor: const Color(0xFFD4AF37),
+            backgroundColor: const Color(0xFFFFFFFF),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -290,7 +316,7 @@ class _UserCard extends ConsumerWidget {
       case UserRole.barber:
         return const Color(0xFF4CAF50);
       case UserRole.admin:
-        return const Color(0xFFFF9800);
+        return Colors.redAccent;
     }
   }
 
@@ -314,6 +340,53 @@ class _UserCard extends ConsumerWidget {
       case UserRole.admin:
         return 'ADMIN';
     }
+  }
+
+  Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref, UserModel user) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+        ),
+        title: const Text('Elimina Utente', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Sei sicuro di voler eliminare l\'utente ${user.name}? Questa azione è irreversibile.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annulla', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref.read(firestoreServiceProvider).deleteUser(user.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Utente eliminato con successo'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Errore: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Elimina', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 }
 
