@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"barbershop-gentleman","appId":"1:635305520200:android:2dd15d19739e761ef73c7d","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"barbershop-gentleman","configurations":{"android":"1:635305520200:android:2dd15d19739e761ef73c7d","ios":"1:635305520200:ios:89aa5979171d0aaff73c7d","macos":"1:635305520200:ios:89aa5979171d0aaff73c7d","web":"1:635305520200:web:6c6c136aa05ff13af73c7d","windows":"1:635305520200:web:fb3391bffa0a8d0bf73c7d"}}}}}}
+{
+    "hosting": {
+        "public": "build/web",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ]
+    },
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "barbershop-gentleman",
+                    "appId": "1:635305520200:android:2dd15d19739e761ef73c7d",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "barbershop-gentleman",
+                    "configurations": {
+                        "android": "1:635305520200:android:2dd15d19739e761ef73c7d",
+                        "ios": "1:635305520200:ios:89aa5979171d0aaff73c7d",
+                        "macos": "1:635305520200:ios:89aa5979171d0aaff73c7d",
+                        "web": "1:635305520200:web:6c6c136aa05ff13af73c7d",
+                        "windows": "1:635305520200:web:fb3391bffa0a8d0bf73c7d"
+                    }
+                }
+            }
+        }
+    }
+}

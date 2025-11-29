@@ -3,7 +3,6 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -42,48 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static FirebaseOptions get web => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_WEB_API_KEY']!,
-    appId: '1:635305520200:web:6c6c136aa05ff13af73c7d',
-    messagingSenderId: '635305520200',
-    projectId: 'barbershop-gentleman',
-    authDomain: 'barbershop-gentleman.firebaseapp.com',
-    storageBucket: 'barbershop-gentleman.firebasestorage.app',
-    measurementId: 'G-75V0GQMVLC',
-  );
+        apiKey: 'AIzaSyBcDZFgbP7XUifXb-zb5g-AvH1iPR2HaP4',
+        appId: '1:635305520200:web:6c6c136aa05ff13af73c7d',
+        messagingSenderId: '635305520200',
+        projectId: 'barbershop-gentleman',
+        authDomain: 'barbershop-gentleman.firebaseapp.com',
+        storageBucket: 'barbershop-gentleman.firebasestorage.app',
+        measurementId: 'G-75V0GQMVLC',
+      );
 
   static FirebaseOptions get android => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_ANDROID_API_KEY']!,
-    appId: '1:635305520200:android:2dd15d19739e761ef73c7d',
-    messagingSenderId: '635305520200',
-    projectId: 'barbershop-gentleman',
-    storageBucket: 'barbershop-gentleman.firebasestorage.app',
-  );
+        apiKey: 'AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo',
+        appId: '1:635305520200:android:2dd15d19739e761ef73c7d',
+        messagingSenderId: '635305520200',
+        projectId: 'barbershop-gentleman',
+        storageBucket: 'barbershop-gentleman.firebasestorage.app',
+      );
 
   static FirebaseOptions get ios => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_IOS_API_KEY']!,
-    appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
-    messagingSenderId: '635305520200',
-    projectId: 'barbershop-gentleman',
-    storageBucket: 'barbershop-gentleman.firebasestorage.app',
-    iosBundleId: 'com.example.barberShopApp',
-  );
+        apiKey: 'AIzaSyDnueMtezaIP2KxDIIYKZznAZQVz0jp7uQ',
+        appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
+        messagingSenderId: '635305520200',
+        projectId: 'barbershop-gentleman',
+        storageBucket: 'barbershop-gentleman.firebasestorage.app',
+        iosBundleId: 'com.example.barberShopApp',
+      );
 
   static FirebaseOptions get macos => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_IOS_API_KEY']!,
-    appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
-    messagingSenderId: '635305520200',
-    projectId: 'barbershop-gentleman',
-    storageBucket: 'barbershop-gentleman.firebasestorage.app',
-    iosBundleId: 'com.example.barberShopApp',
-  );
+        apiKey: 'AIzaSyDnueMtezaIP2KxDIIYKZznAZQVz0jp7uQ',
+        appId: '1:635305520200:ios:89aa5979171d0aaff73c7d',
+        messagingSenderId: '635305520200',
+        projectId: 'barbershop-gentleman',
+        storageBucket: 'barbershop-gentleman.firebasestorage.app',
+        iosBundleId: 'com.example.barberShopApp',
+      );
 
   static FirebaseOptions get windows => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_WEB_API_KEY']!,
-    appId: '1:635305520200:web:fb3391bffa0a8d0bf73c7d',
-    messagingSenderId: '635305520200',
-    projectId: 'barbershop-gentleman',
-    authDomain: 'barbershop-gentleman.firebaseapp.com',
-    storageBucket: 'barbershop-gentleman.firebasestorage.app',
-    measurementId: 'G-KR9E7QTYYF',
-  );
+        apiKey: 'AIzaSyBcDZFgbP7XUifXb-zb5g-AvH1iPR2HaP4',
+        appId: '1:635305520200:web:fb3391bffa0a8d0bf73c7d',
+        messagingSenderId: '635305520200',
+        projectId: 'barbershop-gentleman',
+        authDomain: 'barbershop-gentleman.firebaseapp.com',
+        storageBucket: 'barbershop-gentleman.firebasestorage.app',
+        measurementId: 'G-KR9E7QTYYF',
+      );
 }

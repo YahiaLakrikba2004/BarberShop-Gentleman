@@ -28,11 +28,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('I MIEI APPUNTAMENTI', style: TextStyle(color: Colors.white)),
+        title: const Text('I MIEI APPUNTAMENTI',
+            style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: userAsync.when(
@@ -73,7 +74,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return allAppointmentsAsync.when(
       data: (allAppointments) {
         // Convert to CalendarEventData
-        final events = allAppointments.where((apt) => apt.status != AppointmentStatus.cancelled).map((apt) {
+        final events = allAppointments
+            .where((apt) => apt.status != AppointmentStatus.cancelled)
+            .map((apt) {
           return CalendarEventData<AppointmentModel>(
             title: apt.customerName,
             description: '${apt.serviceName}\n${apt.customerPhoneNumber ?? ""}',
@@ -112,19 +115,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         title: 'Giorno',
                         icon: Icons.view_day,
                         isSelected: _currentView == CalendarViewType.day,
-                        onTap: () => setState(() => _currentView = CalendarViewType.day),
+                        onTap: () =>
+                            setState(() => _currentView = CalendarViewType.day),
                       ),
                       _ViewSelectorButton(
                         title: 'Settimana',
                         icon: Icons.view_week,
                         isSelected: _currentView == CalendarViewType.week,
-                        onTap: () => setState(() => _currentView = CalendarViewType.week),
+                        onTap: () => setState(
+                            () => _currentView = CalendarViewType.week),
                       ),
                       _ViewSelectorButton(
                         title: 'Mese',
                         icon: Icons.calendar_month,
                         isSelected: _currentView == CalendarViewType.month,
-                        onTap: () => setState(() => _currentView = CalendarViewType.month),
+                        onTap: () => setState(
+                            () => _currentView = CalendarViewType.month),
                       ),
                     ],
                   ),
@@ -156,7 +162,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               color: const Color(0xFF181818),
                               child: Center(
                                 child: Text(
-                                  DateFormat('EEEE d MMMM', 'it').format(date).toUpperCase(),
+                                  DateFormat('EEEE d MMMM', 'it')
+                                      .format(date)
+                                      .toUpperCase(),
                                   style: const TextStyle(
                                     color: Color(0xFFFFFFFF),
                                     fontSize: 16,
@@ -170,22 +178,82 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             return Container(
                               padding: const EdgeInsets.only(right: 12),
                               alignment: Alignment.centerRight,
-                              child: Text(
-                                DateFormat('H a').format(date),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  // Hour label
+                                  Expanded(
+                                    child: Container(
+                                      alignment: Alignment.centerRight,
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A1A1A),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.1),
+                                        ),
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          DateFormat('HH:mm').format(date),
+                                          style: TextStyle(
+                                            color:
+                                                Colors.white.withOpacity(0.9),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Half-hour label (manually added)
+                                  Expanded(
+                                    child: Container(
+                                      alignment: Alignment.centerRight,
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A1A1A),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.1),
+                                        ),
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          DateFormat('HH:mm').format(date.add(
+                                              const Duration(minutes: 30))),
+                                          style: TextStyle(
+                                            color:
+                                                Colors.white.withOpacity(0.9),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           },
+                          minuteSlotSize: MinuteSlotSize.minutes30,
+                          heightPerMinute: 2.0,
                           hourIndicatorSettings: HourIndicatorSettings(
                             color: Colors.white.withOpacity(0.1),
                             height: 1,
                             offset: 0,
                           ),
-                          liveTimeIndicatorSettings: const LiveTimeIndicatorSettings(
+                          liveTimeIndicatorSettings:
+                              const LiveTimeIndicatorSettings(
                             color: Color(0xFFEA4335),
                             height: 2,
                             showTime: true,
@@ -196,45 +264,72 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               _showAppointmentDetails(context, events.first);
                             }
                           },
-                          eventTileBuilder: (date, events, boundary, start, end) {
+                          eventTileBuilder:
+                              (date, events, boundary, start, end) {
                             if (events.isEmpty) return const SizedBox();
                             final event = events.first;
                             return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 2, vertical: 1),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFFFFF),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      event.title,
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        event.description?.split('\n').first ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: 11,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 2),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Always show title
+                                        Text(
+                                          event.title,
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                        // Show time if height allows (> 30)
+                                        if (constraints.maxHeight > 30)
+                                          Text(
+                                            '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        // Show description if height allows (> 50)
+                                        if (constraints.maxHeight > 50)
+                                          Expanded(
+                                            child: Text(
+                                              event.description
+                                                      ?.split('\n')
+                                                      .first ??
+                                                  '',
+                                              style: const TextStyle(
+                                                color: Colors.black87,
+                                                fontSize: 10,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
                             );
                           },
-                          heightPerMinute: 1.5,
                           startHour: 8,
                           endHour: 22,
                           showLiveTimeLineInAllDays: true,
@@ -257,12 +352,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                               headerBuilder: (date) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 24),
                                   color: const Color(0xFF181818),
                                   child: Row(
                                     children: [
                                       Text(
-                                        DateFormat('MMMM yyyy', 'it').format(date).toUpperCase(),
+                                        DateFormat('MMMM yyyy', 'it')
+                                            .format(date)
+                                            .toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 22,
@@ -271,12 +369,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       ),
                                       const Spacer(),
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_left, color: Colors.white),
-                                        onPressed: () => _monthViewKey.currentState?.previousPage(),
+                                        icon: const Icon(Icons.chevron_left,
+                                            color: Colors.white),
+                                        onPressed: () => _monthViewKey
+                                            .currentState
+                                            ?.previousPage(),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_right, color: Colors.white),
-                                        onPressed: () => _monthViewKey.currentState?.nextPage(),
+                                        icon: const Icon(Icons.chevron_right,
+                                            color: Colors.white),
+                                        onPressed: () => _monthViewKey
+                                            .currentState
+                                            ?.nextPage(),
                                       ),
                                     ],
                                   ),
@@ -284,11 +388,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               },
                               weekDayBuilder: (day) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   color: const Color(0xFF181818),
                                   child: Center(
                                     child: Text(
-                                      ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'][day],
+                                      [
+                                        'LUN',
+                                        'MAR',
+                                        'MER',
+                                        'GIO',
+                                        'VEN',
+                                        'SAB',
+                                        'DOM'
+                                      ][day],
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontWeight: FontWeight.bold,
@@ -297,7 +410,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                 );
                               },
-                              cellBuilder: (date, events, isToday, isInMonth, hideDaysNotInMonth) {
+                              cellBuilder: (date, events, isToday, isInMonth,
+                                  hideDaysNotInMonth) {
                                 return GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -322,15 +436,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                             width: 24,
                                             height: 24,
                                             decoration: BoxDecoration(
-                                              color: isToday ? const Color(0xFFFFFFFF) : Colors.transparent,
+                                              color: isToday
+                                                  ? const Color(0xFFFFFFFF)
+                                                  : Colors.transparent,
                                               shape: BoxShape.circle,
                                             ),
                                             alignment: Alignment.center,
                                             child: Text(
                                               '${date.day}',
                                               style: TextStyle(
-                                                color: isToday ? Colors.black : (isInMonth ? Colors.white : Colors.white24),
-                                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                                color: isToday
+                                                    ? Colors.black
+                                                    : (isInMonth
+                                                        ? Colors.white
+                                                        : Colors.white24),
+                                                fontWeight: isToday
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
                                               ),
                                             ),
                                           ),
@@ -342,11 +464,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                                 spacing: 4,
                                                 runSpacing: 4,
                                                 alignment: WrapAlignment.center,
-                                                children: events.take(4).map((event) {
+                                                children:
+                                                    events.take(4).map((event) {
                                                   return Container(
                                                     width: 6,
                                                     height: 6,
-                                                    decoration: const BoxDecoration(
+                                                    decoration:
+                                                        const BoxDecoration(
                                                       color: Color(0xFFFFFFFF),
                                                       shape: BoxShape.circle,
                                                     ),
@@ -360,7 +484,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   ),
                                 );
                               },
-                              onPageChange: (date, pageIndex) => _focusedDate = date,
+                              onPageChange: (date, pageIndex) =>
+                                  _focusedDate = date,
                               onEventTap: (event, date) {
                                 _showAppointmentDetails(context, event);
                               },
@@ -384,12 +509,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               weekTitleHeight: 70,
                               weekPageHeaderBuilder: (startDate, endDate) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 24),
                                   color: const Color(0xFF181818),
                                   child: Row(
                                     children: [
                                       Text(
-                                        DateFormat('MMMM yyyy', 'it').format(startDate).toUpperCase(),
+                                        DateFormat('MMMM yyyy', 'it')
+                                            .format(startDate)
+                                            .toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 22,
@@ -398,22 +526,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       ),
                                       const Spacer(),
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_left, color: Colors.white),
-                                        onPressed: () => _weekViewKey.currentState?.previousPage(),
+                                        icon: const Icon(Icons.chevron_left,
+                                            color: Colors.white),
+                                        onPressed: () => _weekViewKey
+                                            .currentState
+                                            ?.previousPage(),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.chevron_right, color: Colors.white),
-                                        onPressed: () => _weekViewKey.currentState?.nextPage(),
+                                        icon: const Icon(Icons.chevron_right,
+                                            color: Colors.white),
+                                        onPressed: () => _weekViewKey
+                                            .currentState
+                                            ?.nextPage(),
                                       ),
                                     ],
                                   ),
                                 );
                               },
                               weekDayBuilder: (date) {
-                                final isToday = date.day == DateTime.now().day &&
-                                    date.month == DateTime.now().month &&
-                                    date.year == DateTime.now().year;
-                                    
+                                final isToday =
+                                    date.day == DateTime.now().day &&
+                                        date.month == DateTime.now().month &&
+                                        date.year == DateTime.now().year;
+
                                 return Container(
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
@@ -428,9 +563,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        DateFormat('EEE', 'it').format(date).toUpperCase(),
+                                        DateFormat('EEE', 'it')
+                                            .format(date)
+                                            .toUpperCase(),
                                         style: TextStyle(
-                                          color: isToday ? const Color(0xFFFFFFFF) : Colors.white70,
+                                          color: isToday
+                                              ? const Color(0xFFFFFFFF)
+                                              : Colors.white70,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -440,14 +579,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: isToday ? const Color(0xFFFFFFFF) : Colors.transparent,
+                                          color: isToday
+                                              ? const Color(0xFFFFFFFF)
+                                              : Colors.transparent,
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
                                         child: Text(
                                           '${date.day}',
                                           style: TextStyle(
-                                            color: isToday ? Colors.black : Colors.white,
+                                            color: isToday
+                                                ? Colors.black
+                                                : Colors.white,
                                             fontSize: 22,
                                             fontWeight: FontWeight.w400,
                                           ),
@@ -476,7 +619,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 height: 1,
                                 offset: 0,
                               ),
-                              liveTimeIndicatorSettings: const LiveTimeIndicatorSettings(
+                              liveTimeIndicatorSettings:
+                                  const LiveTimeIndicatorSettings(
                                 color: Color(0xFFEA4335),
                                 height: 2,
                                 showTime: true,
@@ -484,24 +628,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                               onEventTap: (events, date) {
                                 if (events.isNotEmpty) {
-                                  _showAppointmentDetails(context, events.first);
+                                  _showAppointmentDetails(
+                                      context, events.first);
                                 }
                               },
-                              eventTileBuilder: (date, events, boundary, start, end) {
+                              eventTileBuilder:
+                                  (date, events, boundary, start, end) {
                                 if (events.isEmpty) return const SizedBox();
-                                
+
                                 final event = events.first;
-                                
+
                                 return Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 2, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFFFFF),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 2),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
@@ -509,9 +658,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                           style: const TextStyle(
                                             color: Colors.black,
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 12,
+                                            fontSize: 10,
                                           ),
-                                          maxLines: 1,
+                                          maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Expanded(
@@ -519,7 +668,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                             '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
                                             style: const TextStyle(
                                               color: Colors.black87,
-                                              fontSize: 11,
+                                              fontSize: 9,
                                               fontWeight: FontWeight.w400,
                                             ),
                                             overflow: TextOverflow.ellipsis,
@@ -555,6 +704,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
     );
   }
+
   void _showAppointmentDetails(BuildContext context, CalendarEventData event) {
     showModalBottomSheet(
       context: context,
@@ -623,16 +773,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            _buildDetailRow(Icons.cut, 'Servizio', event.description?.split('\n').first ?? 'N/A'),
+            _buildDetailRow(Icons.cut, 'Servizio',
+                event.description?.split('\n').first ?? 'N/A'),
             const SizedBox(height: 16),
-            _buildDetailRow(Icons.access_time, 'Orario', 
-              '${DateFormat('HH:mm').format(event.startTime!)} - ${DateFormat('HH:mm').format(event.endTime!)}'),
+            _buildDetailRow(Icons.access_time, 'Orario',
+                '${DateFormat('HH:mm').format(event.startTime!)} - ${DateFormat('HH:mm').format(event.endTime!)}'),
             const SizedBox(height: 16),
-            _buildDetailRow(Icons.calendar_today, 'Data', 
-              DateFormat('EEEE d MMMM yyyy', 'it').format(event.date)),
-            if (event.description != null && event.description!.contains('\n')) ...[
+            _buildDetailRow(Icons.calendar_today, 'Data',
+                DateFormat('EEEE d MMMM yyyy', 'it').format(event.date)),
+            if (event.description != null &&
+                event.description!.contains('\n')) ...[
               const SizedBox(height: 16),
-              _buildDetailRow(Icons.phone, 'Telefono', event.description!.split('\n').last),
+              _buildDetailRow(
+                  Icons.phone, 'Telefono', event.description!.split('\n').last),
             ],
             const SizedBox(height: 32),
             Row(
@@ -641,7 +794,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _showCancelDialog(context, event.event as AppointmentModel);
+                      _showCancelDialog(
+                          context, event.event as AppointmentModel);
                     },
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Colors.red.withOpacity(0.5)),
@@ -712,7 +866,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Future<void> _showCancelDialog(BuildContext context, AppointmentModel appointment) async {
+  Future<void> _showCancelDialog(
+      BuildContext context, AppointmentModel appointment) async {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -721,7 +876,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.red.withOpacity(0.3)),
         ),
-        title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        title: const Text('Annulla Appuntamento',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
         content: Text(
           'Sei sicuro di voler annullare l\'appuntamento di ${appointment.customerName}?\nL\'operazione non può essere annullata.',
           style: const TextStyle(color: Colors.white70),
@@ -729,19 +885,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No, mantieni', style: TextStyle(color: Colors.grey)),
+            child: const Text('No, mantieni',
+                style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await ref.read(firestoreServiceProvider).updateAppointmentStatus(
-                  appointment.id, 
-                  AppointmentStatus.cancelled
-                );
+                await ref
+                    .read(firestoreServiceProvider)
+                    .updateAppointmentStatus(
+                        appointment.id, AppointmentStatus.cancelled);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Appuntamento annullato con successo')),
+                    const SnackBar(
+                        content: Text('Appuntamento annullato con successo')),
                   );
                 }
               } catch (e) {
@@ -752,7 +910,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 }
               }
             },
-            child: const Text('Sì, annulla', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text('Sì, annulla',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -783,8 +943,8 @@ class _ViewSelectorButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? const Color(0xFFFFFFFF) 
+            color: isSelected
+                ? const Color(0xFFFFFFFF)
                 : const Color(0xFFFFFFFF).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
@@ -793,11 +953,9 @@ class _ViewSelectorButton extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(
-                icon, 
-                color: isSelected ? Colors.black : const Color(0xFFFFFFFF), 
-                size: 24
-              ),
+              Icon(icon,
+                  color: isSelected ? Colors.black : const Color(0xFFFFFFFF),
+                  size: 24),
               const SizedBox(height: 4),
               Text(
                 title,

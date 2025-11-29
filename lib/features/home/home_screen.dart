@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 import '../../services/seed_service.dart';
 import '../../core/ui/hexagon_painter.dart';
+import 'dart:ui';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _logoController;
   late Animation<double> _drawAnimation;
   int _currentCarouselIndex = 0;
@@ -30,8 +32,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _drawAnimation = CurvedAnimation(parent: _logoController, curve: Curves.easeInOut);
-    
+    _drawAnimation =
+        CurvedAnimation(parent: _logoController, curve: Curves.easeInOut);
+
     // Start animation after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _logoController.forward();
@@ -50,8 +53,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     final user = userAsync.value;
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: const Color(0xFF0A0A0A).withOpacity(0.7),
+            ),
+          ),
+        ),
         surfaceTintColor: Colors.transparent,
         title: FittedBox(
           fit: BoxFit.scaleDown,
@@ -105,7 +118,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               duration: const Duration(milliseconds: 500),
               child: Container(
                 // Removed fixed height to prevent overflow
-                padding: const EdgeInsets.symmetric(vertical: 32),
+                padding: const EdgeInsets.only(top: 120, bottom: 32),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -153,7 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               ),
                             ),
                             const SizedBox(height: 16), // Reduced spacing
-                            
+
                             // Animated Logo
                             SizedBox(
                               width: 120,
@@ -174,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                       );
                                     },
                                   ),
-                                  
+
                                   // Central Icon
                                   FadeIn(
                                     delay: const Duration(milliseconds: 1000),
@@ -185,7 +198,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                                            color: const Color(0xFFFFFFFF)
+                                                .withOpacity(0.1),
                                             blurRadius: 20,
                                             spreadRadius: 5,
                                           ),
@@ -204,27 +218,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 ],
                               ),
                             ),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // Main title with shimmer
                             FadeInUp(
                               delay: const Duration(milliseconds: 200),
                               child: Shimmer.fromColors(
                                 baseColor: const Color(0xFFFFFFFF),
-                                highlightColor: const Color(0xFFE0E0E0), // Softer highlight
-                                period: const Duration(milliseconds: 2500), // Slower shimmer
+                                highlightColor:
+                                    const Color(0xFFE0E0E0), // Softer highlight
+                                period: const Duration(
+                                    milliseconds: 2500), // Slower shimmer
                                 child: Text(
                                   'THE GENTLEMAN',
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.cinzel( // Changed to Cinzel
-                                    fontSize: 42, // Slightly smaller to fit better
-                                    fontWeight: FontWeight.w700, // Bold but elegant
-                                    letterSpacing: 4, // Reduced spacing for cohesion
+                                  style: GoogleFonts.cinzel(
+                                    // Changed to Cinzel
+                                    fontSize:
+                                        42, // Slightly smaller to fit better
+                                    fontWeight:
+                                        FontWeight.w700, // Bold but elegant
+                                    letterSpacing:
+                                        4, // Reduced spacing for cohesion
                                     color: const Color(0xFFFAFAFA),
                                     shadows: [
                                       Shadow(
-                                        color: const Color(0xFFFFFFFF).withOpacity(0.5),
+                                        color: const Color(0xFFFFFFFF)
+                                            .withOpacity(0.5),
                                         blurRadius: 20,
                                       ),
                                     ],
@@ -232,16 +253,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 12),
-                            
+
                             // Subtitle
                             FadeInUp(
                               delay: const Duration(milliseconds: 300),
                               child: Text(
                                 'BARBERSTYLE',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.montserrat( // Changed to Montserrat
+                                style: GoogleFonts.montserrat(
+                                  // Changed to Montserrat
                                   fontSize: 16,
                                   color: const Color(0xFFB0B0B0), // Silver/Grey
                                   letterSpacing: 8,
@@ -249,9 +271,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // CTA Button
                             BounceInUp(
                               delay: const Duration(milliseconds: 500),
@@ -259,9 +281,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 onPressed: () => context.push('/booking'),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Decorative bottom line
                             FadeInUp(
                               delay: const Duration(milliseconds: 1000),
@@ -302,7 +324,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       children: [
                         Text(
                           'I NOSTRI SERVIZI',
-                          style: GoogleFonts.cinzel( // Consistent font
+                          style: GoogleFonts.cinzel(
+                            // Consistent font
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFFFAFAFA),
@@ -326,7 +349,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         const SizedBox(height: 16),
                         Text(
                           'Trattamenti Premium per il Gentleman Moderno',
-                          style: GoogleFonts.montserrat( // Consistent font
+                          style: GoogleFonts.montserrat(
+                            // Consistent font
                             fontSize: 14,
                             color: Colors.white60,
                             letterSpacing: 1,
@@ -337,7 +361,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     ),
                   ),
                   const SizedBox(height: 56),
-                  
+
                   // Service Cards Grid
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -380,7 +404,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                           child: const _PremiumServiceCard(
                             icon: Icons.auto_awesome,
                             title: 'Taglio + Barba',
-                            description: 'Pacchetto completo per un look impeccabile e curato',
+                            description:
+                                'Pacchetto completo per un look impeccabile e curato',
                             price: '35€',
                             duration: '50 min',
                             featured: true,
@@ -440,7 +465,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFFFFFFFF)),
+                                border:
+                                    Border.all(color: const Color(0xFFFFFFFF)),
                                 color: const Color(0xFFFFFFFF).withOpacity(0.1),
                               ),
                               child: ClipOval(
@@ -478,7 +504,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                           ],
                         ),
                       ),
-                      
+
                       // Content
                       Padding(
                         padding: const EdgeInsets.all(24),
@@ -490,14 +516,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               title: 'Via Borgo Eniano, 50',
                               subtitle: '35044 Montagnana PD, Italy',
                               onTap: () async {
-                                final uri = Uri.parse('https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
+                                final uri = Uri.parse(
+                                    'https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
                                 if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  await launchUrl(uri,
+                                      mode: LaunchMode.externalApplication);
                                 }
                               },
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // Phone
                             _ContactRow(
                               icon: Icons.phone,
@@ -534,17 +562,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  _HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
+                                  _HoursRow(
+                                      day: 'Lun - Gio',
+                                      hours: '10:00-12:30 | 14:30-20:00'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
+                                  _HoursRow(
+                                      day: 'Venerdì',
+                                      hours: '10:00-12:30 | 14:00-20:30'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
+                                  _HoursRow(
+                                      day: 'Sabato', hours: '09:00 - 20:00'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
+                                  _HoursRow(
+                                      day: 'Domenica', hours: '10:00 - 18:00'),
                                 ],
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
 
                             // Social Actions
@@ -553,7 +587,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                               children: [
                                 _SocialButton(
                                   icon: FontAwesomeIcons.instagram,
-                                  url: 'https://www.instagram.com/the_gentlemen_barberstyle/',
+                                  url:
+                                      'https://www.instagram.com/the_gentlemen_barberstyle/',
                                 ),
                                 const SizedBox(width: 20),
                                 _SocialButton(
@@ -687,7 +722,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                   children: [
                                     Icon(
                                       Icons.image_not_supported_outlined,
-                                      color: const Color(0xFFFFFFFF).withOpacity(0.5),
+                                      color: const Color(0xFFFFFFFF)
+                                          .withOpacity(0.5),
                                       size: 48,
                                     ),
                                     const SizedBox(height: 8),
@@ -783,14 +819,15 @@ class _PremiumServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: compact ? null : 320, // Flexible width if compact
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 400),
       height: compact ? 200 : 240, // Reduced height for compact
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: featured 
-                ? const Color(0xFFFFFFFF).withOpacity(0.2) 
+            color: featured
+                ? const Color(0xFFFFFFFF).withOpacity(0.2)
                 : Colors.black.withOpacity(0.5),
             blurRadius: 20,
             spreadRadius: 0,
@@ -870,7 +907,7 @@ class _PremiumServiceCard extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      
+
                       // Title
                       Text(
                         title.toUpperCase(),
@@ -882,7 +919,7 @@ class _PremiumServiceCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Description
                       Text(
                         description,
@@ -895,7 +932,7 @@ class _PremiumServiceCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Footer
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1112,7 +1149,8 @@ class _PremiumAnimatedButton extends StatefulWidget {
   State<_PremiumAnimatedButton> createState() => _PremiumAnimatedButtonState();
 }
 
-class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton> with TickerProviderStateMixin {
+class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late AnimationController _glowController;
   late Animation<double> _scaleAnimation;
@@ -1173,7 +1211,8 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton> with Tic
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFFFFF).withOpacity(0.2 + (0.3 * _glowAnimation.value)),
+                  color: const Color(0xFFFFFFFF)
+                      .withOpacity(0.2 + (0.3 * _glowAnimation.value)),
                   blurRadius: 15 + (10 * _glowAnimation.value),
                   spreadRadius: 1 + (1 * _glowAnimation.value),
                   offset: const Offset(0, 0),

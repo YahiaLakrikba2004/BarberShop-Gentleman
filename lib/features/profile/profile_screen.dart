@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
-import '../../services/storage_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
-import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
+import '../appointments/grouped_appointments_list.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -21,7 +19,8 @@ class ProfileScreen extends ConsumerWidget {
     final user = userAsync.value;
 
     if (user == null) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
     }
 
     return DefaultTabController(
@@ -42,7 +41,8 @@ class ProfileScreen extends ConsumerWidget {
           elevation: 0,
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings_outlined, color: Color(0xFFFFFFFF)),
+              icon:
+                  const Icon(Icons.settings_outlined, color: Color(0xFFFFFFFF)),
               onPressed: () => _showSettingsModal(context, ref, user),
             ),
           ],
@@ -54,7 +54,8 @@ class ProfileScreen extends ConsumerWidget {
               duration: const Duration(milliseconds: 800),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0A0A0A),
                   gradient: LinearGradient(
@@ -84,28 +85,33 @@ class ProfileScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFF1A1A1A),
-                              border: Border.all(color: const Color(0xFFFFFFFF), width: 2),
+                              border: Border.all(
+                                  color: const Color(0xFFFFFFFF), width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFFFFFFF).withOpacity(0.2),
+                                  color:
+                                      const Color(0xFFFFFFFF).withOpacity(0.2),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
                               ],
                               image: _getUserImage(user.imageUrl),
                             ),
-                            child: user.imageUrl == null || user.imageUrl!.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                                      style: GoogleFonts.playfairDisplay(
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFFFFFFF),
-                                      ),
-                                    ),
-                                  )
-                                : null,
+                            child:
+                                user.imageUrl == null || user.imageUrl!.isEmpty
+                                    ? Center(
+                                        child: Text(
+                                          user.name.isNotEmpty
+                                              ? user.name[0].toUpperCase()
+                                              : 'U',
+                                          style: GoogleFonts.playfairDisplay(
+                                            fontSize: 40,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFFFFFFFF),
+                                          ),
+                                        ),
+                                      )
+                                    : null,
                           ),
                           Positioned(
                             bottom: 0,
@@ -115,7 +121,8 @@ class ProfileScreen extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFFFFF),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF0A0A0A), width: 2),
+                                border: Border.all(
+                                    color: const Color(0xFF0A0A0A), width: 2),
                               ),
                               child: const Icon(
                                 Icons.camera_alt,
@@ -146,7 +153,8 @@ class ProfileScreen extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.email_outlined, size: 16, color: const Color(0xFFFFFFFF)),
+                            Icon(Icons.email_outlined,
+                                size: 16, color: const Color(0xFFFFFFFF)),
                             const SizedBox(width: 8),
                             Text(
                               user.email,
@@ -158,12 +166,14 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty) ...[
+                        if (user.phoneNumber != null &&
+                            user.phoneNumber!.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.phone_outlined, size: 16, color: const Color(0xFFFFFFFF)),
+                              Icon(Icons.phone_outlined,
+                                  size: 16, color: const Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 user.phoneNumber!,
@@ -191,7 +201,8 @@ class ProfileScreen extends ConsumerWidget {
                 indicatorSize: TabBarIndicatorSize.label,
                 labelColor: Color(0xFFFFFFFF),
                 unselectedLabelColor: Colors.grey,
-                labelStyle: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                labelStyle:
+                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
                 tabs: [
                   Tab(text: 'IN PROGRAMMA'),
                   Tab(text: 'STORICO'),
@@ -203,8 +214,10 @@ class ProfileScreen extends ConsumerWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  _AppointmentsList(userId: user.id, userRole: user.role, isHistory: false),
-                  _AppointmentsList(userId: user.id, userRole: user.role, isHistory: true),
+                  _AppointmentsList(
+                      userId: user.id, userRole: user.role, isHistory: false),
+                  _AppointmentsList(
+                      userId: user.id, userRole: user.role, isHistory: true),
                 ],
               ),
             ),
@@ -214,7 +227,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickAndUploadImage(BuildContext context, WidgetRef ref, UserModel user) async {
+  Future<void> _pickAndUploadImage(
+      BuildContext context, WidgetRef ref, UserModel user) async {
     final picker = ImagePicker();
     // Pick and compress image to avoid Firestore 1MB limit
     final pickedFile = await picker.pickImage(
@@ -235,11 +249,11 @@ class ProfileScreen extends ConsumerWidget {
         final File imageFile = File(pickedFile.path);
         final bytes = await imageFile.readAsBytes();
         final base64Image = base64Encode(bytes);
-        
+
         // Save Base64 string directly to Firestore
         final updatedUser = user.copyWith(imageUrl: base64Image);
         await ref.read(firestoreServiceProvider).updateUser(updatedUser);
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Foto profilo aggiornata!')),
@@ -264,7 +278,8 @@ class ProfileScreen extends ConsumerWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(
-            top: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.3), width: 1),
+            top: BorderSide(
+                color: const Color(0xFFFFFFFF).withOpacity(0.3), width: 1),
           ),
           boxShadow: [
             BoxShadow(
@@ -300,7 +315,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Account Section
                 _buildSettingsSectionTitle('ACCOUNT'),
                 _buildSettingsTile(
@@ -311,9 +326,9 @@ class ProfileScreen extends ConsumerWidget {
                     _showEditProfileDialog(context, ref, user);
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Legal Section
                 _buildSettingsSectionTitle('INFO LEGALI'),
                 _buildSettingsTile(
@@ -322,15 +337,16 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Apertura Privacy Policy...')),
+                      const SnackBar(
+                          content: Text('Apertura Privacy Policy...')),
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 24),
                 Divider(color: Colors.white.withOpacity(0.1), height: 1),
                 const SizedBox(height: 24),
-                
+
                 // Actions
                 _buildSettingsTile(
                   icon: Icons.logout,
@@ -352,7 +368,7 @@ class ProfileScreen extends ConsumerWidget {
                     _showDeleteAccountDialog(context, ref);
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
                 Text(
                   'Versione 1.0.0',
@@ -406,10 +422,14 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDestructive ? color.withOpacity(0.1) : const Color(0xFF2C2C2C),
+                  color: isDestructive
+                      ? color.withOpacity(0.1)
+                      : const Color(0xFF2C2C2C),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDestructive ? Colors.transparent : Colors.white.withOpacity(0.05),
+                    color: isDestructive
+                        ? Colors.transparent
+                        : Colors.white.withOpacity(0.05),
                   ),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -426,7 +446,8 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.2), size: 20),
+              Icon(Icons.chevron_right,
+                  color: Colors.white.withOpacity(0.2), size: 20),
             ],
           ),
         ),
@@ -434,7 +455,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditProfileDialog(BuildContext context, WidgetRef ref, UserModel user) {
+  void _showEditProfileDialog(
+      BuildContext context, WidgetRef ref, UserModel user) {
     final nameController = TextEditingController(text: user.name);
     final phoneController = TextEditingController(text: user.phoneNumber);
 
@@ -446,7 +468,9 @@ class ProfileScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
         ),
-        title: Text('Modifica Profilo', style: GoogleFonts.playfairDisplay(color: const Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+        title: Text('Modifica Profilo',
+            style: GoogleFonts.playfairDisplay(
+                color: const Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -457,7 +481,8 @@ class ProfileScreen extends ConsumerWidget {
               decoration: InputDecoration(
                 labelText: 'Nome',
                 labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFFFFFFFF)),
+                prefixIcon:
+                    const Icon(Icons.person_outline, color: Color(0xFFFFFFFF)),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2C),
                 border: OutlineInputBorder(
@@ -479,7 +504,8 @@ class ProfileScreen extends ConsumerWidget {
               decoration: InputDecoration(
                 labelText: 'Telefono',
                 labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFFFFFFFF)),
+                prefixIcon:
+                    const Icon(Icons.phone_outlined, color: Color(0xFFFFFFFF)),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2C),
                 border: OutlineInputBorder(
@@ -504,12 +530,17 @@ class ProfileScreen extends ConsumerWidget {
               final newName = nameController.text.trim();
               final newPhone = phoneController.text.trim();
               if (newName.isNotEmpty) {
-                final updatedUser = user.copyWith(name: newName, phoneNumber: newPhone);
-                await ref.read(firestoreServiceProvider).updateUser(updatedUser);
+                final updatedUser =
+                    user.copyWith(name: newName, phoneNumber: newPhone);
+                await ref
+                    .read(firestoreServiceProvider)
+                    .updateUser(updatedUser);
                 if (context.mounted) Navigator.pop(context);
               }
             },
-            child: const Text('Salva', style: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+            child: const Text('Salva',
+                style: TextStyle(
+                    color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -525,7 +556,9 @@ class ProfileScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
         ),
-        title: const Text('Elimina Account', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        title: const Text('Elimina Account',
+            style: TextStyle(
+                color: Colors.redAccent, fontWeight: FontWeight.bold)),
         content: const Text(
           'Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati e appuntamenti.',
           style: TextStyle(color: Colors.white70),
@@ -548,7 +581,9 @@ class ProfileScreen extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('Elimina Definitivamente', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: const Text('Elimina Definitivamente',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -593,293 +628,49 @@ class _AppointmentsList extends ConsumerWidget {
           }
         });
 
-        return Column(
-          children: [
-
-            Expanded(
-              child: filteredAppointments.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isHistory ? Icons.history : Icons.calendar_today,
-                            size: 64,
-                            color: Colors.grey.withOpacity(0.1),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            isHistory
-                                ? 'Nessun appuntamento passato'
-                                : 'Nessun appuntamento in programma',
-                            style: TextStyle(
-                              color: Colors.grey.withOpacity(0.3),
-                              fontSize: 16,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: filteredAppointments.length,
-                      itemBuilder: (context, index) {
-                        final appointment = filteredAppointments[index];
-                        return _AppointmentTicket(
-                          appointment: appointment,
-                          isHistory: isHistory,
-                          isBarber: userRole == UserRole.barber,
-                        );
-                      },
-                    ),
+        if (filteredAppointments.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isHistory ? Icons.history : Icons.calendar_today,
+                  size: 64,
+                  color: Colors.grey.withOpacity(0.1),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isHistory
+                      ? 'Nessun appuntamento passato'
+                      : 'Nessun appuntamento in programma',
+                  style: TextStyle(
+                    color: Colors.grey.withOpacity(0.3),
+                    fontSize: 16,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ],
+          );
+        }
+
+        return GroupedAppointmentsList(
+          appointments: filteredAppointments,
+          onAppointmentTap: (apt) {
+            // Optional: Show details
+          },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
+      loading: () => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       error: (e, _) => Center(child: Text('Errore: $e')),
-    );
-  }
-}
-
-class _AppointmentTicket extends ConsumerWidget {
-  final AppointmentModel appointment;
-  final bool isHistory;
-  final bool isBarber;
-
-  const _AppointmentTicket({
-    required this.appointment,
-    required this.isHistory,
-    this.isBarber = false,
-  });
-
-  Future<void> _showCancelDialog(BuildContext context, WidgetRef ref) async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.red.withOpacity(0.3)),
-        ),
-        title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-        content: const Text(
-          'Sei sicuro di voler annullare questo appuntamento? L\'operazione non può essere annullata.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No, mantieni', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await ref.read(firestoreServiceProvider).updateAppointmentStatus(
-                  appointment.id, 
-                  AppointmentStatus.cancelled
-                );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Appuntamento annullato con successo')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Errore: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Sì, annulla', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dateFormat = DateFormat('d MMM y', 'it');
-    final timeFormat = DateFormat('HH:mm');
-
-    return FadeInUp(
-      duration: const Duration(milliseconds: 500),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left Border Indicator
-              Container(
-                width: 6,
-                decoration: BoxDecoration(
-                  color: isHistory ? Colors.grey : const Color(0xFFFFFFFF),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              appointment.serviceName.toUpperCase(),
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isHistory ? Colors.white70 : Colors.white,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (!isHistory && appointment.status != AppointmentStatus.cancelled)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFFFFF).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
-                              ),
-                              child: const Text(
-                                'CONFIRMED',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFFFFFFF),
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            )
-                          else if (appointment.status == AppointmentStatus.cancelled)
-                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.red.withOpacity(0.3)),
-                              ),
-                              child: const Text(
-                                'CANCELLED',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline, size: 16, color: Colors.white.withOpacity(0.5)),
-                          const SizedBox(width: 8),
-                          Text(
-                            isBarber ? appointment.customerName : appointment.barberName,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Divider(color: Colors.white.withOpacity(0.1), height: 1),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today_outlined, size: 16, color: const Color(0xFFFFFFFF)),
-                              const SizedBox(width: 8),
-                              Text(
-                                dateFormat.format(appointment.date).toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Icon(Icons.access_time, size: 16, color: const Color(0xFFFFFFFF)),
-                              const SizedBox(width: 8),
-                              Text(
-                                timeFormat.format(appointment.date),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      
-                      // Cancel Button
-                      if (!isHistory && appointment.status != AppointmentStatus.cancelled) ...[
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: () => _showCancelDialog(context, ref),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.red.withOpacity(0.5)),
-                              foregroundColor: Colors.red,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text('ANNULLA APPUNTAMENTO'),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
 
 DecorationImage? _getUserImage(String? imageUrl) {
   if (imageUrl == null || imageUrl.isEmpty) return null;
-  
+
   ImageProvider? imageProvider;
   if (imageUrl.startsWith('assets/')) {
     imageProvider = AssetImage(imageUrl);
@@ -892,7 +683,7 @@ DecorationImage? _getUserImage(String? imageUrl) {
       return null;
     }
   }
-  
+
   return DecorationImage(
     image: imageProvider,
     fit: BoxFit.cover,

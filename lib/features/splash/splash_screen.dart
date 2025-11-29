@@ -17,7 +17,8 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _mainController;
   late AnimationController _particleController;
   late AnimationController _pulseController;
@@ -34,7 +35,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
-    
+
     _mainController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -67,7 +68,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
         curve: const Interval(0.2, 0.6, curve: Curves.elasticOut),
       ),
     );
-    
+
     _rotateAnimation = Tween<double>(begin: -0.5, end: 0.0).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -108,7 +109,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
     for (var particle in _particles) {
       particle.y += particle.speedY;
       particle.x += particle.speedX;
-      
+
       if (particle.y < 0) {
         particle.y = size.height;
         particle.x = _random.nextDouble() * size.width;
@@ -119,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   Future<void> _startSequence() async {
     await _mainController.forward();
     HapticFeedback.lightImpact(); // Haptic feedback when sequence completes
-    
+
     if (mounted) {
       if (widget.onComplete != null) {
         widget.onComplete!();
@@ -140,7 +141,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: Stack(
@@ -158,7 +159,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
               ),
             ),
           ),
-          
+
           // Particle System
           AnimatedBuilder(
             animation: _particleController,
@@ -173,7 +174,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
               );
             },
           ),
-          
+
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -198,14 +199,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                           );
                         },
                       ),
-                      
+
                       // Icon with Pulse
                       AnimatedBuilder(
-                        animation: Listenable.merge([_mainController, _pulseController]),
+                        animation: Listenable.merge(
+                            [_mainController, _pulseController]),
                         builder: (context, child) {
                           // Only pulse when scale is near 1.0 (fully visible)
-                          final pulseScale = _scaleAnimation.value > 0.9 ? _pulseAnimation.value : 1.0;
-                          
+                          final pulseScale = _scaleAnimation.value > 0.9
+                              ? _pulseAnimation.value
+                              : 1.0;
+
                           return Transform.scale(
                             scale: _scaleAnimation.value * pulseScale,
                             child: Transform.rotate(
@@ -217,13 +221,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                                   color: Colors.black,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFFFFFFFF).withOpacity(0.2 * _scaleAnimation.value),
+                                      color: const Color(0xFFFFFFFF)
+                                          .withOpacity(
+                                              0.2 * _scaleAnimation.value),
                                       blurRadius: 30 * pulseScale,
                                       spreadRadius: 5 * pulseScale,
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: const Color(0xFFFFFFFF).withOpacity(0.5),
+                                    color: const Color(0xFFFFFFFF)
+                                        .withOpacity(0.5),
                                     width: 1,
                                   ),
                                 ),
@@ -243,9 +250,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 50),
-                
+
                 // Text Section
                 FadeTransition(
                   opacity: _fadeAnimation,
@@ -257,16 +264,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                         period: const Duration(seconds: 2),
                         child: const Text(
                           'THE GENTLEMAN',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Playfair Display',
-                            fontSize: 42,
+                            fontSize: 36,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 6,
+                            letterSpacing: 4,
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Refined Subtitle with Decorative Lines
                       SizedBox(
                         width: 250,
@@ -286,7 +294,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                               child: const Text(
                                 'BARBER STYLE',
                                 style: TextStyle(
@@ -319,7 +328,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with TickerProvider
               ],
             ),
           ),
-          
+
           // Loading Line at Bottom
           Positioned(
             bottom: 50,

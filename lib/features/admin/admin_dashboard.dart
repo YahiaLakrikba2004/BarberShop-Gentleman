@@ -10,6 +10,7 @@ import 'user_management_screen.dart';
 import 'barber_management_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../../services/auth_service.dart';
+import '../appointments/grouped_appointments_list.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -23,7 +24,9 @@ class AdminDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('DASHBOARD AMMINISTRATORE', style: TextStyle(letterSpacing: 1.5, fontSize: 16, color: Colors.white)),
+        title: const Text('DASHBOARD AMMINISTRATORE',
+            style: TextStyle(
+                letterSpacing: 1.5, fontSize: 16, color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -39,7 +42,7 @@ class AdminDashboard extends ConsumerWidget {
       body: appointmentsAsync.when(
         data: (appointments) {
           final stats = _calculateStats(appointments);
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -70,9 +73,9 @@ class AdminDashboard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Revenue Chart Section
                 FadeInUp(
                   child: Container(
@@ -115,7 +118,8 @@ class AdminDashboard extends ConsumerWidget {
                                 color: const Color(0xFFFFFFFF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.show_chart, color: Color(0xFFFFFFFF)),
+                              child: const Icon(Icons.show_chart,
+                                  color: Color(0xFFFFFFFF)),
                             ),
                           ],
                         ),
@@ -164,7 +168,8 @@ class AdminDashboard extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFF1A1A1A),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.05)),
                         ),
                         child: Column(
                           children: [
@@ -214,7 +219,9 @@ class AdminDashboard extends ConsumerWidget {
                               title: 'Gestione\nUtenti',
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const UserManagementScreen()),
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const UserManagementScreen()),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -223,7 +230,9 @@ class AdminDashboard extends ConsumerWidget {
                               title: 'Gestione\nBarbieri',
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const BarberManagementScreen()),
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const BarberManagementScreen()),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -232,7 +241,8 @@ class AdminDashboard extends ConsumerWidget {
                               title: 'Calendario\nCompleto',
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                                MaterialPageRoute(
+                                    builder: (_) => const CalendarScreen()),
                               ),
                             ),
                           ],
@@ -263,15 +273,18 @@ class AdminDashboard extends ConsumerWidget {
                           ),
                           TextButton(
                             onPressed: () {
-                               Navigator.push(
+                              Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                                MaterialPageRoute(
+                                    builder: (_) => const CalendarScreen()),
                               );
                             },
-                            child: const Text('Vedi Tutti', style: TextStyle(color: Color(0xFFFFFFFF))),
+                            child: const Text('Vedi Tutti',
+                                style: TextStyle(color: Color(0xFFFFFFFF))),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
                       const SizedBox(height: 16),
                       if (appointments.isEmpty)
                         Container(
@@ -284,17 +297,30 @@ class AdminDashboard extends ConsumerWidget {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.event_busy, size: 48, color: Colors.white.withOpacity(0.2)),
+                              Icon(Icons.event_busy,
+                                  size: 48,
+                                  color: Colors.white.withOpacity(0.2)),
                               const SizedBox(height: 16),
                               Text(
                                 'Nessun appuntamento trovato',
-                                style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.5)),
                               ),
                             ],
                           ),
                         )
                       else
-                        ...appointments.take(5).map((appointment) => _AppointmentCard(appointment: appointment)),
+                        SizedBox(
+                          height: 400, // Fixed height for the list
+                          child: GroupedAppointmentsList(
+                            appointments: appointments,
+                            onAppointmentTap: (apt) {
+                              // Show details or navigate
+                              // For now, we can show a simple dialog or reuse the calendar detail view logic if accessible
+                              // Or simply do nothing as per request "just list them"
+                            },
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -319,11 +345,18 @@ class AdminDashboard extends ConsumerWidget {
 
   Map<String, dynamic> _calculateStats(List<AppointmentModel> appointments) {
     int total = appointments.length;
-    int confirmed = appointments.where((a) => a.status == AppointmentStatus.confirmed).length;
-    int pending = appointments.where((a) => a.status == AppointmentStatus.pending).length;
-    int cancelled = appointments.where((a) => a.status == AppointmentStatus.cancelled).length;
+    int confirmed = appointments
+        .where((a) => a.status == AppointmentStatus.confirmed)
+        .length;
+    int pending =
+        appointments.where((a) => a.status == AppointmentStatus.pending).length;
+    int cancelled = appointments
+        .where((a) => a.status == AppointmentStatus.cancelled)
+        .length;
     double revenue = appointments
-        .where((a) => a.status == AppointmentStatus.confirmed || a.status == AppointmentStatus.completed)
+        .where((a) =>
+            a.status == AppointmentStatus.confirmed ||
+            a.status == AppointmentStatus.completed)
         .fold(0.0, (sum, a) => sum + a.price);
 
     return {
@@ -353,12 +386,13 @@ class _RevenueChart extends StatelessWidget {
     final spots = last7Days.asMap().entries.map((entry) {
       final index = entry.key;
       final day = entry.value;
-      
+
       final dailyRevenue = appointments
-          .where((a) => 
-              (a.status == AppointmentStatus.confirmed || a.status == AppointmentStatus.completed) &&
-              a.date.year == day.year && 
-              a.date.month == day.month && 
+          .where((a) =>
+              (a.status == AppointmentStatus.confirmed ||
+                  a.status == AppointmentStatus.completed) &&
+              a.date.year == day.year &&
+              a.date.month == day.month &&
               a.date.day == day.day)
           .fold(0.0, (sum, a) => sum + a.price);
 
@@ -379,7 +413,8 @@ class _RevenueChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       DateFormat('E', 'it').format(last7Days[index]),
-                      style: const TextStyle(color: Colors.white54, fontSize: 10),
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 10),
                     ),
                   );
                 }
@@ -431,9 +466,11 @@ class _StatusPieChart extends StatelessWidget {
     final pending = stats['pending'] as int;
     final cancelled = stats['cancelled'] as int;
     final total = confirmed + pending + cancelled;
-    
+
     if (total == 0) {
-      return const Center(child: Text('Dati insufficienti', style: TextStyle(color: Colors.white54, fontSize: 12)));
+      return const Center(
+          child: Text('Dati insufficienti',
+              style: TextStyle(color: Colors.white54, fontSize: 12)));
     }
 
     return PieChart(
@@ -447,7 +484,10 @@ class _StatusPieChart extends StatelessWidget {
               value: confirmed.toDouble(),
               title: '${(confirmed / total * 100).toStringAsFixed(0)}%',
               radius: 40,
-              titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+              titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           if (pending > 0)
             PieChartSectionData(
@@ -455,7 +495,10 @@ class _StatusPieChart extends StatelessWidget {
               value: pending.toDouble(),
               title: '${(pending / total * 100).toStringAsFixed(0)}%',
               radius: 40,
-              titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+              titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           if (cancelled > 0)
             PieChartSectionData(
@@ -463,7 +506,10 @@ class _StatusPieChart extends StatelessWidget {
               value: cancelled.toDouble(),
               title: '${(cancelled / total * 100).toStringAsFixed(0)}%',
               radius: 40,
-              titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+              titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
         ],
       ),
@@ -581,254 +627,5 @@ class _QuickActionCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _AppointmentCard extends ConsumerWidget {
-  final AppointmentModel appointment;
-
-  const _AppointmentCard({required this.appointment});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isCancelled = appointment.status == AppointmentStatus.cancelled;
-    final isCompleted = appointment.status == AppointmentStatus.completed;
-
-    // Common card decoration
-    final cardDecoration = BoxDecoration(
-      color: const Color(0xFF1A1A1A),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white.withOpacity(0.05)),
-    );
-
-    // Completed appointments cannot be swiped
-    if (isCompleted) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: cardDecoration,
-        child: _buildCardBody(context),
-      );
-    }
-
-    // Dismissible for active/cancelled appointments
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: cardDecoration,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Dismissible(
-          key: Key(appointment.id),
-          direction: DismissDirection.endToStart, // Only allow swipe left
-          background: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isCancelled 
-                    ? [const Color(0xFF8B0000), const Color(0xFFB71C1C)] // Darker Red Gradient
-                    : [const Color(0xFF424242), const Color(0xFF616161)], // Grey Gradient
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-            ),
-            alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  isCancelled ? 'ELIMINA' : 'ANNULLA',
-                  style: const TextStyle(
-                    color: Colors.white, 
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: 1.5,
-                    fontFamily: 'PlayfairDisplay',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isCancelled ? Icons.delete_forever_rounded : Icons.cancel_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          confirmDismiss: (direction) async {
-            if (isCancelled) {
-              // DELETE ACTION
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  title: const Text('Elimina Definitivamente', style: TextStyle(color: Colors.red)),
-                  content: const Text(
-                    'Sei sicuro di voler eliminare definitivamente questo appuntamento dallo storico? Questa azione è irreversibile.',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Annulla', style: TextStyle(color: Colors.white54)),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Elimina', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                await ref.read(firestoreServiceProvider).deleteAppointment(appointment.id);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Appuntamento eliminato definitivamente'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-                return true;
-              }
-            } else {
-              // CANCEL ACTION
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  title: const Text('Annulla Appuntamento', style: TextStyle(color: Colors.white)),
-                  content: const Text(
-                    'Sei sicuro di voler annullare questo appuntamento? Il cliente verrà notificato.',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('No, mantieni', style: TextStyle(color: Colors.white54)),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Sì, annulla', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                await ref.read(firestoreServiceProvider).updateAppointmentStatus(
-                  appointment.id, 
-                  AppointmentStatus.cancelled
-                );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Appuntamento annullato con successo'),
-                      backgroundColor: Colors.grey[800],
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-                return false;
-              }
-            }
-            return false;
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF1A1A1A), // Solid background for the card content
-            child: _buildCardBody(context),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardBody(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2C),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              DateFormat('d\nMMM', 'it').format(appointment.date),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                height: 1.1,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appointment.customerName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${appointment.serviceName} con ${appointment.barberName}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: _getStatusColor(appointment.status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _getStatusColor(appointment.status).withOpacity(0.5)),
-          ),
-          child: Text(
-            DateFormat('HH:mm').format(appointment.date),
-            style: TextStyle(
-              color: _getStatusColor(appointment.status),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor(AppointmentStatus status) {
-    switch (status) {
-      case AppointmentStatus.confirmed:
-        return const Color(0xFF4CAF50);
-      case AppointmentStatus.pending:
-        return Colors.blueGrey;
-      case AppointmentStatus.cancelled:
-        return const Color(0xFFF44336);
-      case AppointmentStatus.completed:
-        return const Color(0xFF2196F3);
-    }
   }
 }
