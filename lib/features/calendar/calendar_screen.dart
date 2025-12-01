@@ -256,7 +256,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               const LiveTimeIndicatorSettings(
                             color: Color(0xFFEA4335),
                             height: 2,
-                            showTime: true,
+                            showTime: false,
                             showBullet: true,
                           ),
                           onEventTap: (events, date) {
@@ -623,7 +623,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   const LiveTimeIndicatorSettings(
                                 color: Color(0xFFEA4335),
                                 height: 2,
-                                showTime: true,
+                                showTime: false,
                                 showBullet: true,
                               ),
                               onEventTap: (events, date) {

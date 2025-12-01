@@ -93,7 +93,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   void _initParticles() {
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 20; i++) {
       _particles.add(Particle(
         x: _random.nextDouble() * 400, // Will be updated in build
         y: _random.nextDouble() * 800,

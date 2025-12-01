@@ -82,19 +82,25 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
   @override
   void initState() {
     super.initState();
-    // Initialize notifications
-    ref.read(notificationServiceProvider).initialize();
-    // Fix barber schedules (Temporary fix)
-    ref.read(seedServiceProvider).fixBarberSchedules();
+    // Initialize notifications after first frame to avoid blocking startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationServiceProvider).initialize();
+    });
+    // Fix barber schedules (Temporary fix) - REMOVED
+    // ref.read(seedServiceProvider).fixBarberSchedules();
   }
 
   @override
   Widget build(BuildContext context) {
     // Warm up auth state and router
     final authState = ref.watch(authStateProvider);
+    final userProfileState = ref.watch(currentUserProfileProvider);
 
-    // Keep splash screen if manually showing OR if auth is still loading
-    if (_showSplash || authState.isLoading) {
+    // Check if we are waiting for profile data (User is logged in but profile is loading)
+    final isProfileLoading = authState.value != null && userProfileState.isLoading;
+
+    // Keep splash screen if manually showing OR if auth/profile is still loading
+    if (_showSplash || authState.isLoading || isProfileLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

@@ -23,7 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _logoController;
   late Animation<double> _drawAnimation;
-  int _currentCarouselIndex = 0;
+
 
   @override
   void initState() {
@@ -102,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
         actions: [
-          if (user == null)
+          if (!userAsync.isLoading && user == null)
             TextButton(
               onPressed: () => context.push('/auth'),
               child: const Text('Login'),
@@ -310,7 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
             // Image Carousel Section
-            _buildImageCarousel(),
+            const _HomeCarousel(),
 
             // Services Section
             Container(
@@ -616,7 +616,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildImageCarousel() {
+}
+
+class _HomeCarousel extends StatefulWidget {
+  const _HomeCarousel();
+
+  @override
+  State<_HomeCarousel> createState() => _HomeCarouselState();
+}
+
+class _HomeCarouselState extends State<_HomeCarousel> {
+  int _currentCarouselIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final List<String> galleryImages = [
       'assets/images/gallery/haircut1.png',
       'assets/images/gallery/haircut2.png',
