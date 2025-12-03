@@ -124,11 +124,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (mounted) {
       if (widget.onComplete != null) {
         widget.onComplete!();
-      } else {
-        context.go('/');
       }
     }
   }
+
 
   @override
   void dispose() {
@@ -161,18 +160,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           ),
 
           // Particle System
-          AnimatedBuilder(
-            animation: _particleController,
-            builder: (context, child) {
-              _updateParticles(size);
-              return CustomPaint(
-                painter: ParticlePainter(
-                  particles: _particles,
-                  color: const Color(0xFFFFFFFF), // White particles
-                ),
-                size: size,
-              );
-            },
+          RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _particleController,
+              builder: (context, child) {
+                _updateParticles(size);
+                return CustomPaint(
+                  painter: ParticlePainter(
+                    particles: _particles,
+                    color: const Color(0xFFFFFFFF), // White particles
+                  ),
+                  size: size,
+                );
+              },
+            ),
           ),
 
           Center(

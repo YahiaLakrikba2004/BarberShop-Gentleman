@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import 'firestore_service.dart';
 
+import '../core/initialization.dart';
+
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(FirebaseAuth.instance, ref.read(firestoreServiceProvider));
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {
+  final init = ref.watch(appInitializationProvider);
+  if (!init.hasValue) return const Stream.empty();
+  
   return ref.watch(authServiceProvider).authStateChanges;
 });
 

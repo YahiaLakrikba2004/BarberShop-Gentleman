@@ -1,72 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'firebase_options.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/initialization.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'services/auth_service.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/notification_service.dart';
-import 'services/seed_service.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await dotenv.load(fileName: kIsWeb ? "assets/.env" : ".env");
-  } catch (e) {
-    debugPrint("Error loading .env file: $e");
-  }
+  
+  // Register background handler early
+  FirebaseMessaging.onBackgroundMessage(
+      NotificationService.firebaseMessagingBackgroundHandler);
 
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-
-    // Register background handler
-    FirebaseMessaging.onBackgroundMessage(
-        NotificationService.firebaseMessagingBackgroundHandler);
-
-    await initializeDateFormatting('it_IT', null);
-
-    runApp(
-      ProviderScope(
-        child: const BarberShopApp(),
-      ),
-    );
-  } catch (e, stackTrace) {
-    debugPrint("Firebase Initialization Error: $e");
-    runApp(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  const Text("Errore di Inizializzazione",
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text(e.toString(), textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  Text(stackTrace.toString(),
-                      style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  runApp(
+    const ProviderScope(
+      child: BarberShopApp(),
+    ),
+  );
 }
 
 class BarberShopApp extends ConsumerStatefulWidget {
@@ -77,43 +31,79 @@ class BarberShopApp extends ConsumerStatefulWidget {
 }
 
 class _BarberShopAppState extends ConsumerState<BarberShopApp> {
-  bool _showSplash = true;
+  bool _isSplashVisible = true;
+  bool _isSplashAnimationComplete = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize notifications after first frame to avoid blocking startup
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationServiceProvider).initialize();
-    });
-    // Fix barber schedules (Temporary fix) - REMOVED
-    // ref.read(seedServiceProvider).fixBarberSchedules();
+  }
+
+  void _onSplashAnimationComplete() {
+    if (mounted) {
+      setState(() {
+        _isSplashAnimationComplete = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Warm up auth state and router
+    final initializationState = ref.watch(appInitializationProvider);
     final authState = ref.watch(authStateProvider);
     final userProfileState = ref.watch(currentUserProfileProvider);
+    final router = ref.watch(routerProvider);
 
-    // Check if we are waiting for profile data (User is logged in but profile is loading)
-    final isProfileLoading = authState.value != null && userProfileState.isLoading;
+    // Initialize notifications when app is ready
+    ref.listen(appInitializationProvider, (previous, next) {
+      if (next.hasValue) {
+        // Use read here because we are inside a callback/effect
+        ref.read(notificationServiceProvider).initialize();
+      }
+    });
 
-    // Keep splash screen if manually showing OR if auth/profile is still loading
-    if (_showSplash || authState.isLoading || isProfileLoading) {
+    // Check if critical data is ready
+    final isInitialized = initializationState.hasValue;
+    final isAuthReady = !authState.isLoading;
+    final isProfileReady = !userProfileState.isLoading;
+    
+    // We are ready to remove splash when:
+    // 1. App initialization is done
+    // 2. Auth check is done
+    // 3. Profile is loaded (if logged in)
+    // 4. Splash animation reported completion
+    final isAppReady = isInitialized && isAuthReady && isProfileReady;
+    final shouldDismissSplash = isAppReady && _isSplashAnimationComplete;
+
+    // Handle Initialization Error
+    if (initializationState.hasError) {
       return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        home: SplashScreen(
-          onComplete: () {
-            setState(() => _showSplash = false);
-          },
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Errore di Inizializzazione",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    initializationState.error.toString(),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       );
     }
 
-    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'The Gentleman Barberstyle',
       debugShowCheckedModeBanner: false,
@@ -121,6 +111,36 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       routerConfig: router,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            // The actual app content
+            if (child != null) child,
+
+            // Splash Screen Overlay
+            // We keep it in the tree until it's fully faded out or dismissed
+            if (_isSplashVisible)
+              AnimatedOpacity(
+                opacity: shouldDismissSplash ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                onEnd: () {
+                  if (shouldDismissSplash) {
+                    setState(() {
+                      _isSplashVisible = false;
+                    });
+                  }
+                },
+                child: IgnorePointer(
+                  ignoring: shouldDismissSplash, // Allow touches to pass through when fading
+                  child: SplashScreen(
+                    onComplete: _onSplashAnimationComplete,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

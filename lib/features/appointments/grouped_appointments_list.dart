@@ -6,11 +6,13 @@ import '../../models/appointment_model.dart';
 class GroupedAppointmentsList extends StatelessWidget {
   final List<AppointmentModel> appointments;
   final Function(AppointmentModel) onAppointmentTap;
+  final Function(AppointmentModel)? onAppointmentCancel;
 
   const GroupedAppointmentsList({
     super.key,
     required this.appointments,
     required this.onAppointmentTap,
+    this.onAppointmentCancel,
   });
 
   @override
@@ -171,13 +173,26 @@ class GroupedAppointmentsList extends StatelessWidget {
                           ),
                       ],
                     ),
-                    trailing: Text(
-                      '${DateFormat('HH:mm').format(apt.date)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${DateFormat('HH:mm').format(apt.date)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (onAppointmentCancel != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.cancel_outlined,
+                                color: Colors.redAccent, size: 20),
+                            onPressed: () => onAppointmentCancel!(apt),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 );

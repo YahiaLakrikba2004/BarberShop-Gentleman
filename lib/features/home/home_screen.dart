@@ -175,17 +175,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 alignment: Alignment.center,
                                 children: [
                                   // Drawing Border
-                                  AnimatedBuilder(
-                                    animation: _drawAnimation,
-                                    builder: (context, child) {
-                                      return CustomPaint(
-                                        painter: HexagonPainter(
-                                          progress: _drawAnimation.value,
-                                          color: const Color(0xFFFFFFFF),
-                                        ),
-                                        size: const Size(120, 120),
-                                      );
-                                    },
+                                  RepaintBoundary(
+                                    child: AnimatedBuilder(
+                                      animation: _drawAnimation,
+                                      builder: (context, child) {
+                                        return CustomPaint(
+                                          painter: HexagonPainter(
+                                            progress: _drawAnimation.value,
+                                            color: const Color(0xFFFFFFFF),
+                                          ),
+                                          size: const Size(120, 120),
+                                        );
+                                      },
+                                    ),
                                   ),
 
                                   // Central Icon
@@ -362,57 +364,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 56),
 
-                  // Service Cards Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FadeInLeft(
-                                delay: const Duration(milliseconds: 300),
-                                child: const _PremiumServiceCard(
-                                  icon: Icons.content_cut,
-                                  title: 'Taglio Capelli',
-                                  description: 'Taglio classico o moderno',
-                                  price: '25€',
-                                  duration: '30 min',
-                                  compact: true,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: FadeInUp(
-                                delay: const Duration(milliseconds: 400),
-                                child: const _PremiumServiceCard(
-                                  icon: Icons.face,
-                                  title: 'Regolazione Barba',
-                                  description: 'Modellatura e rifinitura',
-                                  price: '15€',
-                                  duration: '20 min',
-                                  compact: true,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        FadeInRight(
-                          delay: const Duration(milliseconds: 500),
-                          child: const _PremiumServiceCard(
-                            icon: Icons.auto_awesome,
-                            title: 'Taglio + Barba',
-                            description:
-                                'Pacchetto completo per un look impeccabile e curato',
-                            price: '35€',
-                            duration: '50 min',
-                            featured: true,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Service Cards Carousel
+                  SizedBox(
+                    height: 360, // Increased height for better spacing
+                    child: _ServicesCarousel(),
                   ),
                 ],
               ),
@@ -684,94 +639,96 @@ class _HomeCarouselState extends State<_HomeCarousel> {
             ),
           ),
           const SizedBox(height: 40),
-          CarouselSlider(
-            options: CarouselOptions(
-              height: 400,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 4),
-              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              autoPlayCurve: Curves.fastOutSlowIn,
-              enlargeCenterPage: true,
-              viewportFraction: 0.8,
-              onPageChanged: (index, reason) {
-                setState(() {
-                  _currentCarouselIndex = index;
-                });
-              },
-            ),
-            items: galleryImages.map((imagePath) {
-              return Builder(
-                builder: (BuildContext context) {
-                  return Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFFFFFFFF).withOpacity(0.3),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFFFFF).withOpacity(0.2),
-                          blurRadius: 20,
-                          spreadRadius: 2,
+          RepaintBoundary(
+            child: CarouselSlider(
+              options: CarouselOptions(
+                height: 400,
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 4),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayCurve: Curves.fastOutSlowIn,
+                enlargeCenterPage: true,
+                viewportFraction: 0.8,
+                onPageChanged: (index, reason) {
+                  setState(() {
+                    _currentCarouselIndex = index;
+                  });
+                },
+              ),
+              items: galleryImages.map((imagePath) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFFFFFFF).withOpacity(0.3),
+                          width: 2,
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: const Color(0xFF1A1A1A),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.image_not_supported_outlined,
-                                      color: const Color(0xFFFFFFFF)
-                                          .withOpacity(0.5),
-                                      size: 48,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Immagine non disponibile',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.5),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          // Gradient Overlay for Premium Feel
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.3),
-                                ],
-                              ),
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFFFFF).withOpacity(0.2),
+                            blurRadius: 20,
+                            spreadRadius: 2,
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
-              );
-            }).toList(),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.asset(
+                              imagePath,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: const Color(0xFF1A1A1A),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.image_not_supported_outlined,
+                                        color: const Color(0xFFFFFFFF)
+                                            .withOpacity(0.5),
+                                        size: 48,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Immagine non disponibile',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.5),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            // Gradient Overlay for Premium Feel
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.3),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(height: 24),
           // Animated Indicators
@@ -834,17 +791,22 @@ class _PremiumServiceCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 400),
-      height: compact ? 200 : 240, // Reduced height for compact
+      // height removed to allow flexibility
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: featured
-                ? const Color(0xFFFFFFFF).withOpacity(0.2)
-                : Colors.black.withOpacity(0.5),
-            blurRadius: 20,
+            color: const Color(0xFFFFFFFF).withOpacity(0.15),
+            blurRadius: 25,
+            spreadRadius: -5,
+            offset: const Offset(0, 8),
+          ),
+          // Add a second subtle shadow for depth
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 15,
             spreadRadius: 0,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -857,16 +819,11 @@ class _PremiumServiceCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: featured
-                    ? [
-                        const Color(0xFFFFFFFF),
-                        const Color(0xFFE0E0E0),
-                        const Color(0xFFBDBDBD),
-                      ]
-                    : [
-                        const Color(0xFF424242),
-                        const Color(0xFF212121),
-                      ],
+                colors: [
+                  const Color(0xFFFFFFFF),
+                  const Color(0xFFE0E0E0),
+                  const Color(0xFFBDBDBD),
+                ],
               ),
             ),
             child: Padding(
@@ -877,7 +834,10 @@ class _PremiumServiceCard extends StatelessWidget {
                   color: const Color(0xFF1A1A1A),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(compact ? 16 : 24),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 16 : 28, // Increased horizontal padding
+                    vertical: compact ? 16 : 32, // Increased vertical padding
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -897,26 +857,6 @@ class _PremiumServiceCard extends StatelessWidget {
                               size: compact ? 20 : 24,
                             ),
                           ),
-                          if (featured)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFFFFF),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'PREMIUM',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                       const Spacer(),
@@ -1276,6 +1216,128 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ServicesCarousel extends StatefulWidget {
+  const _ServicesCarousel();
+
+  @override
+  State<_ServicesCarousel> createState() => _ServicesCarouselState();
+}
+
+class _ServicesCarouselState extends State<_ServicesCarousel> {
+  late PageController _pageController;
+  int _currentPage = 0;
+  double _currentViewportFraction = 0.75;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: _currentViewportFraction);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTabletOrWeb = screenWidth > 600;
+    final newViewportFraction = isTabletOrWeb ? 0.6 : 0.75;
+
+    if (newViewportFraction != _currentViewportFraction) {
+      _currentViewportFraction = newViewportFraction;
+      final oldController = _pageController;
+      _pageController = PageController(
+        viewportFraction: _currentViewportFraction,
+        initialPage: _currentPage,
+      );
+      oldController.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTabletOrWeb = screenWidth > 600;
+    final cardWidth = isTabletOrWeb ? 500.0 : 360.0;
+
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: _services.length,
+            itemBuilder: (context, index) {
+              final service = _services[index];
+              
+              // Animated Scale Effect
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double value = 1.0;
+                  if (_pageController.position.haveDimensions) {
+                    value = _pageController.page! - index;
+                    value = (1 - (value.abs() * 0.2)).clamp(0.8, 1.0);
+                  } else {
+                    value = index == _currentPage ? 1.0 : 0.8;
+                  }
+                  
+                  return Center(
+                    child: SizedBox(
+                      height: Curves.easeOut.transform(value) * 340,
+                      width: Curves.easeOut.transform(value) * cardWidth,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: _PremiumServiceCard(
+                    icon: service['icon'],
+                    title: service['title'],
+                    description: service['description'],
+                    price: service['price'],
+                    duration: service['duration'],
+                    featured: service['featured'],
+                    compact: false, 
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Page Indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_services.length, (index) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentPage == index ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _currentPage == index
+                    ? const Color(0xFFFFFFFF)
+                    : const Color(0xFFFFFFFF).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

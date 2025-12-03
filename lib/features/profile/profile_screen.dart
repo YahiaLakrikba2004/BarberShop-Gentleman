@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../models/user_model.dart';
+import '../../models/appointment_model.dart';
 import '../appointments/grouped_appointments_list.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -659,11 +661,66 @@ class _AppointmentsList extends ConsumerWidget {
           onAppointmentTap: (apt) {
             // Optional: Show details
           },
+          onAppointmentCancel: isHistory
+              ? null
+              : (apt) => _showCancelAppointmentDialog(context, ref, apt),
         );
       },
       loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       error: (e, _) => Center(child: Text('Errore: $e')),
+    );
+  }
+
+  void _showCancelAppointmentDialog(
+      BuildContext context, WidgetRef ref, AppointmentModel apt) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+        ),
+        title: const Text('Annulla Appuntamento',
+            style: TextStyle(
+                color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Sei sicuro di voler annullare l\'appuntamento del ${DateFormat('dd/MM/yyyy HH:mm').format(apt.date)}?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref
+                    .read(firestoreServiceProvider)
+                    .deleteAppointment(apt.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Appuntamento annullato con successo')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Errore: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Sì, Annulla',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }
