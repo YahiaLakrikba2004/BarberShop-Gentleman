@@ -115,6 +115,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _mainController.reset();
     await _mainController.forward();
     
+    // Pause to admire the logo before fading out
+    await Future.delayed(const Duration(milliseconds: 500));
+
     if (mounted) {
       widget.onComplete?.call();
     }

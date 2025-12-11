@@ -131,7 +131,7 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
             if (_isSplashVisible)
               AnimatedOpacity(
                 opacity: shouldDismissSplash ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 500),
+                duration: const Duration(milliseconds: 1200),
                 curve: Curves.easeInOut,
                 onEnd: () {
                   if (shouldDismissSplash) {
