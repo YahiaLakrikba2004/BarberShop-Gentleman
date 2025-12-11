@@ -57,255 +57,130 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: const Color(0xFF0A0A0A).withOpacity(0.7),
-            ),
-          ),
-        ),
-        surfaceTintColor: Colors.transparent,
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'The Gentleman Barberstyle',
-            style: GoogleFonts.greatVibes(
-              fontSize: 30,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.5,
-              color: const Color(0xFFFAFAFA),
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFFFFFF).withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 0),
-                ),
-              ],
-            ),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            height: 1.0,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  Color(0xFFFFFFFF), // Luxury Gold
-                  Colors.transparent,
-                ],
-                stops: [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          if (!userAsync.isLoading && user == null)
-            TextButton(
-              onPressed: () => context.push('/auth'),
-              child: const Text('Login'),
-            ),
-        ],
+        toolbarHeight: 0, // HIDE APP BAR completely for a cleaner Full-Screen look
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Hero Section with Luxury Design
+            // Hero Section - Neo-Classic Luxury Design
             FadeIn(
-              duration: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 800),
               child: Container(
-                // Removed fixed height to prevent overflow
-                padding: const EdgeInsets.only(top: 120, bottom: 32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                padding: const EdgeInsets.fromLTRB(24, 100, 24, 60), // Adjusted top padding since AppBar is gone
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0A0A0A), // Deepest Black
+                  // Code-generated Vignette (No missing assets)
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.3, // Slightly tighter spotlight
                     colors: [
-                      Color(0xFF0A0A0A),
-                      Color(0xFF1A1A1A),
-                      Color(0xFF0A0A0A),
+                      Color(0xFF1F1F1F), // Dark Grey Center
+                      Color(0xFF0A0A0A), // Pure Black Corners
                     ],
+                    stops: [0.0, 1.0],
                   ),
                 ),
                 child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    // Decorative gold lines
+                    // Subtle Background Glow
                     Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
+                      top: 60,
                       child: Container(
-                        height: 2,
+                        width: 250,
+                        height: 250,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              Color(0xFFFFFFFF),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Decorative top line
-                            FadeInDown(
-                              delay: const Duration(milliseconds: 200),
-                              child: Container(
-                                width: 80, // Reduced width
-                                height: 1,
-                                color: Color(0xFFFFFFFF),
-                              ),
-                            ),
-                            const SizedBox(height: 16), // Reduced spacing
-
-                            // Animated Logo
-                            SizedBox(
-                              width: 120,
-                              height: 120,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Drawing Border
-                                  RepaintBoundary(
-                                    child: AnimatedBuilder(
-                                      animation: _drawAnimation,
-                                      builder: (context, child) {
-                                        return CustomPaint(
-                                          painter: HexagonPainter(
-                                            progress: _drawAnimation.value,
-                                            color: const Color(0xFFFFFFFF),
-                                          ),
-                                          size: const Size(120, 120),
-                                        );
-                                      },
-                                    ),
-                                  ),
-
-                                  // Central Icon
-                                  FadeIn(
-                                    delay: const Duration(milliseconds: 1000),
-                                    duration: const Duration(milliseconds: 800),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFFFFFFFF)
-                                                .withOpacity(0.1),
-                                            blurRadius: 20,
-                                            spreadRadius: 5,
-                                          ),
-                                        ],
-                                      ),
-                                      child: ClipOval(
-                                        child: Image.asset(
-                                          'assets/images/icon_premium.png',
-                                          fit: BoxFit.cover,
-                                          width: 80,
-                                          height: 80,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Main title with shimmer
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 200),
-                              child: Shimmer.fromColors(
-                                baseColor: const Color(0xFFFFFFFF),
-                                highlightColor:
-                                    const Color(0xFFE0E0E0), // Softer highlight
-                                period: const Duration(
-                                    milliseconds: 2500), // Slower shimmer
-                                child: Text(
-                                  'THE GENTLEMAN',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.cinzel(
-                                    // Changed to Cinzel
-                                    fontSize:
-                                        42, // Slightly smaller to fit better
-                                    fontWeight:
-                                        FontWeight.w700, // Bold but elegant
-                                    letterSpacing:
-                                        4, // Reduced spacing for cohesion
-                                    color: const Color(0xFFFAFAFA),
-                                    shadows: [
-                                      Shadow(
-                                        color: const Color(0xFFFFFFFF)
-                                            .withOpacity(0.5),
-                                        blurRadius: 20,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Subtitle
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 300),
-                              child: Text(
-                                'BARBERSTYLE',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.montserrat(
-                                  // Changed to Montserrat
-                                  fontSize: 16,
-                                  color: const Color(0xFFB0B0B0), // Silver/Grey
-                                  letterSpacing: 8,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // CTA Button
-                            BounceInUp(
-                              delay: const Duration(milliseconds: 500),
-                              child: _PremiumAnimatedButton(
-                                onPressed: () => context.push('/booking'),
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // Decorative bottom line
-                            FadeInUp(
-                              delay: const Duration(milliseconds: 1000),
-                              child: Container(
-                                width: 60,
-                                height: 1,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.transparent,
-                                      const Color(0xFFFFFFFF).withOpacity(0.5),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                ),
-                              ),
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFFFFFF).withOpacity(0.02), // Very subtle
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFFFFF).withOpacity(0.03),
+                              blurRadius: 80,
+                              spreadRadius: 10,
                             ),
                           ],
                         ),
                       ),
+                    ),
+
+                    Column(
+                      children: [
+                        // 1. Logo - Static & Iconic
+                        Container(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF333333),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.8), // Stronger shadow for depth
+                                blurRadius: 30,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/icon_premium.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 24), // Tighter spacing
+
+                        // 2. Title - Cinzel (Modern Classic)
+                        Text(
+                          'THE GENTLEMAN',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.cinzel(
+                            fontSize: 32, 
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFECECEC),
+                            letterSpacing: 4,
+                            height: 1.2,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // 3. Subtitle - Montserrat (Clean)
+                        Text(
+                          'BARBERSTYLE',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF888888),
+                            letterSpacing: 8,
+                          ),
+                        ),
+
+                        const SizedBox(height: 36),
+
+                        // 4. Divider Line (Gold)
+                        Container(
+                          width: 40,
+                          height: 1,
+                          color: const Color(0xFFD4AF37).withOpacity(0.6),
+                        ),
+
+                        const SizedBox(height: 32), // Reduced from 36
+
+                        // 5. CTA Button - Fixed Width & Smaller
+                        SizedBox(
+                          width: 260, // Increased from 220
+                          height: 56, // Increased from 50
+                          child: _PremiumAnimatedButton(
+                            onPressed: () => context.push('/booking'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1155,20 +1030,26 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
               borderRadius: BorderRadius.circular(30),
               gradient: const LinearGradient(
                 colors: [
-                  Color(0xFFBDBDBD), // Dark Gold
-                  Color(0xFFF5F5F5), // Light Gold
-                  Color(0xFFFFFFFF), // Standard Gold
+                  Color(0xFF222222), // Dark Metallic
+                  Color(0xFF111111), // Almost Black
+                  Color(0xFF222222), // Dark Metallic
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
+                // Clean White Border Glow - No blurry spread
                 BoxShadow(
-                  color: const Color(0xFFFFFFFF)
-                      .withOpacity(0.2 + (0.3 * _glowAnimation.value)),
-                  blurRadius: 15 + (10 * _glowAnimation.value),
-                  spreadRadius: 1 + (1 * _glowAnimation.value),
+                  color: const Color(0xFFFFFFFF).withOpacity(0.1 + (0.1 * _glowAnimation.value)),
+                  blurRadius: 8, // Sharper
+                  spreadRadius: 1, 
                   offset: const Offset(0, 0),
+                ),
+                // Subtle Ambient Shadow
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -1188,7 +1069,7 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
                 ),
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
