@@ -4,15 +4,18 @@ import '../models/user_model.dart';
 import '../models/barber_model.dart';
 import '../models/service_model.dart';
 import '../models/appointment_model.dart';
+import 'notification_service.dart';
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  return FirestoreService(FirebaseFirestore.instance);
+  final notificationService = ref.watch(notificationServiceProvider);
+  return FirestoreService(FirebaseFirestore.instance, notificationService);
 });
 
 class FirestoreService {
   final FirebaseFirestore _firestore;
+  final NotificationService _notificationService;
 
-  FirestoreService(this._firestore);
+  FirestoreService(this._firestore, this._notificationService);
 
   // Users
   Future<void> createUser(UserModel user) async {
@@ -128,6 +131,21 @@ class FirestoreService {
         .collection('appointments')
         .doc(appointment.id)
         .set(appointment.toMap());
+
+    try {
+      // Schedule reminder 1 hour before
+      final reminderTime = appointment.date.subtract(const Duration(hours: 1));
+      if (reminderTime.isAfter(DateTime.now())) {
+        await _notificationService.scheduleNotification(
+          id: appointment.date.hashCode,
+          title: 'Appuntamento In Arrivo',
+          body: 'Hai un appuntamento tra 1 ora!',
+          scheduledDate: reminderTime,
+        );
+      }
+    } catch (e) {
+      print("Error scheduling notification: $e");
+    }
   }
 
   Future<void> updateAppointmentStatus(String appointmentId, AppointmentStatus status) async {

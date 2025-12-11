@@ -1232,6 +1232,41 @@ class _ServicesCarouselState extends State<_ServicesCarousel> {
   int _currentPage = 0;
   double _currentViewportFraction = 0.75;
 
+  final List<Map<String, dynamic>> _services = [
+    {
+      'icon': Icons.content_cut,
+      'title': 'Taglio Capelli',
+      'description': 'Taglio classico o moderno eseguito con precisione e stile.',
+      'price': '25€',
+      'duration': '30 min',
+      'featured': false,
+    },
+    {
+      'icon': Icons.face,
+      'title': 'Regolazione Barba',
+      'description': 'Modellatura, rifinitura e trattamento panno caldo.',
+      'price': '15€',
+      'duration': '20 min',
+      'featured': false,
+    },
+    {
+      'icon': Icons.auto_awesome,
+      'title': 'Taglio + Barba',
+      'description': 'Il pacchetto completo per un look impeccabile e curato.',
+      'price': '35€',
+      'duration': '50 min',
+      'featured': true,
+    },
+    {
+      'icon': Icons.child_care,
+      'title': 'Taglio Bambino',
+      'description': 'Stile e divertimento per i più piccoli.',
+      'price': '20€',
+      'duration': '30 min',
+      'featured': false,
+    },
+  ];
+
   @override
   void initState() {
     super.initState();

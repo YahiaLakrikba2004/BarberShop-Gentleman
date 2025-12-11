@@ -11,6 +11,7 @@ import '../../models/user_model.dart';
 import '../../models/appointment_model.dart';
 import '../appointments/grouped_appointments_list.dart';
 import 'package:intl/intl.dart';
+import '../../services/notification_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -368,6 +369,47 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () {
                     Navigator.pop(context);
                     _showDeleteAccountDialog(context, ref);
+                  },
+                ),
+
+                _buildSettingsTile(
+                  icon: Icons.notifications_active_outlined,
+                  title: 'Test Notifica (Debug)',
+                  onTap: () async {
+                    // 1. Check Permissions
+                    final service = ref.read(notificationServiceProvider);
+                    final debugInfo = await service.debugNotificationPermissions();
+                    
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (c) => AlertDialog(
+                          title: const Text('Debug Notifiche'),
+                          content: Text('Permessi:\n$debugInfo\n\nInvio notifica immediata...'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(c);
+                                service.showImmediateNotification();
+                              },
+                              child: const Text('Prova Immediata'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(c);
+                                service.scheduleNotification(
+                                  id: DateTime.now().hashCode,
+                                  title: 'Test Programmato',
+                                  body: 'Tra 5 secondi...',
+                                  scheduledDate: DateTime.now().add(const Duration(seconds: 5)),
+                                );
+                              },
+                              child: const Text('Prova 5s'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
                 ),
 

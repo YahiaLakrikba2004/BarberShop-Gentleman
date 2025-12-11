@@ -62,6 +62,15 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
       }
     });
 
+    // Handle notification navigation
+    ref.listen(notificationOpenProvider, (previous, next) {
+      next.whenData((path) {
+        if (path != null) {
+          router.go(path);
+        }
+      });
+    });
+
     // Check if critical data is ready
     final isInitialized = initializationState.hasValue;
     final isAuthReady = !authState.isLoading;
@@ -105,7 +114,7 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
     }
 
     return MaterialApp.router(
-      title: 'The Gentleman Barberstyle',
+      title: 'BarberShop Gentleman',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
