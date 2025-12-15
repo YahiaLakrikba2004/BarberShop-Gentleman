@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:label="barber_shop_app"
+        android:label="BarberShop Gentleman"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

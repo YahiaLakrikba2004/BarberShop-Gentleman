@@ -33,9 +33,9 @@ class ProfileScreen extends ConsumerWidget {
         appBar: AppBar(
           title: Text(
             'IL MIO PROFILO',
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.cinzel(
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
+              letterSpacing: 2.0,
               color: const Color(0xFFFFFFFF),
             ),
           ),
@@ -93,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
                               boxShadow: [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFFFFFFFF).withOpacity(0.2),
+                                      const Color(0xFFFFFFFF).withOpacity(0.15),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
@@ -107,7 +107,7 @@ class ProfileScreen extends ConsumerWidget {
                                           user.name.isNotEmpty
                                               ? user.name[0].toUpperCase()
                                               : 'U',
-                                          style: GoogleFonts.playfairDisplay(
+                                          style: GoogleFonts.cinzel(
                                             fontSize: 40,
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFFFFFFFF),
@@ -140,16 +140,15 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     // Name
                     Text(
-                      user.name,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 28,
+                      user.name.toUpperCase(),
+                      style: GoogleFonts.cinzel(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        letterSpacing: 0.5,
+                        letterSpacing: 2,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const SizedBox(height: 16),
                     // Minimalist Contact Info
                     Column(
                       children: [
@@ -157,13 +156,13 @@ class ProfileScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.email_outlined,
-                                size: 16, color: const Color(0xFFFFFFFF)),
+                                size: 14, color: const Color(0xFFFFFFFF)),
                             const SizedBox(width: 8),
                             Text(
                               user.email,
-                              style: TextStyle(
+                              style: GoogleFonts.montserrat(
                                 fontSize: 14,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withOpacity(0.7),
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -176,13 +175,13 @@ class ProfileScreen extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.phone_outlined,
-                                  size: 16, color: const Color(0xFFFFFFFF)),
+                                  size: 14, color: const Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 user.phoneNumber!,
-                                style: TextStyle(
+                                style: GoogleFonts.montserrat(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withOpacity(0.7),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -310,11 +309,11 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 Text(
                   'IMPOSTAZIONI',
-                  style: GoogleFonts.playfairDisplay(
+                  style: GoogleFonts.cinzel(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFFFFFFF),
-                    letterSpacing: 1.5,
+                    letterSpacing: 2.0,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -513,18 +512,18 @@ class ProfileScreen extends ConsumerWidget {
           side: BorderSide(color: const Color(0xFFFFFFFF).withOpacity(0.3)),
         ),
         title: Text('Modifica Profilo',
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.cinzel(
                 color: const Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Colors.white),
               cursorColor: const Color(0xFFFFFFFF),
               decoration: InputDecoration(
                 labelText: 'Nome',
-                labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                labelStyle: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.5)),
                 prefixIcon:
                     const Icon(Icons.person_outline, color: Color(0xFFFFFFFF)),
                 filled: true,
@@ -542,12 +541,12 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             TextField(
               controller: phoneController,
-              style: const TextStyle(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Colors.white),
               keyboardType: TextInputType.phone,
               cursorColor: const Color(0xFFFFFFFF),
               decoration: InputDecoration(
                 labelText: 'Telefono',
-                labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                labelStyle: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.5)),
                 prefixIcon:
                     const Icon(Icons.phone_outlined, color: Color(0xFFFFFFFF)),
                 filled: true,
@@ -567,7 +566,7 @@ class ProfileScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annulla', style: TextStyle(color: Colors.grey)),
+            child: Text('Annulla', style: GoogleFonts.montserrat(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -582,9 +581,9 @@ class ProfileScreen extends ConsumerWidget {
                 if (context.mounted) Navigator.pop(context);
               }
             },
-            child: const Text('Salva',
-                style: TextStyle(
-                    color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+            child: Text('Salva',
+                style: GoogleFonts.montserrat(
+                    color: const Color(0xFFFFFFFF), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -600,8 +599,8 @@ class ProfileScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
         ),
-        title: const Text('Elimina Account',
-            style: TextStyle(
+        title: Text('Elimina Account',
+            style: GoogleFonts.cinzel(
                 color: Colors.redAccent, fontWeight: FontWeight.bold)),
         content: const Text(
           'Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati e appuntamenti.',

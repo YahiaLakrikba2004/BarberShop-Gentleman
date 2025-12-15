@@ -125,6 +125,17 @@ class FirestoreService {
     await _firestore.collection('services').doc(service.id).set(service.toMap());
   }
 
+  Future<void> updateService(ServiceModel service) async {
+    await _firestore
+        .collection('services')
+        .doc(service.id)
+        .update(service.toMap());
+  }
+
+  Future<void> deleteService(String serviceId) async {
+    await _firestore.collection('services').doc(serviceId).delete();
+  }
+
   // Appointments
   Future<void> createAppointment(AppointmentModel appointment) async {
     await _firestore

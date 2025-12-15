@@ -163,11 +163,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         const SizedBox(height: 36),
 
-                        // 4. Divider Line (Gold)
+                        // 4. Divider Line (Silver)
                         Container(
                           width: 40,
                           height: 1,
-                          color: const Color(0xFFD4AF37).withOpacity(0.6),
+                          color: const Color(0xFFE0E0E0).withOpacity(0.6),
                         ),
 
                         const SizedBox(height: 32), // Reduced from 36
@@ -240,9 +240,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   const SizedBox(height: 56),
 
                   // Service Cards Carousel
-                  SizedBox(
+                  const SizedBox(
                     height: 360, // Increased height for better spacing
-                    child: _ServicesCarousel(),
+                    child: RepaintBoundary(
+                      child: _ServicesCarousel(),
+                    ),
                   ),
                 ],
               ),
@@ -558,23 +560,23 @@ class _HomeCarouselState extends State<_HomeCarousel> {
                             Image.asset(
                               imagePath,
                               fit: BoxFit.cover,
+                              cacheWidth: 800, // Optimize memory usage
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
                                   color: const Color(0xFF1A1A1A),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.image_not_supported_outlined,
-                                        color: const Color(0xFFFFFFFF)
-                                            .withOpacity(0.5),
+                                        color: Color(0x80FFFFFF),
                                         size: 48,
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
+                                      const Text(
                                         'Immagine non disponibile',
                                         style: TextStyle(
-                                          color: Colors.white.withOpacity(0.5),
+                                          color: Color(0x80FFFFFF),
                                           fontSize: 12,
                                         ),
                                       ),
@@ -663,166 +665,249 @@ class _PremiumServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 400),
-      // height removed to allow flexibility
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFFFFF).withOpacity(0.15),
-            blurRadius: 25,
-            spreadRadius: -5,
-            offset: const Offset(0, 8),
-          ),
-          // Add a second subtle shadow for depth
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 15,
-            spreadRadius: 0,
-            offset: const Offset(0, 15),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Gradient Border Container
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFFFFFFF),
-                  const Color(0xFFE0E0E0),
-                  const Color(0xFFBDBDBD),
-                ],
+    // Definizione colori accent
+    final accentColor = featured ? const Color(0xFFE0E0E0) : const Color(0xFFFFFFFF);
+    
+    return GestureDetector(
+      onTap: () => context.push('/booking'),
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(featured ? 0.15 : 0.05),
+              blurRadius: 30,
+              spreadRadius: -5,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Background & Border
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: featured
+                      ? [
+                          const Color(0xFFE0E0E0).withOpacity(0.4), // Silver
+                          const Color(0xFF1A1A1A),
+                        ]
+                      : [
+                          const Color(0xFF444444),
+                          const Color(0xFF111111),
+                        ],
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(1.5), // Spessore bordo
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(23),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: featured
+                          ? [
+                              const Color(0xFF2C2C2C),
+                              const Color(0xFF151515),
+                            ]
+                          : [
+                              const Color(0xFF252525),
+                              const Color(0xFF111111),
+                            ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(compact ? 16 : 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Icon Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(compact ? 10 : 12),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accentColor.withOpacity(0.1),
+                                border: Border.all(
+                                  color: accentColor.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accentColor.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    spreadRadius: 0,
+                                  )
+                                ],
+                              ),
+                              child: Icon(
+                                icon,
+                                color: accentColor,
+                                size: compact ? 22 : 26,
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const Spacer(),
+
+                        // Title
+                        Text(
+                          title.toUpperCase(),
+                          style: GoogleFonts.cinzel(
+                            fontSize: compact ? 16 : 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFAFAFA),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Description
+                        Text(
+                          description,
+                          style: GoogleFonts.montserrat(
+                            fontSize: compact ? 11 : 12,
+                            color: Colors.white70,
+                            height: 1.5,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Divider
+                        Container(
+                          width: double.infinity,
+                          height: 1,
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Footer (Price & Action)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Price & Duration Info
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  price,
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: compact ? 18 : 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: accentColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.schedule, 
+                                      size: 12, 
+                                      color: Colors.white38
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      duration,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 12,
+                                        color: Colors.white38,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            // "Prenota" Button
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16, 
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: accentColor.withOpacity(0.4),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'PRENOTA',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: accentColor,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 10,
+                                    color: accentColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(1.0), // Border width
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(23),
-                  color: const Color(0xFF1A1A1A),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 16 : 28, // Increased horizontal padding
-                    vertical: compact ? 16 : 32, // Increased vertical padding
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(compact ? 8 : 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFFFFF).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              icon,
-                              color: const Color(0xFFFFFFFF),
-                              size: compact ? 20 : 24,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-
-                      // Title
-                      Text(
-                        title.toUpperCase(),
-                        style: GoogleFonts.cinzel(
-                          fontSize: compact ? 14 : 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFAFAFA),
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Description
-                      Text(
-                        description,
-                        style: GoogleFonts.montserrat(
-                          fontSize: compact ? 10 : 12,
-                          color: Colors.white60,
-                          height: 1.5,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Footer
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'PREZZO',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: compact ? 8 : 10,
-                                  color: Colors.white38,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                price,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: compact ? 14 : 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFFFFFF),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.white10,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'DURATA',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: compact ? 8 : 10,
-                                  color: Colors.white38,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                duration,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: compact ? 14 : 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFFFFFF),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+            
+            // "Featured" Badge Top-Right
+            if (featured)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37),
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(24),
+                      bottomLeft: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(-2, 2),
                       ),
                     ],
                   ),
+                  child: Text(
+                    'CONSIGLIATO',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

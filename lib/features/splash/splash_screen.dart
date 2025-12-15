@@ -140,18 +140,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     // OPTIMIZATION: Create Shader once
-    final Shader goldGradient = const LinearGradient(
-      colors: <Color>[
-        Color(0xFFBF953F), // Dark Gold
-        Color(0xFFFCF6BA), // Light Gold
-        Color(0xFFB38728), // Dark Gold
-        Color(0xFFFBF5B7), // Light Gold
-        Color(0xFFAA771C), // Dark Gold
-      ],
-      stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ).createShader(const Rect.fromLTWH(0.0, 0.0, 300.0, 70.0));
+    // OPTIMIZATION: Create Shader once - REMOVED GOLD SHADER as we are now Monochrome
+    // final Shader goldGradient = ...
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -245,21 +235,27 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           children: [
                             // OPTIMIZATION: Replaced ShaderMask (expensive saveLayer) with TextStyle foreground (cheap)
                             Text(
-                              'THE GENTLEMAN',
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 26,
+                              'THE GENTLEMEN',
+                              style: GoogleFonts.cinzel( // Updated to Cinzel
+                                fontSize: 28, // Slightly larger for Cinzel
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: _textSpacingAnimation.value,
-                                foreground: Paint()..shader = goldGradient, // Direct Shader
+                                color: Colors.white, // Pure white
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               'BARBER STUDIO',
-                              style: GoogleFonts.lato(
-                                color: const Color(0xFF666666), 
+                              style: GoogleFonts.montserrat( // Updated to Montserrat
+                                color: const Color(0xFFE0E0E0), // Silver
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                                 letterSpacing: 8,
                               ),
                             ),
@@ -296,9 +292,9 @@ class GlowingLinePainter extends CustomPainter {
         Offset(0, size.height/2 + 100),
         [
           Colors.transparent,
-          const Color(0xFFD4AF37), // Gold
+          const Color(0xFFE0E0E0), // Silver
           Colors.white,            // Hot center
-          const Color(0xFFD4AF37), // Gold
+          const Color(0xFFE0E0E0), // Silver
           Colors.transparent,
         ],
         [0.0, 0.2, 0.5, 0.8, 1.0],
@@ -309,7 +305,7 @@ class GlowingLinePainter extends CustomPainter {
     
     // OPTIMIZATION: Fake Glow using a wider transparent stroke instead of MaskFilter.blur
     final Paint glowPaint = Paint()
-      ..color = const Color(0xFFD4AF37).withOpacity(0.2 * (1 - splitProgress))
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.15 * (1 - splitProgress)) // White Glow
       ..strokeWidth = 8.0 // Wide loose stroke to simulate glow
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -395,7 +391,7 @@ class AmbientParticlePainter extends CustomPainter {
       if (p.y < 0) p.y = 1.0;
       if (p.y > 1) p.y = 0.0;
 
-      paint.color = const Color(0xFFD4AF37).withOpacity(p.opacity * 0.3);
+      paint.color = const Color(0xFFFFFFFF).withOpacity(p.opacity * 0.2); // White particles
       canvas.drawCircle(
         Offset(p.x * size.width, p.y * size.height),
         p.size,

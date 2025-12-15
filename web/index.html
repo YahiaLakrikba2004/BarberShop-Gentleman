@@ -35,6 +35,7 @@
 
   <title>BarberShop Gentleman</title>
   <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <style>
   body {
@@ -42,16 +43,35 @@
     margin: 0;
     height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    font-family: 'Cinzel', serif;
   }
 
-  .loading {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .logo-text {
+    color: #FFFFFF;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    border-top-color: #ffffff;
+    border-top-color: #FFFFFF;
     animation: spin 1s ease-in-out infinite;
   }
 
@@ -60,11 +80,20 @@
       transform: rotate(360deg);
     }
   }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
+  }
 </style>
 </head>
 
 <body>
-  <div class="loading"></div>
+  <div class="loading-container">
+    <div class="logo-text">BarberShop</div>
+    <div class="loading-spinner"></div>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 

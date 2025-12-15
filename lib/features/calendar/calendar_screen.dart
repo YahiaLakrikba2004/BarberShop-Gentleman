@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart'; // Added
 import '../../models/appointment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
@@ -31,33 +32,60 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('I MIEI APPUNTAMENTI',
-            style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: userAsync.when(
-        data: (user) {
-          if (user == null) {
-            return const Center(
-              child: Text(
-                'Effettua il login per vedere i tuoi appuntamenti',
-                style: TextStyle(color: Colors.white70),
-              ),
-            );
-          }
-
-          return _buildCalendarView(user);
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
+      // Custom body with gradient background
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0A0A0A),
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.5,
+            colors: [
+              Color(0xFF1F1F1F),
+              Color(0xFF0A0A0A),
+            ],
           ),
         ),
-        error: (err, stack) => Center(
-          child: Text(
-            'Errore: $err',
-            style: const TextStyle(color: Colors.red),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Text(
+                  'I MIEI APPUNTAMENTI',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: userAsync.when(
+                  data: (user) {
+                    if (user == null) {
+                      return Center(
+                        child: Text(
+                          'Effettua il login per vedere gli appuntamenti',
+                          style: GoogleFonts.montserrat(color: Colors.white70),
+                        ),
+                      );
+                    }
+                    return _buildCalendarView(user);
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  error: (err, stack) => Center(
+                    child: Text(
+                      'Errore: $err',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -92,47 +120,61 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         _eventController.removeWhere((event) => true);
         _eventController.addAll(events);
 
-        return FadeIn(
+        return FadeInUp( // Add Animation
+          duration: const Duration(milliseconds: 600),
           child: CalendarControllerProvider(
             controller: _eventController,
             child: Column(
               children: [
                 // View selector buttons
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFFFFFFFF).withOpacity(0.2),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF222222),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _ViewSelectorButton(
-                        title: 'Giorno',
-                        icon: Icons.view_day,
-                        isSelected: _currentView == CalendarViewType.day,
-                        onTap: () =>
-                            setState(() => _currentView = CalendarViewType.day),
-                      ),
-                      _ViewSelectorButton(
-                        title: 'Settimana',
-                        icon: Icons.view_week,
-                        isSelected: _currentView == CalendarViewType.week,
-                        onTap: () => setState(
-                            () => _currentView = CalendarViewType.week),
-                      ),
-                      _ViewSelectorButton(
-                        title: 'Mese',
-                        icon: Icons.calendar_month,
-                        isSelected: _currentView == CalendarViewType.month,
-                        onTap: () => setState(
-                            () => _currentView = CalendarViewType.month),
-                      ),
-                    ],
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: _ViewSelectorButton(
+                            title: 'Giorno',
+                            icon: Icons.view_day_outlined,
+                            isSelected: _currentView == CalendarViewType.day,
+                            onTap: () => setState(() => _currentView = CalendarViewType.day),
+                          ),
+                        ),
+                        Expanded(
+                          child: _ViewSelectorButton(
+                            title: 'Settimana',
+                            icon: Icons.calendar_view_week_outlined,
+                            isSelected: _currentView == CalendarViewType.week,
+                            onTap: () => setState(() => _currentView = CalendarViewType.week),
+                          ),
+                        ),
+                        Expanded(
+                          child: _ViewSelectorButton(
+                            title: 'Mese',
+                            icon: Icons.calendar_month_outlined,
+                            isSelected: _currentView == CalendarViewType.month,
+                            onTap: () => setState(() => _currentView = CalendarViewType.month),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -142,33 +184,34 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           controller: _eventController,
                           initialDay: _focusedDate,
                           onPageChange: (date, page) => _focusedDate = date,
-                          backgroundColor: const Color(0xFF181818),
+                          backgroundColor: const Color(0xFF0A0A0A),
                           headerStyle: HeaderStyle(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF181818),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF0A0A0A),
                             ),
-                            headerTextStyle: const TextStyle(
+                            headerTextStyle: GoogleFonts.cinzel(
                               color: Colors.white,
                               fontSize: 20,
-                              fontWeight: FontWeight.w400,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           dateStringBuilder: (date, {secondaryDate}) {
-                            return DateFormat('d MMMM yyyy', 'it').format(date);
+                            return DateFormat('d MMMM yyyy', 'it').format(date).toUpperCase();
                           },
                           dayTitleBuilder: (date) {
                             return Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
-                              color: const Color(0xFF181818),
+                              color: const Color(0xFF0A0A0A),
                               child: Center(
                                 child: Text(
-                                  DateFormat('EEEE d MMMM', 'it')
+                                  DateFormat('EEEE d', 'it')
                                       .format(date)
                                       .toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Color(0xFFFFFFFF),
+                                  style: GoogleFonts.cinzel(
+                                    color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
                                   ),
                                 ),
                               ),
@@ -184,59 +227,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 children: [
                                   // Hour label
                                   Expanded(
-                                    child: Container(
-                                      alignment: Alignment.centerRight,
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 2),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 4, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1A1A1A),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.1),
-                                        ),
-                                      ),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(
-                                          DateFormat('HH:mm').format(date),
-                                          style: TextStyle(
-                                            color:
-                                                Colors.white.withOpacity(0.9),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                    child: Center(
+                                      child: Text(
+                                        DateFormat('HH:mm').format(date),
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
                                   ),
                                   // Half-hour label (manually added)
                                   Expanded(
-                                    child: Container(
-                                      alignment: Alignment.centerRight,
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 2),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 4, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1A1A1A),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.1),
-                                        ),
-                                      ),
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(
-                                          DateFormat('HH:mm').format(date.add(
-                                              const Duration(minutes: 30))),
-                                          style: TextStyle(
-                                            color:
-                                                Colors.white.withOpacity(0.9),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                    child: Center(
+                                      child: Text(
+                                        DateFormat('HH:mm').format(date.add(
+                                            const Duration(minutes: 30))),
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white.withOpacity(0.4),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
                                         ),
                                       ),
                                     ),
@@ -254,7 +265,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                           liveTimeIndicatorSettings:
                               const LiveTimeIndicatorSettings(
-                            color: Color(0xFFEA4335),
+                            color: Colors.white,
                             height: 2,
                             showTime: false,
                             showBullet: true,
@@ -273,10 +284,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   horizontal: 2, vertical: 1),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFFFFF),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ],
                               ),
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
+                                  if (constraints.maxHeight < 20) {
+                                    return const SizedBox();
+                                  }
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 4, vertical: 2),
@@ -285,25 +306,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                           CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        // Always show title
+                                        // Title
                                         Text(
-                                          event.title,
-                                          style: const TextStyle(
+                                          event.title.toUpperCase(),
+                                          style: GoogleFonts.cinzel(
                                             color: Colors.black,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        // Show time if height allows (> 30)
-                                        if (constraints.maxHeight > 30)
+                                        // Show time if height allows (> 40)
+                                        if (constraints.maxHeight > 40)
                                           Text(
                                             '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
-                                            style: const TextStyle(
+                                            style: GoogleFonts.montserrat(
                                               color: Colors.black54,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w500,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -316,7 +337,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                                       ?.split('\n')
                                                       .first ??
                                                   '',
-                                              style: const TextStyle(
+                                              style: GoogleFonts.montserrat(
                                                 color: Colors.black87,
                                                 fontSize: 10,
                                               ),
@@ -339,32 +360,32 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               key: _monthViewKey,
                               controller: _eventController,
                               initialMonth: _focusedDate,
-                              borderColor: Colors.white.withOpacity(0.1),
+                              borderColor: Colors.white.withOpacity(0.05),
                               headerStyle: HeaderStyle(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF181818),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF0A0A0A),
                                 ),
-                                headerTextStyle: const TextStyle(
+                                headerTextStyle: GoogleFonts.cinzel(
                                   color: Colors.white,
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w400,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               headerBuilder: (date) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 16, horizontal: 24),
-                                  color: const Color(0xFF181818),
+                                  color: const Color(0xFF0A0A0A),
                                   child: Row(
                                     children: [
                                       Text(
                                         DateFormat('MMMM yyyy', 'it')
                                             .format(date)
                                             .toUpperCase(),
-                                        style: const TextStyle(
+                                        style: GoogleFonts.cinzel(
                                           color: Colors.white,
                                           fontSize: 22,
-                                          fontWeight: FontWeight.w400,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       const Spacer(),
@@ -390,7 +411,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return Container(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 8),
-                                  color: const Color(0xFF181818),
+                                  color: const Color(0xFF0A0A0A),
                                   child: Center(
                                     child: Text(
                                       [
@@ -402,9 +423,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         'SAB',
                                         'DOM'
                                       ][day],
-                                      style: const TextStyle(
+                                      style: GoogleFonts.montserrat(
                                         color: Colors.white70,
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
@@ -421,7 +443,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF181818),
+                                      color: const Color(0xFF0A0A0A),
                                       border: Border.all(
                                         color: Colors.white.withOpacity(0.1),
                                         width: 0.5,
@@ -444,7 +466,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                             alignment: Alignment.center,
                                             child: Text(
                                               '${date.day}',
-                                              style: TextStyle(
+                                              style: GoogleFonts.montserrat(
                                                 color: isToday
                                                     ? Colors.black
                                                     : (isInMonth
@@ -495,15 +517,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               controller: _eventController,
                               initialDay: _focusedDate,
                               onPageChange: (date, page) => _focusedDate = date,
-                              backgroundColor: const Color(0xFF181818),
+                              backgroundColor: const Color(0xFF0A0A0A),
                               headerStyle: HeaderStyle(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF181818),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF0A0A0A),
                                 ),
-                                headerTextStyle: const TextStyle(
+                                headerTextStyle: GoogleFonts.cinzel(
                                   color: Colors.white,
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w400,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               weekTitleHeight: 70,
@@ -511,17 +533,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 16, horizontal: 24),
-                                  color: const Color(0xFF181818),
+                                  color: const Color(0xFF0A0A0A),
                                   child: Row(
                                     children: [
                                       Text(
                                         DateFormat('MMMM yyyy', 'it')
                                             .format(startDate)
                                             .toUpperCase(),
-                                        style: const TextStyle(
+                                        style: GoogleFonts.cinzel(
                                           color: Colors.white,
                                           fontSize: 22,
-                                          fontWeight: FontWeight.w400,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       const Spacer(),
@@ -552,7 +574,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return Container(
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF181818),
+                                    color: const Color(0xFF0A0A0A),
                                     border: Border(
                                       bottom: BorderSide(
                                         color: Colors.white.withOpacity(0.1),
@@ -566,12 +588,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         DateFormat('EEE', 'it')
                                             .format(date)
                                             .toUpperCase(),
-                                        style: TextStyle(
+                                        style: GoogleFonts.montserrat(
                                           color: isToday
                                               ? const Color(0xFFFFFFFF)
                                               : Colors.white70,
                                           fontSize: 11,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -587,12 +609,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         alignment: Alignment.center,
                                         child: Text(
                                           '${date.day}',
-                                          style: TextStyle(
+                                          style: GoogleFonts.montserrat(
                                             color: isToday
                                                 ? Colors.black
                                                 : Colors.white,
                                             fontSize: 22,
-                                            fontWeight: FontWeight.w400,
+                                            fontWeight: isToday
+                                                ? FontWeight.bold
+                                                : FontWeight.w400,
                                           ),
                                         ),
                                       ),
@@ -606,10 +630,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   alignment: Alignment.centerRight,
                                   child: Text(
                                     DateFormat('H a').format(date),
-                                    style: TextStyle(
+                                    style: GoogleFonts.montserrat(
                                       color: Colors.white.withOpacity(0.7),
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w400,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 );
@@ -621,7 +645,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                               liveTimeIndicatorSettings:
                                   const LiveTimeIndicatorSettings(
-                                color: Color(0xFFEA4335),
+                                color: Colors.white,
                                 height: 2,
                                 showTime: false,
                                 showBullet: true,
@@ -638,42 +662,61 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                                 final event = events.first;
 
+                                // Handle very small events
+                                if (boundary.height < 15) {
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 2, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFFFFF),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  );
+                                }
+
                                 return Container(
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 2, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFFFFF),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      )
+                                    ],
                                   ),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 4, vertical: 2),
+                                        horizontal: 4, vertical: 1),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          event.title,
-                                          style: const TextStyle(
+                                          event.title.toUpperCase(),
+                                          style: GoogleFonts.cinzel(
                                             color: Colors.black,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 9,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        Expanded(
-                                          child: Text(
+                                        if (boundary.height > 22)
+                                          Text(
                                             '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
-                                            style: const TextStyle(
+                                            style: GoogleFonts.montserrat(
                                               color: Colors.black87,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w400,
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                             overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -711,14 +754,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: const Color(0xFF111111), // Darker background
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFFFFFFFF).withOpacity(0.5),
+              color: Colors.white.withOpacity(0.15),
               width: 1,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            )
+          ],
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -741,10 +791,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person, color: Color(0xFFFFFFFF)),
+                  child: const Icon(Icons.person, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -753,7 +803,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     children: [
                       Text(
                         event.title,
-                        style: const TextStyle(
+                        style: GoogleFonts.cinzel(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -762,7 +812,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'Cliente',
-                        style: TextStyle(
+                        style: GoogleFonts.montserrat(
                           color: Colors.white.withOpacity(0.5),
                           fontSize: 14,
                         ),
@@ -773,19 +823,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            _buildDetailRow(Icons.cut, 'Servizio',
+            _buildDetailRow(Icons.cut_outlined, 'Servizio',
                 event.description?.split('\n').first ?? 'N/A'),
             const SizedBox(height: 16),
             _buildDetailRow(Icons.access_time, 'Orario',
                 '${DateFormat('HH:mm').format(event.startTime!)} - ${DateFormat('HH:mm').format(event.endTime!)}'),
             const SizedBox(height: 16),
-            _buildDetailRow(Icons.calendar_today, 'Data',
+            _buildDetailRow(Icons.calendar_today_outlined, 'Data',
                 DateFormat('EEEE d MMMM yyyy', 'it').format(event.date)),
             if (event.description != null &&
                 event.description!.contains('\n')) ...[
               const SizedBox(height: 16),
               _buildDetailRow(
-                  Icons.phone, 'Telefono', event.description!.split('\n').last),
+                  Icons.phone_outlined, 'Telefono', event.description!.split('\n').last),
             ],
             const SizedBox(height: 32),
             Row(
@@ -798,16 +848,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           context, event.event as AppointmentModel);
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.red.withOpacity(0.5)),
-                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Annulla',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      'ANNULLA',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -816,16 +870,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFFFFF),
+                      backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 0,
                     ),
-                    child: const Text(
-                      'Chiudi',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      'CHIUDI',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -840,23 +899,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFFFFFFF), size: 20),
+        Icon(icon, color: Colors.white.withOpacity(0.9), size: 18),
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 12,
+              label.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                color: Colors.white.withOpacity(0.4),
+                fontSize: 10,
+                letterSpacing: 0.5,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               value,
-              style: const TextStyle(
+              style: GoogleFonts.montserrat(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -871,22 +932,38 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF111111),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.red.withOpacity(0.3)),
+          side: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
-        title: const Text('Annulla Appuntamento',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        title: Text(
+          'ANNULLA APPUNTAMENTO',
+          style: GoogleFonts.cinzel(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         content: Text(
           'Sei sicuro di voler annullare l\'appuntamento di ${appointment.customerName}?\nL\'operazione non può essere annullata.',
-          style: const TextStyle(color: Colors.white70),
+          style: GoogleFonts.montserrat(
+            color: Colors.white70,
+            fontSize: 14,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No, mantieni',
-                style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'NO, MANTIENI',
+              style: GoogleFonts.montserrat(
+                color: Colors.white38,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -910,9 +987,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 }
               }
             },
-            child: const Text('Sì, annulla',
-                style:
-                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(
+              'SÌ, ANNULLA',
+              style: GoogleFonts.montserrat(
+                color: Colors.red, // Keep red for destructive action warning
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
@@ -935,40 +1017,38 @@ class _ViewSelectorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFFFFFFFF)
-                : const Color(0xFFFFFFFF).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: const Color(0xFFFFFFFF).withOpacity(0.3),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.black : Colors.white54,
+              size: 20,
             ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon,
-                  color: isSelected ? Colors.black : const Color(0xFFFFFFFF),
-                  size: 24),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? Colors.black : const Color(0xFFFFFFFF),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: GoogleFonts.montserrat(
+                color: isSelected ? Colors.black : Colors.white54,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+

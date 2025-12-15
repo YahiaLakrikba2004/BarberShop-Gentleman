@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -113,41 +114,59 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     required VoidCallback onTap,
   }) {
     final isSelected = widget.currentIndex == index;
-    final goldColor = const Color(0xFFFFFFFF);
+    final goldColor = const Color(0xFFD4AF37); // Classic Gold
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? goldColor.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected 
-              ? Border.all(color: goldColor.withOpacity(0.2), width: 1)
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? selectedIcon : icon,
-              color: isSelected ? goldColor : Colors.white60,
-              size: 24,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Animated Icon Container
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              // No background - just pure icon
+              color: Colors.transparent,
+              shape: BoxShape.circle,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: goldColor.withOpacity(0.3),
+                        blurRadius: 15,
+                        spreadRadius: -2,
+                      )
+                    ]
+                  : [],
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: goldColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+            child: Icon(
+              isSelected ? selectedIcon : icon,
+              color: isSelected ? goldColor : Colors.white24, // High contrast
+              size: 26,
+            ),
+          ),
+          
+          if (isSelected) ...[
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.montserrat( // Elegant font
+                color: goldColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+                letterSpacing: 1,
               ),
-            ],
+            ),
+          ] else ...[
+             // Placeholder to prevent jumpy layout, or just remove if we want it compact.
+             // Keeping it compact for unselected.
+             const SizedBox(height: 4),
+             const SizedBox(height: 12), // Height of text approx
           ],
-        ),
+        ],
       ),
     );
   }

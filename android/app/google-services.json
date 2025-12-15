@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:635305520200:android:977a6cf6ffe4f4cbf73c7d",
+        "android_client_info": {
+          "package_name": "com.barbershop.gentleman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:635305520200:android:2dd15d19739e761ef73c7d",
         "android_client_info": {
           "package_name": "com.example.barber_shop_app"
