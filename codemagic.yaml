@@ -1,0 +1,126 @@
+workflows:
+  ios-workflow:
+    name: iOS Build (Free)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      
+      vars:
+        # Configurazione app
+        BUNDLE_ID: "com.lakri.barbershop"
+        APP_NAME: "Barber Shop - Gentleman"
+        
+      # Variabili Firebase (da configurare in Codemagic UI)
+      # FIREBASE_API_KEY
+      # FIREBASE_PROJECT_ID
+      # FIREBASE_APP_ID
+      # FIREBASE_MESSAGING_SENDER_ID
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+        - pattern: 'develop'
+          include: true
+          source: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      
+      - name: Build iOS (no codesign - for testing)
+        script: |
+          flutter build ios --release --no-codesign
+      
+      - name: Create IPA (unsigned - for distribution via link)
+        script: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          mv Runner.app Payload/
+          zip -r app-unsigned.ipa Payload
+          mv app-unsigned.ipa $CM_BUILD_DIR/
+    
+    artifacts:
+      - build/ios/iphoneos/*.app
+      - app-unsigned.ipa
+      - flutter_drive.log
+    
+    publishing:
+      email:
+        recipients:
+          - lakri@example.com  # Cambia con la tua email
+        notify:
+          success: true
+          failure: true
+      
+      # Opzionale: pubblica su Slack, Discord, etc.
+      # slack:
+      #   channel: '#builds'
+      #   notify_on_build_start: true
+
+  # Workflow alternativo: con Free Provisioning (richiede Apple ID)
+  ios-free-provisioning:
+    name: iOS Build (Free Provisioning)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      
+      vars:
+        BUNDLE_ID: "com.lakri.barbershop"
+        APP_NAME: "Barber Shop - Gentleman"
+      
+      # Aggiungi in Codemagic UI:
+      # APPLE_ID - il tuo Apple ID
+      # APPLE_PASSWORD - password specifica per app
+      
+    scripts:
+      - name: Set up keychain
+        script: |
+          keychain initialize
+      
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Build iOS with Free Provisioning
+        script: |
+          flutter build ios --release \
+            --export-options-plist=$HOME/export_options.plist
+      
+      - name: Package IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+    
+    publishing:
+      email:
+        recipients:
+          - lakrikbayahia@gmail.com
+        notify:
+          success: true
+          failure: true
