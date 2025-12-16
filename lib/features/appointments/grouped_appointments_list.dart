@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/appointment_model.dart';
 
@@ -7,12 +8,14 @@ class GroupedAppointmentsList extends StatelessWidget {
   final List<AppointmentModel> appointments;
   final Function(AppointmentModel) onAppointmentTap;
   final Function(AppointmentModel)? onAppointmentCancel;
+  final bool showBarber;
 
   const GroupedAppointmentsList({
     super.key,
     required this.appointments,
     required this.onAppointmentTap,
     this.onAppointmentCancel,
+    this.showBarber = false,
   });
 
   @override
@@ -127,72 +130,146 @@ class GroupedAppointmentsList extends StatelessWidget {
               ),
               children: dayAppointments.map((apt) {
                 return Container(
-                  margin: const EdgeInsets.only(top: 8),
+                  margin: const EdgeInsets.only(top: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: ListTile(
-                    onTap: () => onAppointmentTap(apt),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.person,
-                          color: Colors.white, size: 16),
-                    ),
-                    title: Text(
-                      apt.customerName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          apt.serviceName,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (apt.customerPhoneNumber != null)
-                          Text(
-                            apt.customerPhoneNumber!,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
-                              fontSize: 11,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => onAppointmentTap(apt),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1. Time Column (Left Side)
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  DateFormat('HH:mm').format(apt.date),
+                                  style: GoogleFonts.cinzel(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${apt.durationMinutes} min',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${DateFormat('HH:mm').format(apt.date)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
+                            const SizedBox(width: 16),
+                            
+                            // Divider
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // 2. Main Info (Center)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        showBarber ? Icons.content_cut : Icons.person_outline,
+                                        size: 14,
+                                        color: Colors.white.withOpacity(0.6),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          showBarber ? apt.barberName : apt.customerName,
+                                          style: GoogleFonts.cinzel(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    apt.serviceName,
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withOpacity(0.7),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (apt.customerPhoneNumber != null) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.phone_android, size: 12, color: Colors.white.withOpacity(0.4)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          apt.customerPhoneNumber!,
+                                          style: GoogleFonts.montserrat(
+                                            color: Colors.white.withOpacity(0.4),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            // 3. Actions (Right Side)
+                            if (onAppointmentCancel != null)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: InkWell(
+                                  onTap: () => onAppointmentCancel!(apt),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.redAccent.withOpacity(0.8),
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        if (onAppointmentCancel != null) ...[
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.cancel_outlined,
-                                color: Colors.redAccent, size: 20),
-                            onPressed: () => onAppointmentCancel!(apt),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 );

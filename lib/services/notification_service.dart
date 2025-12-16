@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui'; 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,6 +9,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -29,18 +33,16 @@ class NotificationService {
     try {
       // Initialize time zones
       tz.initializeTimeZones();
-      print('NotificationService: Time zones initialized');
+      if (kDebugMode) print('NotificationService: Time zones initialized');
 
       // 1. Request permissions (Firebase)
-      // ... (existing helper code, we'll keep the logic but maybe wrap parts)
-    
       NotificationSettings settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
         provisional: false,
       );
-      print('User granted permission: ${settings.authorizationStatus}');
+      if (kDebugMode) print('User granted permission: ${settings.authorizationStatus}');
 
       // 2. Initialize Local Notifications
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -61,16 +63,15 @@ class NotificationService {
       await _localNotifications.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          print("Notification tapped: ${response.payload}");
+          if (kDebugMode) print("Notification tapped: ${response.payload}");
           if (response.payload != null) {
             _onNotificationOpenStr.add(response.payload);
           }
         },
       );
-      print('NotificationService: Local notifications initialized');
+      if (kDebugMode) print('NotificationService: Local notifications initialized');
 
       // 3. Create Android Notification Channel
-      // Only for Android
       try {
         final androidImplementation = _localNotifications
             .resolvePlatformSpecificImplementation<
@@ -85,18 +86,17 @@ class NotificationService {
           );
 
           await androidImplementation.createNotificationChannel(channel);
-          print('NotificationService: Android channel created');
+          if (kDebugMode) print('NotificationService: Android channel created');
 
           // Explicitly request notification permission for Android 13+
           final granted = await androidImplementation.requestNotificationsPermission();
-          print('NotificationService: Android Notification Permission granted: $granted');
+          if (kDebugMode) print('NotificationService: Android Notification Permission granted: $granted');
         }
       } catch (e) {
-         print("Error creating Android channel: $e");
+         if (kDebugMode) print("Error creating Android channel: $e");
       }
 
       // 4. Get and Save Token
-      // Wrapped in its own try-catch to not block everything else
       try {
         String? fcmToken;
         if (kIsWeb) {
@@ -104,7 +104,7 @@ class NotificationService {
         } else {
            fcmToken = await _firebaseMessaging.getToken();
         }
-        print('FCM TOKEN: $fcmToken');
+        if (kDebugMode) print('FCM TOKEN: $fcmToken');
         if (fcmToken != null) {
           await _saveTokenToFirestore(fcmToken);
         }
@@ -113,15 +113,17 @@ class NotificationService {
            _saveTokenToFirestore(token);
         });
       } catch (e) {
-        print("Error handling FCM Token (ignoring for local notifications): $e");
+        if (kDebugMode) print("Error handling FCM Token (ignoring for local notifications): $e");
       }
 
       // 5. Handle Foreground Messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        // ...
-        print('Got a message whilst in the foreground!');
+        if (kDebugMode) print('Got a message whilst in the foreground!');
+        
         RemoteNotification? notification = message.notification;
         AndroidNotification? android = message.notification?.android;
+
+        // Show standard system notification in foreground
         if (notification != null && android != null) {
           _showForegroundNotification(notification, android);
         }
@@ -140,35 +142,108 @@ class NotificationService {
             _onNotificationOpenStr.add(initialMessage.data['path']);
         }
       } catch (e) {
-         print("Error getting initial message: $e");
+         if (kDebugMode) print("Error getting initial message: $e");
       }
       
     } catch (e) {
-      print("CRITICAL ERROR initializing NotificationService: $e");
+      if (kDebugMode) print("CRITICAL ERROR initializing NotificationService: $e");
+    }
+  }
+
+
+
+  Future<NotificationDetails> _getPremiumNotificationDetails({
+    String? title,
+    String? body,
+    String? imagePath, // Optional: Path to custom image (asset)
+  }) async {
+    final largeIcon = await _getAssetBitmap('assets/images/logo.png');
+    
+    // Android Style
+    StyleInformation? styleInformation;
+    if (imagePath != null) {
+        final bigPicture = await _getAssetBitmap(imagePath);
+        if (bigPicture != null) {
+            styleInformation = BigPictureStyleInformation(
+                bigPicture,
+                largeIcon: largeIcon,
+                contentTitle: title != null ? '<b>$title</b>' : null,
+                htmlFormatContentTitle: true,
+                summaryText: body,
+                htmlFormatSummaryText: true,
+                hideExpandedLargeIcon: true,
+            );
+        }
+    }
+    
+    // Fallback to BigText if no image or image failed
+    styleInformation ??= BigTextStyleInformation(
+          body ?? '',
+          htmlFormatBigText: true,
+          contentTitle: title != null ? '<b>$title</b>' : null,
+          htmlFormatContentTitle: true,
+    );
+
+    // iOS Attachments
+    List<DarwinNotificationAttachment>? iosAttachments;
+    if (imagePath != null) {
+        final filePath = await _saveAssetToFile(imagePath);
+        if (filePath != null) {
+            iosAttachments = [DarwinNotificationAttachment(filePath)];
+        }
+    }
+
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is used for important notifications.',
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFFD4AF37),
+        largeIcon: largeIcon,
+        styleInformation: styleInformation,
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(
+          attachments: iosAttachments,
+      ),
+    );
+  }
+
+  Future<String?> _saveAssetToFile(String assetPath) async {
+    try {
+      final byteData = await rootBundle.load(assetPath);
+      final bytes = byteData.buffer.asUint8List();
+      
+      final tempDir = await getTemporaryDirectory();
+      final fileName = assetPath.split('/').last;
+      final file = File('${tempDir.path}/$fileName');
+      
+      await file.writeAsBytes(bytes);
+      return file.path;
+    } catch (e) {
+      if (kDebugMode) print("Error saving asset to file: $e");
+      return null;
     }
   }
 
   Future<void> _showForegroundNotification(
       RemoteNotification notification, AndroidNotification android) async {
-    // ... no changes needed
+    
+    final details = await _getPremiumNotificationDetails(
+      title: notification.title,
+      body: notification.body,
+    );
+
     await _localNotifications.show(
       notification.hashCode,
       notification.title,
       notification.body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription: 'This channel is used for important notifications.',
-          icon: '@mipmap/ic_launcher',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-        iOS: const DarwinNotificationDetails(),
-      ),
+      details,
     );
   }
-  
+
   // Schedule a local notification
   Future<void> scheduleNotification({
     required int id,
@@ -177,39 +252,34 @@ class NotificationService {
     required DateTime scheduledDate,
   }) async {
     try {
-      print("Attempting to schedule notification: $title at $scheduledDate");
+      if (kDebugMode) print("Attempting to schedule notification: $title at $scheduledDate");
       
       if(!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
          final androidImplementation = _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
          if(androidImplementation != null) {
             bool? granted = await androidImplementation.requestExactAlarmsPermission();
-            print("Exact Alarm Permission Granted: $granted");
+            if (kDebugMode) print("Exact Alarm Permission Granted: $granted");
          }
       }
+
+      final details = await _getPremiumNotificationDetails(
+        title: title,
+        body: body,
+      );
 
       await _localNotifications.zonedSchedule(
         id,
         title,
         body,
         tz.TZDateTime.from(scheduledDate, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription: 'This channel is used for important notifications.',
-            icon: '@mipmap/ic_launcher',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-          iOS: const DarwinNotificationDetails(),
-        ),
+        details, // Use premium details
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-      print("SUCCESS: Notification scheduled: $title");
+      if (kDebugMode) print("SUCCESS: Notification scheduled: $title");
     } catch (e) {
-      print("ERROR Scheduling Notification: $e");
+      if (kDebugMode) print("ERROR Scheduling Notification: $e");
     }
   }
 
@@ -220,15 +290,15 @@ class NotificationService {
         await _firestore.collection('users').doc(user.uid).update({
           'fcmToken': token,
         });
-        print('FCM Token saved to Firestore for user: ${user.uid}');
+        if (kDebugMode) print('FCM Token saved to Firestore for user: ${user.uid}');
       } catch (e) {
-        print('Error saving FCM Token: $e');
+        if (kDebugMode) print('Error saving FCM Token: $e');
       }
     }
   }
 
   static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-    print("Handling a background message: ${message.messageId}");
+    if (kDebugMode) print("Handling a background message: ${message.messageId}");
   }
 
   Future<Map<String, dynamic>> debugNotificationPermissions() async {
@@ -247,23 +317,31 @@ class NotificationService {
     return status;
   }
 
+  // Keep for legacy/debug system notification testing
   Future<void> showImmediateNotification() async {
+    final details = await _getPremiumNotificationDetails(
+      title: 'The Gentleman Club',
+      body: 'È il momento di rinnovare il tuo stile.',
+      imagePath: 'assets/images/gallery/haircut5.png',
+    );
+
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'Test Immediato',
-      'Se leggi questo, le notifiche funzionano! 🚀',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription: 'This channel is used for important notifications.',
-          icon: '@mipmap/ic_launcher',
-          importance: Importance.max,
-          priority: Priority.high,
-          ticker: 'ticker',
-        ),
-        iOS: const DarwinNotificationDetails(),
-      ),
+      'The Gentleman Club',
+      'È il momento di rinnovare il tuo stile.',
+      details,
+      payload: '/booking',
     );
+  }
+
+  Future<ByteArrayAndroidBitmap?> _getAssetBitmap(String assetPath) async {
+    try {
+      final byteData = await rootBundle.load(assetPath);
+      final Uint8List bytes = byteData.buffer.asUint8List();
+      return ByteArrayAndroidBitmap(bytes);
+    } catch (e) {
+      if (kDebugMode) print("Error loading asset bitmap: $e");
+      return null;
+    }
   }
 }

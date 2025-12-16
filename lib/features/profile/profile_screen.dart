@@ -383,27 +383,16 @@ class ProfileScreen extends ConsumerWidget {
                       showDialog(
                         context: context,
                         builder: (c) => AlertDialog(
-                          title: const Text('Debug Notifiche'),
-                          content: Text('Permessi:\n$debugInfo\n\nInvio notifica immediata...'),
+                          backgroundColor: const Color(0xFF1A1A1A),
+                          title: const Text('Debug Notifiche', style: TextStyle(color: Colors.white)),
+                          content: Text('Permessi:\n$debugInfo\n\nInvio notifica di sistema...', style: const TextStyle(color: Colors.white70)),
                           actions: [
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(c);
                                 service.showImmediateNotification();
                               },
-                              child: const Text('Prova Immediata'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(c);
-                                service.scheduleNotification(
-                                  id: DateTime.now().hashCode,
-                                  title: 'Test Programmato',
-                                  body: 'Tra 5 secondi...',
-                                  scheduledDate: DateTime.now().add(const Duration(seconds: 5)),
-                                );
-                              },
-                              child: const Text('Prova 5s'),
+                              child: const Text('Invia Notifica (System Tray)', style: TextStyle(color: Colors.white)),
                             ),
                           ],
                         ),
@@ -699,6 +688,7 @@ class _AppointmentsList extends ConsumerWidget {
 
         return GroupedAppointmentsList(
           appointments: filteredAppointments,
+          showBarber: userRole == UserRole.client,
           onAppointmentTap: (apt) {
             // Optional: Show details
           },

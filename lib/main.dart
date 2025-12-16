@@ -57,12 +57,11 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
     // Initialize notifications when app is ready
     ref.listen(appInitializationProvider, (previous, next) {
       if (next.hasValue) {
-        // Use read here because we are inside a callback/effect
         ref.read(notificationServiceProvider).initialize();
       }
     });
 
-    // Handle notification navigation
+    // Handle notification navigation (Background/Terminated Open)
     ref.listen(notificationOpenProvider, (previous, next) {
       next.whenData((path) {
         if (path != null) {
