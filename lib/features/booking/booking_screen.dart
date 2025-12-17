@@ -469,8 +469,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0xFF111111), // Dark card base
+              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFF111111),
               border: Border.all(
                 color: isSelected ? Colors.white : Colors.transparent,
                 width: 1.5,
@@ -478,15 +478,21 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.1),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                        color: Colors.white.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       )
                     ]
-                  : [],
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                  ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(15),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -494,7 +500,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   Builder(
                     builder: (context) {
                       String imageUrl = barber.imageUrl;
-                      // Fallback logic
                       if (imageUrl.isEmpty) {
                         if (barber.name.toLowerCase().contains('omar')) {
                           imageUrl = 'assets/images/barber_marco.png';
@@ -520,10 +525,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         imageWidget = Container(color: const Color(0xFF222222));
                       }
                       
-                      // Optional: Make image Grayscale if not selected? keeping full color for now but darkening unselected
                       return ColorFiltered(
                         colorFilter: ColorFilter.mode(
-                          isSelected ? Colors.transparent : Colors.black.withOpacity(0.3), 
+                          isSelected ? Colors.transparent : Colors.black.withOpacity(0.2), 
                           BlendMode.darken
                         ),
                         child: imageWidget,
@@ -531,7 +535,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     }
                   ),
 
-                  // 2. Gradient Overlay
+                  // 2. Pro Grade Gradient Overlay
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -539,10 +543,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.5),
-                          Colors.black.withOpacity(0.9),
+                          Colors.black.withOpacity(0.2), // Mid-transition
+                          Colors.black.withOpacity(0.8), // Text legibility
+                          Colors.black.withOpacity(0.95), // Bottom anchor
                         ],
-                        stops: const [0.5, 0.7, 1.0],
+                        stops: const [0.4, 0.6, 0.85, 1.0],
                       ),
                     ),
                   ),
@@ -550,37 +555,101 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   // 3. Unavailable Overlay
                   if (!isAvailable)
                     Container(
-                      color: Colors.black.withOpacity(0.8),
+                      color: Colors.black.withOpacity(0.75),
                       child: Center(
-                         child: Icon(Icons.block, color: Colors.white54, size: 40),
+                         child: Column(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             const Icon(Icons.block, color: Colors.white38, size: 32),
+                             const SizedBox(height: 8),
+                             Text(
+                               'NON DISPONIBILE',
+                               style: GoogleFonts.montserrat(
+                                  color: Colors.white38, 
+                                  fontSize: 10, 
+                                  fontWeight: FontWeight.bold
+                               ),
+                             ),
+                           ],
+                         ),
                       ),
                     ),
 
-                  // 4. Content
+                  // 4. Content Content
                   Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Barber Name
                         Text(
                           barber.name.toUpperCase(),
                           style: GoogleFonts.cinzel(
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            letterSpacing: 1.0,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${barber.startHour}-${barber.endHour}',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white70,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                        
+                        // Specialties (New!)
+                        if (barber.specialties.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            barber.specialties.join(' • ').toUpperCase(),
+                            style: GoogleFonts.montserrat(
+                              color: const Color(0xFFD4AF37), // Gold accent
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ] else ...[
+                           const SizedBox(height: 4),
+                           Text(
+                            'SPECIALISTA TAGLIO & BARBA', // Default fallback
+                            style: GoogleFonts.montserrat(
+                              color: const Color(0xFFD4AF37),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 8),
+                        
+                        // Hours & Info Row
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.access_time, color: Colors.white70, size: 10),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${barber.startHour}:00 - ${barber.endHour}:00',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -589,12 +658,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   // 5. Status Badge (Top Right)
                   if (!isAvailable)
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 12,
+                      right: 12,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white24, // Subtle badge
+                          color: const Color(0xFFDC143C).withOpacity(0.8), // Crimson for unavailable
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -604,26 +673,32 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 8,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                     ),
                     
-                  // 6. Selection Checkmark
+                  // 6. Selection Indicator (Animated)
                   if (isSelected)
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 12,
+                      right: 12,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(6),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                            )
+                          ]
                         ),
                         child: const Icon(
                           Icons.check,
-                          size: 12,
+                          size: 16,
                           color: Colors.black,
                         ),
                       ),

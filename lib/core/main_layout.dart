@@ -66,7 +66,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                   label: 'Prenota',
                   onTap: () => context.go('/booking'),
                 ),
-                if (user?.role != UserRole.client)
+                // Only show Agenda for Staff (Barbers/Admins), NOT for null (loading/guest)
+                if (user != null && user.role != UserRole.client)
                   _buildNavItem(
                     index: 2,
                     icon: Icons.event_note_outlined,
@@ -74,14 +75,17 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     label: 'Agenda',
                     onTap: () => context.go('/calendar'),
                   ),
-                if (user?.role == UserRole.client)
+                
+                // Show Profile for Clients OR if user is null (to allow logout/fixing)
+                if (user == null || user.role == UserRole.client)
                   _buildNavItem(
-                    index: 2,
+                    index: 2, // Keep index 2 for Client layout
                     icon: Icons.person_outline,
                     selectedIcon: Icons.person,
                     label: 'Profilo',
                     onTap: () => context.go('/profile'),
                   ),
+
                 if (user?.role == UserRole.barber)
                   _buildNavItem(
                     index: 3,

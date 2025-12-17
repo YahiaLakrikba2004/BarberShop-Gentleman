@@ -21,9 +21,41 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
 
+    // If user is null (account deleted or error), show error and allow logout
     if (user == null) {
-      return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A0A),
+        appBar: AppBar(
+          title: Text('ERRORE PROFILO', style: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xFF0A0A0A),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              onPressed: () => ref.read(authServiceProvider).signOut(),
+            ),
+          ],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Profilo non trovato.',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.read(authServiceProvider).signOut(),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+                child: const Text('ESEGUI LOGOUT', style: TextStyle(color: Colors.black)),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return DefaultTabController(
