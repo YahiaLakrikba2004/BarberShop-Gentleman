@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:ui' as ui;
 import '../../services/auth_service.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -251,6 +252,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   ),
                   const SizedBox(height: 32),
 
+                  // Forgot Password (Login Only)
+                  if (_isLogin)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _showForgotPasswordDialog(context),
+                        child: Text(
+                          'Password dimenticata?',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+
                   // Action Button
                   SizedBox(
                     width: double.infinity,
@@ -358,6 +378,137 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+          ),
+          title: Text(
+            'RECUPERA PASSWORD',
+            style: GoogleFonts.cinzel(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              letterSpacing: 2.0,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Inserisci la tua email per ricevere il link di ripristino.',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: emailController,
+                style: GoogleFonts.montserrat(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'EMAIL',
+                  labelStyle: GoogleFonts.montserrat(
+                      color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                  prefixIcon: Icon(Icons.email_outlined, 
+                      color: Colors.white.withOpacity(0.7), size: 20),
+                  filled: true, // Reusing premium inputs
+                  fillColor: Colors.black.withOpacity(0.3),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.white.withOpacity(0.1))
+                      ),
+                    ),
+                    child: Text('ANNULLA', 
+                        style: GoogleFonts.montserrat(
+                            color: Colors.white.withOpacity(0.6), 
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0
+                        )
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (emailController.text.isNotEmpty) {
+                        try {
+                           await ref.read(authServiceProvider).sendPasswordResetEmail(emailController.text.trim());
+                           if (context.mounted) {
+                             Navigator.pop(context);
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               SnackBar(
+                                 content: Text('Email inviata a ${emailController.text}'),
+                                 backgroundColor: Colors.green,
+                               ),
+                             );
+                           }
+                        } catch (e) {
+                           if (context.mounted) {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text('Errore: Email non trovata o invalida')),
+                             );
+                           }
+                        }
+                      }
+                    },
+                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text('INVIA', 
+                        style: GoogleFonts.montserrat(
+                            color: Colors.black, 
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0
+                        )
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

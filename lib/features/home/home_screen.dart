@@ -96,8 +96,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFFFFFFFF).withOpacity(0.03),
-                              blurRadius: 80,
-                              spreadRadius: 10,
+                              blurRadius: 40,
+                              spreadRadius: 5,
                             ),
                           ],
                         ),
@@ -118,9 +118,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.8), // Stronger shadow for depth
-                                blurRadius: 30,
-                                offset: const Offset(0, 10),
+                                color: Colors.black.withOpacity(0.8),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
@@ -426,11 +426,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 _SocialButton(
                                   icon: FontAwesomeIcons.whatsapp,
                                   url: 'https://wa.me/393331234567',
-                                ),
-                                const SizedBox(width: 20),
-                                _SocialButton(
-                                  icon: FontAwesomeIcons.facebook,
-                                  url: 'https://facebook.com',
                                 ),
                               ],
                             ),
@@ -1461,8 +1456,13 @@ class _SocialButton extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
+        debugPrint('SocialButton tapped: $url');
+        try {
+          // Force launch, catch error if it fails.
+          // This bypasses potential false negatives from canLaunchUrl
           await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } catch (e) {
+          debugPrint('Error launching URL: $e');
         }
       },
       child: Container(

@@ -37,49 +37,96 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/auth',
-        builder: (context, state) => const AuthScreen(),
-      ),
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const MainLayout(
-          currentIndex: 0,
-          child: HomeScreen(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const AuthScreen(),
         ),
       ),
-      GoRoute(
-        path: '/booking',
-        builder: (context, state) => const MainLayout(
-          currentIndex: 1,
-          child: BookingScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/calendar',
-        builder: (context, state) => const MainLayout(
-          currentIndex: 2,
-          child: CalendarScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin',
-        builder: (context, state) => const MainLayout(
-          currentIndex: 3,
-          child: AdminDashboard(),
-        ),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) {
-          final isClient = user?.role == UserRole.client;
-          // Barbers use index 3 for profile. Admins don't have profile tab, 
-          // but if they navigate here manually, we can just show it with index 3 (which highlights Admin tab? No, that's weird).
-          // Let's just use 3 for non-clients.
+      ShellRoute(
+        builder: (context, state, child) {
+          final location = state.uri.toString();
+          int currentIndex = 0;
+          
+          if (location == '/' || location == '') {
+            currentIndex = 0;
+          } else if (location.startsWith('/booking')) {
+            currentIndex = 1;
+          } else if (location.startsWith('/calendar')) {
+            currentIndex = 2;
+          } else if (location.startsWith('/profile')) {
+             currentIndex = (user?.role == UserRole.client) ? 2 : 3;
+          } else if (location.startsWith('/admin')) {
+            currentIndex = 3;
+          }
+
           return MainLayout(
-            currentIndex: isClient ? 2 : 3,
-            child: const ProfileScreen(),
+            currentIndex: currentIndex,
+            child: child,
           );
         },
+        routes: [
+           GoRoute(
+            path: '/',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const HomeScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/booking',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const BookingScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/calendar',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const CalendarScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/admin',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const AdminDashboard(),
+            ),
+          ),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const ProfileScreen(),
+            ),
+          ),
+        ],
       ),
     ],
   );
 });
+
+CustomTransitionPage _buildPageWithTransition({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 400),
+  );
+}
+

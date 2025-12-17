@@ -40,9 +40,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFFFFF).withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+              color: const Color(0xFFFFFFFF).withOpacity(0.05), // Lighter opacity
+              blurRadius: 10, // Optimized from 20
+              offset: const Offset(0, -2),
             ),
           ],
         ),
