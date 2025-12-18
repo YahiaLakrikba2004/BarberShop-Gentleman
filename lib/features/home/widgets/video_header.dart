@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
+
 
 class VideoHeader extends StatefulWidget {
   final Widget child;
@@ -14,26 +16,50 @@ class VideoHeader extends StatefulWidget {
   State<VideoHeader> createState() => _VideoHeaderState();
 }
 
+
+
 class _VideoHeaderState extends State<VideoHeader> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/video/rain-shave-video.mp4')
-      ..initialize().then((_) {
-        _controller.setLooping(true);
-        _controller.setVolume(0.0); // Mute for background
-        _controller.play();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-        }
-      }).catchError((error) {
-         debugPrint("Video initialization failed: $error");
-      });
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      if (kIsWeb) {
+        // Explicitly pointing to the built asset location for Web
+        _controller = VideoPlayerController.networkUrl(
+          Uri.parse('assets/assets/video/rain-shave-video.mp4'),
+        );
+      } else {
+        _controller = VideoPlayerController.asset('assets/video/rain-shave-video.mp4');
+      }
+      
+      await _controller.initialize();
+      await _controller.setLooping(true);
+      await _controller.setVolume(0.0);
+      await _controller.play();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _hasError = false;
+        });
+      }
+    } catch (error) {
+      debugPrint("Video initialization failed: $error");
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
   }
 
   @override
@@ -45,32 +71,19 @@ class _VideoHeaderState extends State<VideoHeader> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Keep the original container properties for fallback/sizing
       width: double.infinity,
-       // Remove fixed height to let content dictate, or use AspectRatio?
-       // The original container had no explicit height, it was just padding around content.
-       // But for video cover, we might want to ensure it covers the area.
       decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0A), // Black fallback
+        color: Color(0xFF0A0A0A), 
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 1. Video Background
-          if (_isInitialized)
-            Positioned.fill(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                   // Enforce aspect ratio to cover
-                  width: _controller.value.size.width,
-                  height: _controller.value.size.height,
-                  child: VideoPlayer(_controller),
-                ),
-              ),
-            ),
+          // 1. Background (Video or Fallback Image)
+          Positioned.fill(
+            child: _buildBackground(),
+          ),
             
-          // 2. Gradient Overlay (Vignette) - Essential for text readability
+          // 2. Gradient Overlay
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -78,8 +91,8 @@ class _VideoHeaderState extends State<VideoHeader> {
                   center: Alignment.center,
                   radius: 1.3,
                   colors: [
-                    Colors.black54, // Semi-transparent center
-                    Color(0xFF0A0A0A), // Solid black corners
+                    Colors.black54, 
+                    Color(0xFF0A0A0A), 
                   ],
                   stops: [0.0, 1.0],
                 ),
@@ -87,7 +100,6 @@ class _VideoHeaderState extends State<VideoHeader> {
             ),
           ),
           
-          // Additional dark overlay for better contrast
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.4),
@@ -95,13 +107,32 @@ class _VideoHeaderState extends State<VideoHeader> {
           ),
 
           // 3. Content
-          // We wrap the child in the original padding
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 150, 24, 60),
             child: widget.child,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBackground() {
+    if (_isInitialized && !_hasError) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _controller.value.size.width,
+          height: _controller.value.size.height,
+          child: VideoPlayer(_controller),
+        ),
+      );
+    }
+
+    // Fallback Image (No debug text, clean fallback)
+    return Image.asset(
+      'assets/images/gallery/haircut3.png', 
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const SizedBox(), 
     );
   }
 }
