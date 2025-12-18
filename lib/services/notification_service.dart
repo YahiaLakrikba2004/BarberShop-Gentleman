@@ -320,14 +320,14 @@ class NotificationService {
   // Keep for legacy/debug system notification testing
   Future<void> showImmediateNotification() async {
     final details = await _getPremiumNotificationDetails(
-      title: 'The Gentleman Club',
+      title: 'The Gentlemen Club',
       body: 'È il momento di rinnovare il tuo stile.',
       imagePath: 'assets/images/gallery/haircut5.png',
     );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'The Gentleman Club',
+      'The Gentlemen Club',
       'È il momento di rinnovare il tuo stile.',
       details,
       payload: '/booking',

@@ -186,7 +186,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         const SizedBox(height: 8),
                         Text(
                           _isLogin
-                              ? 'Accedi al tuo account Gentleman'
+                              ? 'Accedi al tuo account Gentlemen'
                               : 'Crea il tuo profilo esclusivo',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),

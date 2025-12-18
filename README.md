@@ -1,4 +1,4 @@
-# Gentleman Barber Shop App
+# Gentlemen Barber Shop App
 
 A complete Flutter application for a barber shop booking system.
 

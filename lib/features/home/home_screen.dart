@@ -136,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         // 2. Title - Cinzel (Modern Classic)
                         Text(
-                          'THE GENTLEMAN',
+                          'THE GENTLEMEN',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.cinzel(
                             fontSize: 32, 
@@ -225,7 +225,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Trattamenti Premium per il Gentleman Moderno',
+                          'Trattamenti Premium per i Gentlemen Moderni',
                           style: GoogleFonts.montserrat(
                             // Consistent font
                             fontSize: 14,
@@ -315,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'THE GENTLEMAN',
+                                  'THE GENTLEMEN',
                                   style: GoogleFonts.cinzel(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,

@@ -24,7 +24,7 @@ class SeedService {
     // Create Staff Accounts (Auth + Firestore)
     final staff = [
       {
-        'email': 'armin@gentleman.it',
+        'email': 'armin@gentlemen.it',
         'password': 'password123',
         'name': 'Armin',
         'role': UserRole.barber,
@@ -35,7 +35,7 @@ class SeedService {
         'imageUrl': 'assets/images/barber_marco.png',
       },
       {
-        'email': 'andrei@gentleman.it',
+        'email': 'andrei@gentlemen.it',
         'password': 'password123',
         'name': 'Andrei',
         'role': UserRole.barber,
@@ -46,7 +46,7 @@ class SeedService {
         'imageUrl': 'assets/images/barber_giuseppe.png',
       },
       {
-        'email': 'hamza@gentleman.it',
+        'email': 'hamza@gentlemen.it',
         'password': 'password123',
         'name': 'Hamza',
         'role': UserRole.barber,
@@ -57,7 +57,7 @@ class SeedService {
         'imageUrl': 'assets/images/barber_antonio.png',
       },
       {
-        'email': 'osama@gentleman.it',
+        'email': 'osama@gentlemen.it',
         'password': 'password123',
         'name': 'Osama',
         'role': UserRole.admin,

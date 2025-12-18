@@ -1168,7 +1168,7 @@ class _AppointmentsList extends ConsumerWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'THE GENTLEMAN',
+                            'THE GENTLEMEN',
                             style: GoogleFonts.cinzel(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
