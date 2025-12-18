@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 import '../../services/seed_service.dart';
 import '../../core/ui/hexagon_painter.dart';
+import 'widgets/video_header.dart';
 import 'dart:ui';
 import 'dart:async';
 
@@ -66,21 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             // Hero Section - Neo-Classic Luxury Design
             FadeIn(
               duration: const Duration(milliseconds: 800),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 100, 24, 60), // Adjusted top padding since AppBar is gone
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0A0A0A), // Deepest Black
-                  // Code-generated Vignette (No missing assets)
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 1.3, // Slightly tighter spotlight
-                    colors: [
-                      Color(0xFF1F1F1F), // Dark Grey Center
-                      Color(0xFF0A0A0A), // Pure Black Corners
-                    ],
-                    stops: [0.0, 1.0],
-                  ),
-                ),
+              child: VideoHeader(
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -170,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           color: const Color(0xFFE0E0E0).withOpacity(0.6),
                         ),
 
-                        const SizedBox(height: 32), // Reduced from 36
+                        const SizedBox(height: 60), // Increased to lower button
 
                         // 5. CTA Button - Fixed Width & Smaller
                         SizedBox(
