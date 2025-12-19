@@ -1,8 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
-
+import 'web_video_player.dart'; // Conditional import bridge
 
 class VideoHeader extends StatefulWidget {
   final Widget child;
@@ -16,8 +15,6 @@ class VideoHeader extends StatefulWidget {
   State<VideoHeader> createState() => _VideoHeaderState();
 }
 
-
-
 class _VideoHeaderState extends State<VideoHeader> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
@@ -27,19 +24,15 @@ class _VideoHeaderState extends State<VideoHeader> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      registerWebVideoView();
+    }
     _initializeVideo();
   }
 
   Future<void> _initializeVideo() async {
     try {
-      if (kIsWeb) {
-        // Explicitly pointing to the built asset location for Web
-        _controller = VideoPlayerController.networkUrl(
-          Uri.parse('assets/assets/video/rain-shave-video.mp4'),
-        );
-      } else {
-        _controller = VideoPlayerController.asset('assets/video/rain-shave-video.mp4');
-      }
+      _controller = VideoPlayerController.asset('assets/video/rain-shave-video.mp4');
       
       await _controller.initialize();
       await _controller.setLooping(true);
@@ -117,6 +110,11 @@ class _VideoHeaderState extends State<VideoHeader> {
   }
 
   Widget _buildBackground() {
+    if (kIsWeb) {
+      // Use native HTML video on web to bypass plugin issues
+      return const HtmlElementView(viewType: 'video-bg-view');
+    }
+
     if (_isInitialized && !_hasError) {
       return FittedBox(
         fit: BoxFit.cover,
