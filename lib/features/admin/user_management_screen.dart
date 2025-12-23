@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 
@@ -19,13 +20,16 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final usersAsync = ref.watch(allUsersProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('GESTIONE UTENTI', style: TextStyle(color: Colors.white)),
+        title: Text(
+          'GESTIONE UTENTI',
+          style: GoogleFonts.cinzel(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+            fontSize: 16,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
@@ -33,24 +37,26 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              style: const TextStyle(color: Colors.white),
+              style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Cerca utente per nome o email...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFFFFFFF)),
+                hintStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
+                prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
                 filled: true,
-                fillColor: const Color(0xFF1A1A1A),
+                fillColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white.withOpacity(0.05) 
+                    : Colors.grey[100],
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                 ),
               ),
               onChanged: (value) {
@@ -136,13 +142,21 @@ class _UserCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? const Color(0xFF161616) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
         border: Border.all(
-          color: const Color(0xFFFFFFFF).withOpacity(0.2),
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -173,17 +187,18 @@ class _UserCard extends ConsumerWidget {
                     children: [
                       Text(
                         user.name,
-                        style: const TextStyle(
+                        style: GoogleFonts.cinzel(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFFFFF),
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         user.email,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: GoogleFonts.montserrat(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                           fontSize: 13,
                         ),
                       ),
@@ -346,15 +361,18 @@ class _UserCard extends ConsumerWidget {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: Colors.red.withOpacity(0.3)),
         ),
-        title: const Text('Elimina Utente', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Elimina Utente', 
+          style: GoogleFonts.cinzel(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
         content: Text(
           'Sei sicuro di voler eliminare l\'utente ${user.name}? Questa azione è irreversibile.',
-          style: const TextStyle(color: Colors.white70),
+          style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
         ),
         actions: [
           TextButton(
@@ -407,16 +425,17 @@ class _RoleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: isSelected ? null : onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : const Color(0xFF0A0A0A),
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? color.withOpacity(0.1) : (isDark ? Colors.black.withOpacity(0.2) : Colors.grey[50]),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.3),
+            color: isSelected ? color : color.withOpacity(0.15),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -424,16 +443,16 @@ class _RoleButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: color,
+              color: isSelected ? color : color.withOpacity(0.5),
               size: 20,
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                color: color,
+              style: GoogleFonts.montserrat(
+                color: isSelected ? color : color.withOpacity(0.5),
                 fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),
           ],

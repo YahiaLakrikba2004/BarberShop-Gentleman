@@ -22,15 +22,15 @@ class _ContactRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFFFF).withOpacity(0.05),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                color: Theme.of(context).dividerColor.withOpacity(0.1),
               ),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFFD4AF37), // Gold accent
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
           ),
@@ -44,7 +44,7 @@ class _ContactRow extends StatelessWidget {
                   style: GoogleFonts.cinzel(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFAFAFA),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -52,7 +52,7 @@ class _ContactRow extends StatelessWidget {
                   subtitle,
                   style: GoogleFonts.montserrat(
                     fontSize: 13,
-                    color: Colors.white60,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     height: 1.4,
                   ),
                 ),
@@ -62,7 +62,7 @@ class _ContactRow extends StatelessWidget {
           if (onTap != null)
             Icon(
               Icons.arrow_forward_ios,
-              color: const Color(0xFFFFFFFF).withOpacity(0.3),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
               size: 16,
             ),
         ],
@@ -88,7 +88,7 @@ class _HoursRow extends StatelessWidget {
         Text(
           day,
           style: GoogleFonts.montserrat(
-            color: const Color(0xFFFAFAFA),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -96,7 +96,7 @@ class _HoursRow extends StatelessWidget {
         Text(
           hours,
           style: GoogleFonts.montserrat(
-            color: const Color(0xFFD4AF37), // Gold for time
+            color: Theme.of(context).colorScheme.primary,
             fontSize: 13,
             fontWeight: FontWeight.w400,
           ),
@@ -128,16 +128,16 @@ class _SocialButton extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFFFF).withOpacity(0.05),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
           shape: BoxShape.circle,
           border: Border.all(
-            color: const Color(0xFFFFFFFF).withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
           ),
         ),
         child: Center(
           child: FaIcon(
             icon,
-            color: const Color(0xFFFAFAFA),
+            color: Theme.of(context).colorScheme.onSurface,
             size: 20,
           ),
         ),

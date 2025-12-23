@@ -44,26 +44,26 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final isPrivileged = user?.role == UserRole.admin || user?.role == UserRole.barber;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A), // Deep Black
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'PRENOTA APPUNTAMENTO',
           style: GoogleFonts.cinzel(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Column(
         children: [
           // Progress Indicator
           _buildProgressIndicator(isPrivileged),
-          const Divider(height: 1, color: Colors.white10), // Subtle divider
+          Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
           
           // Content with Animation
           Expanded(
@@ -105,9 +105,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0A),
-        border: Border(bottom: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.05))),
       ),
       child: Row(
         children: [
@@ -134,10 +134,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isActive 
-                  ? Colors.white 
+                  ? Theme.of(context).colorScheme.primary 
                   : Colors.transparent,
               border: Border.all(
-                color: isActive ? Colors.white : Colors.white24,
+                color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                 width: 1.5,
               ),
             ),
@@ -146,12 +146,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   ? Icon(
                       Icons.check,
                       size: isCurrent ? 20 : 16,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     )
                   : Text(
                       '${step + 1}',
                       style: GoogleFonts.montserrat(
-                        color: Colors.white24,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                         fontWeight: FontWeight.bold,
                         fontSize: isCurrent ? 14 : 12,
                       ),
@@ -163,7 +163,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             duration: const Duration(milliseconds: 300),
             style: GoogleFonts.montserrat(
               fontSize: 9, // Smaller clean font
-              color: isActive ? Colors.white : Colors.white24,
+              color: isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
               letterSpacing: 0.5,
             ),
@@ -185,7 +185,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       child: Container(
         height: 1, // Thinner line
         margin: const EdgeInsets.only(bottom: 20),
-        color: isActive ? Colors.white : Colors.white10,
+        color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
       ),
     );
   }
@@ -230,9 +230,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF111111),
+                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,10 +242,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.person_add, color: Colors.white, size: 24),
+                        child: Icon(Icons.person_add, color: Theme.of(context).colorScheme.onSurface, size: 24),
                       ),
                       const SizedBox(width: 16),
                       Text(
@@ -253,7 +253,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         style: GoogleFonts.cinzel(
                           fontSize: 18, 
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -281,8 +281,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 _guestName = '';
                 _guestPhone = '';
               }),
-              icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 20),
-              label: Text('Torna alla lista clienti', style: GoogleFonts.montserrat(color: Colors.white54)),
+              icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
+              label: Text('Torna alla lista clienti', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
             ),
           ],
         ),
@@ -320,8 +320,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     icon: const Icon(Icons.person_add, size: 20),
                     label: Text('PRENOTA PER CLIENTE OCCASIONALE', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white38),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -346,10 +346,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF111111),
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? Colors.white : Colors.white10,
+                          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
                           width: 1,
                         ),
                       ),
@@ -366,14 +366,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                                   style: GoogleFonts.cinzel(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   user.email,
                                   style: GoogleFonts.montserrat(
-                                    color: Colors.white54,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -381,7 +381,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             ),
                           ),
                           if (isSelected)
-                            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 20),
                         ],
                       ),
                     ),
@@ -392,7 +392,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+      loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
       error: (e, _) => Center(child: Text('Errore: $e', style: const TextStyle(color: Colors.red))),
     );
   }
@@ -405,23 +405,24 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     TextInputType inputType = TextInputType.text,
   }) {
     return TextField(
-      style: GoogleFonts.montserrat(color: Colors.white),
+      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
       keyboardType: inputType,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.montserrat(color: Colors.white54),
-        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+        prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
         filled: true,
-        fillColor: const Color(0xFF111111),
+        fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.grey[100],
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
       ),
       onChanged: onChanged,
     );
   }
 
   Widget _buildBarberSelection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final barbers = ref.watch(barberListProvider).maybeWhen(
       data: (list) => list,
       orElse: () => [],
@@ -433,7 +434,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       return Center(
         child: Text(
           'Nessun barbiere disponibile.',
-          style: GoogleFonts.montserrat(color: Colors.white60),
+          style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
         ),
       );
     }
@@ -469,23 +470,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: const Color(0xFF111111),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+              borderRadius: BorderRadius.circular(15),
               border: Border.all(
-                color: isSelected ? Colors.white : Colors.transparent,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
                 width: 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       )
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withOpacity(isDark ? 0.5 : 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       )
@@ -527,7 +528,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       
                       return ColorFiltered(
                         colorFilter: ColorFilter.mode(
-                          isSelected ? Colors.transparent : Colors.black.withOpacity(0.2), 
+                          isSelected ? Colors.transparent : (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.2)), 
                           BlendMode.darken
                         ),
                         child: imageWidget,
@@ -543,9 +544,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.2), // Mid-transition
-                          Colors.black.withOpacity(0.8), // Text legibility
-                          Colors.black.withOpacity(0.95), // Bottom anchor
+                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.2), // Mid-transition
+                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.8), // Text legibility
+                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.95), // Bottom anchor
                         ],
                         stops: const [0.4, 0.6, 0.85, 1.0],
                       ),
@@ -560,12 +561,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                          child: Column(
                            mainAxisSize: MainAxisSize.min,
                            children: [
-                             const Icon(Icons.block, color: Colors.white38, size: 32),
+                             Icon(Icons.block, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), size: 32),
                              const SizedBox(height: 8),
                              Text(
                                'NON DISPONIBILE',
                                style: GoogleFonts.montserrat(
-                                  color: Colors.white38, 
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), 
                                   fontSize: 10, 
                                   fontWeight: FontWeight.bold
                                ),
@@ -588,7 +589,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           style: GoogleFonts.cinzel(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, // High contrast on gradient
                             letterSpacing: 1.0,
                           ),
                           maxLines: 1,
@@ -601,7 +602,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           Text(
                             barber.specialties.join(' • ').toUpperCase(),
                             style: GoogleFonts.montserrat(
-                              color: const Color(0xFFD4AF37), // Gold accent
+                              color: Theme.of(context).colorScheme.primary, // Silver/White accent
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.5,
@@ -614,7 +615,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                            Text(
                             'SPECIALISTA TAGLIO & BARBA', // Default fallback
                             style: GoogleFonts.montserrat(
-                              color: const Color(0xFFD4AF37),
+                              color: Theme.of(context).colorScheme.primary,
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.5,
@@ -630,18 +631,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.access_time, color: Colors.white70, size: 10),
+                                  Icon(Icons.access_time, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7), size: 10),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${barber.startHour}:00 - ${barber.endHour}:00',
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white70,
+                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -686,20 +687,20 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       right: 12,
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black26,
+                              color: Colors.black.withOpacity(0.2),
                               blurRadius: 8,
                             )
                           ]
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check,
                           size: 16,
-                          color: Colors.black,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                     ),
@@ -739,7 +740,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+      loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
       error: (e, _) => Center(child: Text('Errore: $e', style: const TextStyle(color: Colors.red))),
     );
   }
@@ -748,7 +749,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   Widget _buildTimeSelection() {
     if (_selectedBarber == null || _selectedService == null) {
       return Center(
-        child: Text('Seleziona prima un barbiere e un servizio.', style: GoogleFonts.montserrat(color: Colors.white70)),
+        child: Text('Seleziona prima un barbiere e un servizio.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
       );
     }
 
@@ -759,28 +760,30 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         children: [
           Text(
             'SELEZIONA DATA',
-            style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF111111),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
             ),
             padding: const EdgeInsets.all(8),
             child: Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.dark(
-                  primary: Colors.white,
-                  onPrimary: Colors.black,
-                  surface: Color(0xFF111111),
-                  onSurface: Colors.white,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Theme.of(context).colorScheme.primary,
+                  brightness: Theme.of(context).brightness,
+                  primary: Theme.of(context).colorScheme.primary,
+                  onPrimary: Theme.of(context).colorScheme.onPrimary,
+                  surface: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+                  onSurface: Theme.of(context).colorScheme.onSurface,
                 ),
                 textTheme: TextTheme(
-                  bodyLarge: GoogleFonts.montserrat(color: Colors.white),
-                  bodyMedium: GoogleFonts.montserrat(color: Colors.white),
-                  titleMedium: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.bold),
+                  bodyLarge: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
+                  bodyMedium: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
+                  titleMedium: GoogleFonts.cinzel(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                 ),
               ),
               child: CalendarDatePicker(
@@ -797,11 +800,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           const SizedBox(height: 32),
           Row(
             children: [
-              const Icon(Icons.access_time, color: Colors.white, size: 20),
+              Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurface, size: 20),
               const SizedBox(width: 8),
               Text(
                 'ORARI DISPONIBILI',
-                style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -820,7 +823,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   Widget _buildConfirmation(bool isPrivileged) {
     if (_selectedBarber == null || _selectedService == null || _selectedSlot == null) {
-      return Center(child: Text('Informazioni mancanti.', style: GoogleFonts.montserrat(color: Colors.white70)));
+      return Center(child: Text('Informazioni mancanti.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))));
     }
     
     return SingleChildScrollView(
@@ -830,20 +833,20 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         children: [
           Text(
             'RIEPILOGO',
-            style: GoogleFonts.cinzel(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            style: GoogleFonts.cinzel(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
             'Controlla i dettagli prima di confermare.',
-            style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54),
+            style: GoogleFonts.montserrat(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
           ),
           const SizedBox(height: 32),
           
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF111111),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
             ),
             child: Column(
               children: [
@@ -852,18 +855,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border(bottom: BorderSide(color: Colors.white10)),
+                    border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.white, size: 48),
+                      Icon(Icons.check_circle_outline, color: Theme.of(context).colorScheme.primary, size: 48),
                       const SizedBox(height: 12),
                       Text(
                         'THE GENTLEMEN',
                         style: GoogleFonts.cinzel(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2.0,
                           fontSize: 16,
@@ -872,7 +875,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       Text(
                         'BARBER STUDIO',
                         style: GoogleFonts.montserrat(
-                          color: Colors.white70,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           fontSize: 10,
                           letterSpacing: 4.0,
                         ),
@@ -893,7 +896,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       _buildSummaryRow('Orario', DateFormat('HH:mm').format(_selectedSlot!)),
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Colors.white10),
+                        child: Divider(),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -901,7 +904,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           Text(
                             'TOTALE',
                             style: GoogleFonts.cinzel(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -909,7 +912,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           Text(
                             '€${_selectedService!.price.toStringAsFixed(2)}',
                             style: GoogleFonts.montserrat(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.primary,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
@@ -927,18 +930,18 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF111111),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.access_time_filled, color: Colors.white54, size: 20),
+                Icon(Icons.access_time_filled, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Ti preghiamo di arrivare 5 minuti prima dell\'orario prenotato.',
-                    style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 12),
+                    style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 12),
                   ),
                 ),
               ],
@@ -957,11 +960,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         children: [
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
           ),
           Text(
             value,
-            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -972,9 +975,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final maxSteps = isPrivileged ? 4 : 3;
     
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0A),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
       ),
       child: SafeArea(
         top: false,
@@ -988,9 +991,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     onPressed: () => setState(() => _currentStep--),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.white24),
+                      side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                     ),
                     child: Text('INDIETRO', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
                   ),
@@ -1001,10 +1004,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 child: FilledButton(
                   onPressed: _canProceed(isPrivileged) ? () => _onNext(maxSteps) : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    disabledBackgroundColor: Colors.white10,
-                    disabledForegroundColor: Colors.white38,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    disabledBackgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
+                    disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
@@ -1121,11 +1124,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Prenotazione confermata per $customerName!', style: GoogleFonts.montserrat()),
-            backgroundColor: Colors.white,
+            content: Text('Prenotazione confermata per $customerName!', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onPrimary)),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.floating, // Premium feel
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            action: SnackBarAction(label: 'OK', textColor: Colors.black, onPressed: () {}),
+            action: SnackBarAction(label: 'OK', textColor: Theme.of(context).colorScheme.onPrimary, onPressed: () {}),
           ),
         );
         context.go('/');
@@ -1158,23 +1161,34 @@ class _SlotsGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appointmentsAsync = ref.watch(barberAppointmentsProvider((barber.id, date)));
+    final settingsAsync = ref.watch(shopSettingsProvider);
 
-    return appointmentsAsync.when(
-      data: (appointments) {
-        final slots = ref.read(slotServiceProvider).getAvailableSlots(
-              barber: barber,
-              date: date,
-              serviceDurationMinutes: service.durationMinutes,
-              existingAppointments: appointments,
-            );
+    return settingsAsync.when(
+      data: (settings) => appointmentsAsync.when(
+        data: (appointments) {
+          final slots = ref.read(slotServiceProvider).getAvailableSlots(
+                barber: barber,
+                date: date,
+                serviceDurationMinutes: service.durationMinutes,
+                existingAppointments: appointments,
+                shopSettings: settings,
+              );
 
-        if (slots.isEmpty) {
-          // Determine reason for unavailability
-          String title = 'NESSUNO SLOT';
-          String message = 'Prova a selezionare un\'altra data';
-          IconData icon = Icons.event_busy;
-          
-          if (barber.availabilityStatus == BarberAvailability.sick) {
+          if (slots.isEmpty) {
+            // Determine reason for unavailability
+            String title = 'NESSUNO SLOT';
+            String message = 'Prova a selezionare un\'altra data';
+            IconData icon = Icons.event_busy;
+            
+            if (settings.isShopClosedManually) {
+              title = 'CHIUSO';
+              message = 'Il salone è temporaneamente chiuso.';
+              icon = Icons.door_front_door_outlined;
+            } else if (settings.closures.any((c) => c.year == date.year && c.month == date.month && c.day == date.day)) {
+              title = 'GIORNO FESTIVO';
+              message = 'Il salone è chiuso per festività in questa data.';
+              icon = Icons.celebration;
+            } else if (barber.availabilityStatus == BarberAvailability.sick) {
             title = 'MALATTIA';
             message = '${barber.name} non è disponibile.';
             icon = Icons.local_hospital;
@@ -1199,21 +1213,21 @@ class _SlotsGrid extends ConsumerWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111111),
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 48, color: Colors.white54),
+                    Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
                     const SizedBox(height: 16),
                     Text(
                       title,
                       style: GoogleFonts.cinzel(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1222,7 +1236,7 @@ class _SlotsGrid extends ConsumerWidget {
                       message,
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
-                        color: Colors.white54,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -1245,10 +1259,10 @@ class _SlotsGrid extends ConsumerWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : const Color(0xFF111111),
+                  color: isSelected ? Theme.of(context).colorScheme.primary : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? Colors.white : Colors.white24,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.2),
                     width: 1,
                   ),
                 ),
@@ -1257,7 +1271,7 @@ class _SlotsGrid extends ConsumerWidget {
                   style: GoogleFonts.montserrat(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.black : Colors.white,
+                    color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1265,10 +1279,20 @@ class _SlotsGrid extends ConsumerWidget {
           }).toList(),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+        error: (e, _) => Center(
+          child: Text(
+            'Errore appuntamenti: $e',
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+        ),
+      ),
+      loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
       error: (e, _) => Center(
         child: Text(
-          'Errore: $e',
+          'Errore impostazioni: $e',
           style: const TextStyle(color: Colors.red),
         ),
       ),
@@ -1353,8 +1377,18 @@ class _UserAvatarState extends State<UserAvatar> {
   Widget _buildInitials() {
     return Container(
       width: 50, height: 50, alignment: Alignment.center,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: widget.isSelected ? Colors.white : Colors.white10),
-      child: Text(widget.user.name.isNotEmpty ? widget.user.name[0].toUpperCase() : '?', style: GoogleFonts.cinzel(color: widget.isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle, 
+        color: widget.isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.1)
+      ),
+      child: Text(
+        widget.user.name.isNotEmpty ? widget.user.name[0].toUpperCase() : '?', 
+        style: GoogleFonts.cinzel(
+          color: widget.isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface, 
+          fontWeight: FontWeight.bold, 
+          fontSize: 20
+        )
+      ),
     );
   }
 }
@@ -1403,9 +1437,9 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
           height: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: const Color(0xFF111111),
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
             border: Border.all(
-              color: widget.isSelected ? Colors.white : Colors.transparent,
+              color: widget.isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
               width: 1.5,
             ),
           ),
@@ -1416,7 +1450,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                 // Selection highlight
                 if (widget.isSelected)
                   Positioned.fill(
-                    child: Container(color: Colors.white.withOpacity(0.05)),
+                    child: Container(color: Theme.of(context).colorScheme.primary.withOpacity(0.05)),
                   ),
 
                 Padding(
@@ -1427,12 +1461,12 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                         ),
-                        child: const Center(
-                          child: Icon(Icons.content_cut, color: Colors.white, size: 28),
+                        child: Center(
+                          child: Icon(Icons.content_cut, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), size: 28),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1444,7 +1478,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                             Text(
                               widget.service.name.toUpperCase(),
                               style: GoogleFonts.cinzel(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1453,7 +1487,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                             Text(
                               '${widget.service.durationMinutes} min',
                               style: GoogleFonts.montserrat(
-                                color: Colors.white54,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -1465,7 +1499,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                         style: GoogleFonts.cinzel(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -1478,11 +1512,11 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, size: 12, color: Colors.black),
+                      child: Icon(Icons.check, size: 12, color: Theme.of(context).colorScheme.onPrimary),
                     ),
                   ),
               ],

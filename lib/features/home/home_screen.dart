@@ -12,6 +12,8 @@ import '../../core/ui/hexagon_painter.dart';
 import 'widgets/video_header.dart';
 import 'dart:ui';
 import 'dart:async';
+import '../../services/firestore_service.dart';
+import '../../models/shop_settings_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -53,7 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -79,10 +81,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         height: 250,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFFFFFFF).withOpacity(0.02), // Very subtle
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.02), // Very subtle
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFFFFFF).withOpacity(0.03),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.03),
                               blurRadius: 40,
                               spreadRadius: 5,
                             ),
@@ -100,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF333333),
+                              color: Theme.of(context).dividerColor,
                               width: 1,
                             ),
                             boxShadow: [
@@ -128,7 +130,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           style: GoogleFonts.cinzel(
                             fontSize: 32, 
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFFECECEC),
+                            color: Theme.of(context).colorScheme.onSurface,
                             letterSpacing: 4,
                             height: 1.2,
                           ),
@@ -143,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           style: GoogleFonts.montserrat(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF888888),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                             letterSpacing: 8,
                           ),
                         ),
@@ -154,7 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         Container(
                           width: 40,
                           height: 1,
-                          color: const Color(0xFFE0E0E0).withOpacity(0.6),
+                          color: Theme.of(context).dividerColor.withOpacity(0.6),
                         ),
 
                         const SizedBox(height: 60), // Increased to lower button
@@ -173,13 +175,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
             ),
+            
+
+
             // Image Carousel Section
             const _HomeCarousel(),
 
             // Services Section
             Container(
-              color: const Color(0xFF1A1A1A),
-              padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.grey[50], // Matches the section below
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
               child: Column(
                 children: [
                   FadeInUp(
@@ -192,7 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             // Consistent font
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFAFAFA),
+                            color: Theme.of(context).colorScheme.onSurface,
                             letterSpacing: 4,
                           ),
                         ),
@@ -200,11 +205,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         Container(
                           width: 80,
                           height: 3,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [
+                            colors: [
                                 Colors.transparent,
-                                Color(0xFFFFFFFF),
+                                Theme.of(context).colorScheme.primary,
                                 Colors.transparent,
                               ],
                             ),
@@ -216,7 +221,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           style: GoogleFonts.montserrat(
                             // Consistent font
                             fontSize: 14,
-                            color: Colors.white60,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             letterSpacing: 1,
                             fontStyle: FontStyle.italic,
                           ),
@@ -239,7 +244,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
             // Premium Digital Business Card Section
             Container(
-              color: const Color(0xFF0A0A0A),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
+              child: Column(
+                children: [
+                   // Announcement Banner (Moved here)
+                   Container(
+                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
+                      padding: const EdgeInsets.only(top: 24, left: 24, right: 24), // Added padding for spacing
+                      child: const _AnnouncementBanner(),
+                   ),
+                   const SizedBox(height: 8),
+                ],
+              ),
+            ),
+
+            // Footer / Business Card Content
+            Container(
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
               padding: const EdgeInsets.all(24),
               child: FadeInUp(
                 delay: const Duration(milliseconds: 200),
@@ -248,19 +269,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF1A1A1A),
-                        const Color(0xFF0A0A0A),
+                    colors: [
+                        Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.white,
+                        Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.grey[200]!,
                       ],
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: const Color(0xFFFFFFFF).withOpacity(0.5),
+                      color: Theme.of(context).dividerColor.withOpacity(0.5),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white.withOpacity(0.1) 
+                            : Colors.black.withOpacity(0.05),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),
@@ -274,7 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         decoration: BoxDecoration(
                           border: Border(
                             bottom: BorderSide(
-                              color: const Color(0xFFFFFFFF).withOpacity(0.2),
+                              color: Theme.of(context).dividerColor.withOpacity(0.2),
                             ),
                           ),
                         ),
@@ -285,8 +308,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border:
-                                    Border.all(color: const Color(0xFFFFFFFF)),
-                                color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                                    Border.all(color: Theme.of(context).colorScheme.onSurface),
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                               ),
                               child: ClipOval(
                                 child: Image.asset(
@@ -306,7 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   style: GoogleFonts.cinzel(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFAFAFA),
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     letterSpacing: 2,
                                   ),
                                 ),
@@ -314,9 +337,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   'BARBERSTYLE',
                                   style: GoogleFonts.montserrat(
                                     fontSize: 12,
-                                    color: Colors.white60,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                     letterSpacing: 4,
                                   ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      FontAwesomeIcons.whatsapp,
+                                      color: Color(0xFF25D366),
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '+39 351 482 3048',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -412,7 +454,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 const SizedBox(width: 20),
                                 _SocialButton(
                                   icon: FontAwesomeIcons.whatsapp,
-                                  url: 'https://wa.me/393331234567',
+                                  url: 'https://wa.me/393514823048',
                                 ),
                               ],
                             ),
@@ -1180,7 +1222,7 @@ class _PremiumServiceCard extends StatelessWidget {
                           style: GoogleFonts.cinzel(
                             fontSize: compact ? 16 : 20,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFAFAFA),
+                            color: Theme.of(context).colorScheme.onSurface,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -1191,7 +1233,7 @@ class _PremiumServiceCard extends StatelessWidget {
                           description,
                           style: GoogleFonts.montserrat(
                             fontSize: compact ? 11 : 12,
-                            color: Colors.white70,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             height: 1.5,
                           ),
                           maxLines: 2,
@@ -1203,7 +1245,7 @@ class _PremiumServiceCard extends StatelessWidget {
                         Container(
                           width: double.infinity,
                           height: 1,
-                          color: Colors.white.withOpacity(0.1),
+                          color: Theme.of(context).dividerColor.withOpacity(0.1),
                         ),
                         const SizedBox(height: 16),
 
@@ -1229,14 +1271,14 @@ class _PremiumServiceCard extends StatelessWidget {
                                     Icon(
                                       Icons.schedule, 
                                       size: 12, 
-                                      color: Colors.white38
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       duration,
                                       style: GoogleFonts.montserrat(
                                         fontSize: 12,
-                                        color: Colors.white38,
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -1295,14 +1337,14 @@ class _PremiumServiceCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37),
+                    color: Theme.of(context).colorScheme.secondary,
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(24),
                       bottomLeft: Radius.circular(24),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37).withOpacity(0.4),
+                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.4),
                         blurRadius: 10,
                         offset: const Offset(-2, 2),
                       ),
@@ -1348,15 +1390,15 @@ class _ContactRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFFFF).withOpacity(0.05),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               ),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFFFFFFFF),
+              color: Theme.of(context).colorScheme.onSurface,
               size: 20,
             ),
           ),
@@ -1368,7 +1410,7 @@ class _ContactRow extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.montserrat(
-                    color: const Color(0xFFFAFAFA),
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1377,7 +1419,7 @@ class _ContactRow extends StatelessWidget {
                 Text(
                   subtitle,
                   style: GoogleFonts.montserrat(
-                    color: Colors.white54,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                     fontSize: 12,
                   ),
                 ),
@@ -1386,7 +1428,7 @@ class _ContactRow extends StatelessWidget {
           ),
           Icon(
             Icons.arrow_forward_ios,
-            color: const Color(0xFFFFFFFF).withOpacity(0.3),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             size: 14,
           ),
         ],
@@ -1412,14 +1454,14 @@ class _HoursRow extends StatelessWidget {
         Text(
           day,
           style: GoogleFonts.montserrat(
-            color: Colors.white70,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             fontSize: 14,
           ),
         ),
         Text(
           hours,
           style: GoogleFonts.montserrat(
-            color: const Color(0xFFFFFFFF),
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -1456,14 +1498,14 @@ class _SocialButton extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFFFFFFFF).withOpacity(0.05),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
           border: Border.all(
-            color: const Color(0xFFFFFFFF).withOpacity(0.2),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
           ),
         ),
         child: Icon(
           icon,
-          color: const Color(0xFFFFFFFF),
+          color: Theme.of(context).colorScheme.onSurface,
           size: 20,
         ),
       ),
@@ -1471,4 +1513,96 @@ class _SocialButton extends StatelessWidget {
   }
 }
 
+class _AnnouncementBanner extends ConsumerWidget {
+  const _AnnouncementBanner();
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(shopSettingsProvider);
+
+    return settingsAsync.when(
+      data: (settings) {
+        if (!settings.isAnnouncementActive || settings.announcement.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return FadeInDown(
+          duration: const Duration(milliseconds: 600),
+          child: Center(
+            child: Padding( // Removed ConstrainedBox to let it fill width
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0), // Reduced vertical padding
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF151515) 
+                        : Colors.white,
+                    Theme.of(context).brightness == Brightness.dark 
+                        ? const Color(0xFF1E1E1E) 
+                        : const Color(0xFFF5F5F5),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15), // Gold glow
+                    blurRadius: 20,
+                    offset: const Offset(0, 0), // Centered glow
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center, // Centered
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center, // Centered
+                  children: [
+                    Icon(
+                      Icons.campaign_rounded, 
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AVVISO',
+                      style: GoogleFonts.cinzel(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  settings.announcement,
+                  textAlign: TextAlign.center, // Centered text
+                  style: GoogleFonts.montserrat(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 14,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}

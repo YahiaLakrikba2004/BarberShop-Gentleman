@@ -13,6 +13,7 @@ import 'service_management_screen.dart'; // Added Import
 import '../calendar/calendar_screen.dart';
 import '../../services/auth_service.dart';
 import '../appointments/grouped_appointments_list.dart';
+import 'shop_management_screen.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -23,21 +24,19 @@ class AdminDashboard extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
         title: Text('DASHBOARD AMMINISTRATORE',
             style: GoogleFonts.cinzel(
                 letterSpacing: 1.5,
                 fontSize: 16,
-                color: Colors.white,
                 fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout),
             onPressed: () {
               ref.read(authServiceProvider).signOut();
             },
@@ -61,7 +60,7 @@ class AdminDashboard extends ConsumerWidget {
                       Text(
                         'Benvenuto, ${user?.name ?? 'Admin'}',
                         style: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                           fontSize: 16,
                         ),
                       ),
@@ -69,7 +68,7 @@ class AdminDashboard extends ConsumerWidget {
                       Text(
                         'Panoramica',
                         style: GoogleFonts.cinzel(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                         ),
@@ -85,9 +84,16 @@ class AdminDashboard extends ConsumerWidget {
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: isDark ? const Color(0xFF161616) : Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                      border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +107,7 @@ class AdminDashboard extends ConsumerWidget {
                                 Text(
                                   'Andamento Ricavi',
                                   style: GoogleFonts.montserrat(
-                                    color: Colors.white70,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                     fontSize: 14,
                                   ),
                                 ),
@@ -109,7 +115,7 @@ class AdminDashboard extends ConsumerWidget {
                                 Text(
                                   '€${stats['revenue']}',
                                   style: GoogleFonts.cinzel(
-                                    color: const Color(0xFFFFFFFF),
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -119,11 +125,11 @@ class AdminDashboard extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.show_chart,
-                                  color: Color(0xFFFFFFFF)),
+                              child: Icon(Icons.show_chart,
+                                  color: Theme.of(context).colorScheme.primary),
                             ),
                           ],
                         ),
@@ -170,17 +176,24 @@ class AdminDashboard extends ConsumerWidget {
                         height: 220,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
+                          color: isDark ? const Color(0xFF161616) : Colors.white,
                           borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                           border:
-                              Border.all(color: Colors.white.withOpacity(0.05)),
+                              Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                         ),
                         child: Column(
                           children: [
                             Text(
                               'Stato Appuntamenti',
                               style: GoogleFonts.montserrat(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -204,10 +217,10 @@ class AdminDashboard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Azioni Rapide',
-                        style: TextStyle(
-                          color: Colors.white,
+                        style: GoogleFonts.cinzel(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -250,6 +263,17 @@ class AdminDashboard extends ConsumerWidget {
                                         const ServiceManagementScreen()),
                               ),
                             ),
+                            const SizedBox(width: 16),
+                            _QuickActionCard(
+                              icon: Icons.settings_applications,
+                              title: 'Gestione\nSalone',
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ShopManagementScreen()),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -268,11 +292,11 @@ class AdminDashboard extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Appuntamenti Recenti',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
+                            style: GoogleFonts.cinzel(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -284,32 +308,31 @@ class AdminDashboard extends ConsumerWidget {
                                     builder: (_) => const CalendarScreen()),
                               );
                             },
-                            child: const Text('Vedi Tutti',
-                                style: TextStyle(color: Color(0xFFFFFFFF))),
+                            child: Text('Vedi Tutti',
+                                style: TextStyle(color: Theme.of(context).colorScheme.primary)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
                       const SizedBox(height: 16),
                       if (appointments.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(32),
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white10),
+                            color: isDark ? const Color(0xFF161616) : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                           ),
                           child: Column(
                             children: [
                               Icon(Icons.event_busy,
                                   size: 48,
-                                  color: Colors.white.withOpacity(0.2)),
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
                               const SizedBox(height: 16),
                               Text(
                                 'Nessun appuntamento trovato',
                                 style: TextStyle(
-                                    color: Colors.white.withOpacity(0.5)),
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
                               ),
                             ],
                           ),
@@ -331,9 +354,9 @@ class AdminDashboard extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFFFFF)),
+            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
           ),
         ),
         error: (err, stack) => Center(
@@ -435,19 +458,19 @@ class _RevenueChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFFFFFFFF),
+            color: Theme.of(context).colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFFFFFFFF).withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFFFFFFFF).withOpacity(0.3),
-                  const Color(0xFFFFFFFF).withOpacity(0.0),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
                 ],
               ),
             ),
@@ -483,37 +506,37 @@ class _StatusPieChart extends StatelessWidget {
         sections: [
           if (confirmed > 0)
             PieChartSectionData(
-              color: Colors.white, // Confirmed = White (Solid)
+              color: Theme.of(context).colorScheme.primary,
               value: confirmed.toDouble(),
               title: '${(confirmed / total * 100).toStringAsFixed(0)}%',
               radius: 40,
               titleStyle: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black),
+                  color: Theme.of(context).colorScheme.onPrimary),
             ),
           if (pending > 0)
             PieChartSectionData(
-              color: Colors.white38, // Pending = Grey (Translucent)
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
               value: pending.toDouble(),
               title: '${(pending / total * 100).toStringAsFixed(0)}%',
               radius: 40,
               titleStyle: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
           if (cancelled > 0)
             PieChartSectionData(
-              color: const Color(0xFF1A1A1A), // Cancelled = Dark (with Border implied by contrast)
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
               value: cancelled.toDouble(),
               title: '${(cancelled / total * 100).toStringAsFixed(0)}%',
               radius: 38,
-              borderSide: const BorderSide(color: Colors.white24, width: 1), // outlined
+              borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 1),
               titleStyle: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white54),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             ),
         ],
       ),
@@ -536,13 +559,21 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: isDark ? const Color(0xFF161616) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -551,10 +582,10 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05), // Monochrome container
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 20), // Always white icon
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Column(
@@ -563,8 +594,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 value,
                 style: GoogleFonts.cinzel(
-                  // Using Cinzel for numbers
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -572,7 +602,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 title,
                 style: GoogleFonts.montserrat(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                   fontSize: 11,
                 ),
               ),
@@ -597,33 +627,34 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 120,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF2C2C2C),
-              const Color(0xFF1A1A1A),
-            ],
-          ),
+          color: isDark ? const Color(0xFF161616) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: const Color(0xFFFFFFFF), size: 32),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
               style: GoogleFonts.cinzel(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),

@@ -409,22 +409,22 @@ class ProfileScreen extends ConsumerWidget {
                             _buildSettingsTile(
                               icon: Icons.privacy_tip_outlined,
                               title: 'Privacy Policy',
-                              onTap: () {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Apertura Privacy Policy... (URL da inserire)')),
-                                );
+                              onTap: () async {
+                                final url = Uri.parse('https://barbershop-gentleman.web.app/privacy.html');
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
                               },
                             ),
                              Divider(height: 1, color: Colors.white.withOpacity(0.05), indent: 60, endIndent: 20),
                              _buildSettingsTile(
                               icon: Icons.description_outlined,
                               title: 'Termini di Servizio',
-                              onTap: () {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Apertura Termini di Servizio... (URL da inserire)')),
-                                );
+                              onTap: () async {
+                                final url = Uri.parse('https://barbershop-gentleman.web.app/terms.html');
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
                               },
                             ),
                           ],

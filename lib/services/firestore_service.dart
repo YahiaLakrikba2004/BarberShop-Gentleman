@@ -5,6 +5,7 @@ import '../models/barber_model.dart';
 import '../models/service_model.dart';
 import '../models/appointment_model.dart';
 import 'notification_service.dart';
+import '../models/shop_settings_model.dart';
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
   final notificationService = ref.watch(notificationServiceProvider);
@@ -223,6 +224,27 @@ class FirestoreService {
           .toList();
     });
   }
+
+  // Shop Settings
+  Stream<ShopSettingsModel> getShopSettings() {
+    return _firestore
+        .collection('settings')
+        .doc('shop')
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.exists) {
+        return ShopSettingsModel.fromMap(snapshot.data()!);
+      }
+      return const ShopSettingsModel();
+    });
+  }
+
+  Future<void> updateShopSettings(ShopSettingsModel settings) async {
+    await _firestore
+        .collection('settings')
+        .doc('shop')
+        .set(settings.toMap(), SetOptions(merge: true));
+  }
 }
 
 final barberListProvider = StreamProvider<List<BarberModel>>((ref) {
@@ -251,4 +273,8 @@ final allAppointmentsProvider = StreamProvider<List<AppointmentModel>>((ref) {
 
 final allUsersProvider = StreamProvider<List<UserModel>>((ref) {
   return ref.watch(firestoreServiceProvider).getAllUsers();
+});
+
+final shopSettingsProvider = StreamProvider<ShopSettingsModel>((ref) {
+  return ref.watch(firestoreServiceProvider).getShopSettings();
 });

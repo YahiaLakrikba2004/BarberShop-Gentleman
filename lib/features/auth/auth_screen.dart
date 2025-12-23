@@ -17,11 +17,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   late AnimationController _rotationController;
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     _rotationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -46,26 +50,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     setState(() => _isLoading = true);
     try {
       final authService = ref.read(authServiceProvider);
+      
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        throw Exception('Inserisci un\'email valida');
+      }
+      if (password.isEmpty) {
+        throw Exception('La password è obbligatoria');
+      }
+
       if (_isLogin) {
-        await authService.signInWithEmailAndPassword(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
+        await authService.signInWithEmailAndPassword(email, password);
       } else {
-        // Validation
+        // Validation for Signup
         final name = _nameController.text.trim();
-        final email = _emailController.text.trim();
-        final password = _passwordController.text.trim();
         final phone = _phoneController.text.trim();
+        final confirmPassword = _confirmPasswordController.text.trim();
 
         if (name.isEmpty) throw Exception('Il nome è obbligatorio');
-        if (email.isEmpty || !email.contains('@'))
-          throw Exception('Inserisci un\'email valida');
         if (password.length < 6)
           throw Exception('La password deve avere almeno 6 caratteri');
+        if (password != confirmPassword)
+          throw Exception('Le password non coincidono');
         if (phone.isEmpty)
           throw Exception('Il numero di telefono è obbligatorio');
-        if (phone.length < 9)
+        
+        // Remove spaces/special chars for check
+        final cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
+        if (cleanPhone.length < 9)
           throw Exception('Inserisci un numero di telefono valido');
 
         await authService.signUpWithEmailAndPassword(
@@ -248,8 +262,36 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     icon: Icons.lock_outline,
                     goldColor: goldColor,
                     fillColor: inputFill,
-                    isPassword: true,
+                    isPassword: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: goldColor.withOpacity(0.5),
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
+                  
+                  if (!_isLogin) ...[
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _confirmPasswordController,
+                      label: 'Conferma Password',
+                      icon: Icons.lock_reset_outlined,
+                      goldColor: goldColor,
+                      fillColor: inputFill,
+                      isPassword: _obscureConfirmPassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: goldColor.withOpacity(0.5),
+                          size: 20,
+                        ),
+                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 32),
 
                   // Forgot Password (Login Only)
@@ -351,6 +393,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     required Color fillColor,
     bool isPassword = false,
     TextInputType? keyboardType,
+    Widget? suffixIcon,
   }) {
     return TextField(
       controller: controller,
@@ -362,6 +405,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         labelText: label,
         labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
         prefixIcon: Icon(icon, color: goldColor.withOpacity(0.8)),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: fillColor,
         border: OutlineInputBorder(

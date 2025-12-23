@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/barber_model.dart';
 import '../models/appointment_model.dart';
+import '../models/shop_settings_model.dart';
 
 final slotServiceProvider = Provider<SlotService>((ref) {
   return SlotService();
@@ -13,8 +14,23 @@ class SlotService {
     required DateTime date,
     required int serviceDurationMinutes,
     required List<AppointmentModel> existingAppointments,
+    required ShopSettingsModel shopSettings,
   }) {
     final List<DateTime> slots = [];
+
+    // 0. Check Global Shop Status
+    if (shopSettings.isShopClosedManually) {
+      return [];
+    }
+
+    // 0.1 Check Global Holiday Closures
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    for (var closureDate in shopSettings.closures) {
+      final closureOnly = DateTime(closureDate.year, closureDate.month, closureDate.day);
+      if (dateOnly.isAtSameMomentAs(closureOnly)) {
+        return [];
+      }
+    }
 
     // 1. Check Availability Status
     if (barber.availabilityStatus != BarberAvailability.available) {
@@ -28,7 +44,7 @@ class SlotService {
 
     // 3. Check Unavailable Dates
     // Normalize date to remove time part for comparison
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    // dateOnly is already declared above
     for (var unavailableDate in barber.unavailableDates) {
       final unavailableDateOnly = DateTime(unavailableDate.year, unavailableDate.month, unavailableDate.day);
       if (dateOnly.isAtSameMomentAs(unavailableDateOnly)) {

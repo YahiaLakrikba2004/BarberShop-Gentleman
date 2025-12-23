@@ -26,11 +26,13 @@ class _VideoHeaderState extends State<VideoHeader> {
     super.initState();
     if (kIsWeb) {
       registerWebVideoView();
+    } else {
+      _initializeVideo();
     }
-    _initializeVideo();
   }
 
   Future<void> _initializeVideo() async {
+    if (kIsWeb) return; // Prevent logs on web
     try {
       _controller = VideoPlayerController.asset('assets/video/rain-shave-video.mp4');
       
