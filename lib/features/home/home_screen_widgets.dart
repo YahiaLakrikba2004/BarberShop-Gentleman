@@ -1,11 +1,19 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:animate_do/animate_do.dart';
+import '../../services/firestore_service.dart';
 
-class _ContactRow extends StatelessWidget {
+class ContactRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
 
-  const _ContactRow({
+  const ContactRow({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -71,11 +79,12 @@ class _ContactRow extends StatelessWidget {
   }
 }
 
-class _HoursRow extends StatelessWidget {
+class HoursRow extends StatelessWidget {
   final String day;
   final String hours;
 
-  const _HoursRow({
+  const HoursRow({
+    super.key,
     required this.day,
     required this.hours,
   });
@@ -106,11 +115,12 @@ class _HoursRow extends StatelessWidget {
   }
 }
 
-class _SocialButton extends StatelessWidget {
+class SocialButton extends StatelessWidget {
   final IconData icon;
   final String url;
 
-  const _SocialButton({
+  const SocialButton({
+    super.key,
     required this.icon,
     required this.url,
   });
@@ -142,6 +152,100 @@ class _SocialButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class AnnouncementBanner extends ConsumerWidget {
+  const AnnouncementBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(shopSettingsProvider);
+
+    return settingsAsync.when(
+      data: (settings) {
+        if (!settings.isAnnouncementActive || settings.announcement.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return FadeInDown(
+          duration: const Duration(milliseconds: 600),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).brightness == Brightness.dark 
+                          ? const Color(0xFF151515) 
+                          : Colors.white,
+                      Theme.of(context).brightness == Brightness.dark 
+                          ? const Color(0xFF1E1E1E) 
+                          : const Color(0xFFF5F5F5),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 0),
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.campaign_rounded, 
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AVVISO',
+                          style: GoogleFonts.cinzel(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      settings.announcement,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

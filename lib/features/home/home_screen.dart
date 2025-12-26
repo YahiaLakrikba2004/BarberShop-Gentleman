@@ -14,6 +14,7 @@ import 'dart:ui';
 import 'dart:async';
 import '../../services/firestore_service.dart';
 import '../../models/shop_settings_model.dart';
+import 'home_screen_widgets.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -251,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                    Container(
                       color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
                       padding: const EdgeInsets.only(top: 24, left: 24, right: 24), // Added padding for spacing
-                      child: const _AnnouncementBanner(),
+                      child: const AnnouncementBanner(),
                    ),
                    const SizedBox(height: 8),
                 ],
@@ -372,7 +373,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         child: Column(
                           children: [
                             // Address
-                            _ContactRow(
+                            ContactRow(
                               icon: Icons.location_on,
                               title: 'Via Borgo Eniano, 50',
                               subtitle: '35044 Montagnana PD, Italy',
@@ -388,7 +389,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             const SizedBox(height: 24),
 
                             // Phone
-                            _ContactRow(
+                            ContactRow(
                               icon: Icons.phone,
                               title: '+39 351 482 3048',
                               subtitle: 'Chiamaci per info',
@@ -423,18 +424,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  _HoursRow(
+                                  HoursRow(
                                       day: 'Lun - Gio',
                                       hours: '10:00-12:30 | 14:30-20:00'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(
+                                  HoursRow(
                                       day: 'Venerdì',
                                       hours: '10:00-12:30 | 14:00-20:30'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(
+                                  HoursRow(
                                       day: 'Sabato', hours: '09:00 - 20:00'),
                                   const SizedBox(height: 8),
-                                  _HoursRow(
+                                  HoursRow(
                                       day: 'Domenica', hours: '10:00 - 18:00'),
                                 ],
                               ),
@@ -446,13 +447,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _SocialButton(
+                                SocialButton(
                                   icon: FontAwesomeIcons.instagram,
                                   url:
                                       'https://www.instagram.com/the_gentlemen_barberstyle/',
                                 ),
                                 const SizedBox(width: 20),
-                                _SocialButton(
+                                SocialButton(
                                   icon: FontAwesomeIcons.whatsapp,
                                   url: 'https://wa.me/393514823048',
                                 ),
@@ -1368,241 +1369,3 @@ class _PremiumServiceCard extends StatelessWidget {
   }
 }
 
-class _ContactRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ContactRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.montserrat(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-            size: 14,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HoursRow extends StatelessWidget {
-  final String day;
-  final String hours;
-
-  const _HoursRow({
-    required this.day,
-    required this.hours,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          day,
-          style: GoogleFonts.montserrat(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          hours,
-          style: GoogleFonts.montserrat(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String url;
-
-  const _SocialButton({
-    required this.icon,
-    required this.url,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final uri = Uri.parse(url);
-        debugPrint('SocialButton tapped: $url');
-        try {
-          // Force launch, catch error if it fails.
-          // This bypasses potential false negatives from canLaunchUrl
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } catch (e) {
-          debugPrint('Error launching URL: $e');
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-          ),
-        ),
-        child: Icon(
-          icon,
-          color: Theme.of(context).colorScheme.onSurface,
-          size: 20,
-        ),
-      ),
-    );
-  }
-}
-
-class _AnnouncementBanner extends ConsumerWidget {
-  const _AnnouncementBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settingsAsync = ref.watch(shopSettingsProvider);
-
-    return settingsAsync.when(
-      data: (settings) {
-        if (!settings.isAnnouncementActive || settings.announcement.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return FadeInDown(
-          duration: const Duration(milliseconds: 600),
-          child: Center(
-            child: Padding( // Removed ConstrainedBox to let it fill width
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0), // Reduced vertical padding
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).brightness == Brightness.dark 
-                        ? const Color(0xFF151515) 
-                        : Colors.white,
-                    Theme.of(context).brightness == Brightness.dark 
-                        ? const Color(0xFF1E1E1E) 
-                        : const Color(0xFFF5F5F5),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15), // Gold glow
-                    blurRadius: 20,
-                    offset: const Offset(0, 0), // Centered glow
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center, // Centered
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center, // Centered
-                  children: [
-                    Icon(
-                      Icons.campaign_rounded, 
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'AVVISO',
-                      style: GoogleFonts.cinzel(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  settings.announcement,
-                  textAlign: TextAlign.center, // Centered text
-                  style: GoogleFonts.montserrat(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
