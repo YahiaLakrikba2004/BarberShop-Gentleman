@@ -5,6 +5,7 @@ enum BarberAvailability {
   sick,
   vacation,
   dayOff,
+  absence, // General absence (Permesso/Assenza)
 }
 
 class BarberModel extends Equatable {

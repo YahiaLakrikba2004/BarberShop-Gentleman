@@ -159,34 +159,67 @@ class _BarberManagementCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                    Row(
+                    Column(
                       children: [
-                        Expanded(
-                          child: _StatusButton(
-                            label: 'Disponibile',
-                            isSelected: barber.availabilityStatus == BarberAvailability.available,
-                            color: Colors.green.shade600,
-                            onTap: () => _updateStatus(ref, barber, BarberAvailability.available),
-                          ),
+                        // Row 1: Available & Sick
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatusButton(
+                                label: 'Disponibile',
+                                isSelected: barber.availabilityStatus == BarberAvailability.available,
+                                color: Colors.green.shade600,
+                                onTap: () => _updateStatus(ref, barber, BarberAvailability.available),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _StatusButton(
+                                label: 'Malattia',
+                                isSelected: barber.availabilityStatus == BarberAvailability.sick,
+                                color: Colors.red.shade600,
+                                onTap: () => _updateStatus(ref, barber, BarberAvailability.sick),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _StatusButton(
-                            label: 'Malattia',
-                            isSelected: barber.availabilityStatus == BarberAvailability.sick,
-                            color: Colors.red.shade600,
-                            onTap: () => _updateStatus(ref, barber, BarberAvailability.sick),
-                          ),
+                        const SizedBox(height: 8),
+                        // Row 2: Vacation & Absence
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatusButton(
+                                label: 'In Ferie',
+                                isSelected: barber.availabilityStatus == BarberAvailability.vacation,
+                                color: Colors.blue.shade600,
+                                onTap: () => _updateStatus(ref, barber, BarberAvailability.vacation),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _StatusButton(
+                                label: 'Assenza',
+                                isSelected: barber.availabilityStatus == BarberAvailability.absence,
+                                color: Colors.grey.shade600,
+                                onTap: () => _updateStatus(ref, barber, BarberAvailability.absence),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                         Expanded(
-                          child: _StatusButton(
-                            label: 'Pianifica Ferie',
-                            isSelected: false,
-                            color: Colors.white,
-                            icon: Icons.calendar_month,
-                            onTap: () => _showBarberVacationDialog(context, ref, barber),
-                          ),
+                        const SizedBox(height: 12),
+                        // Row 3: Future Planning
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatusButton(
+                                label: 'Pianifica Ferie Future',
+                                isSelected: false,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                icon: Icons.calendar_month,
+                                onTap: () => _showBarberVacationDialog(context, ref, barber),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

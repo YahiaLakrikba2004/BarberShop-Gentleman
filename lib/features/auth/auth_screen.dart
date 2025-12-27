@@ -173,7 +173,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           child: Padding(
                             padding: const EdgeInsets.all(1.0),
                             child: Image.asset(
-                              'assets/images/icon_premium.png',
+                              'assets/images/icon_premium_v2.png',
                               fit: BoxFit.contain,
                             ),
                           ),

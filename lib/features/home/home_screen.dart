@@ -116,7 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                           child: ClipOval(
                             child: Image.asset(
-                              'assets/images/icon_premium.png',
+                              'assets/images/icon_premium_v2.png',
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -314,7 +314,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                               child: ClipOval(
                                 child: Image.asset(
-                                  'assets/images/icon_premium.png',
+                                  'assets/images/icon_premium_v2.png',
                                   width: 24,
                                   height: 24,
                                   fit: BoxFit.cover,

@@ -561,14 +561,19 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                          child: Column(
                            mainAxisSize: MainAxisSize.min,
                            children: [
-                             Icon(Icons.block, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), size: 32),
+                             Icon(
+                               _getStatusIcon(barber.availabilityStatus), 
+                               color: _getStatusColor(barber.availabilityStatus).withOpacity(0.8), 
+                               size: 32
+                             ),
                              const SizedBox(height: 8),
                              Text(
-                               'NON DISPONIBILE',
+                               _getStatusLabel(barber.availabilityStatus),
                                style: GoogleFonts.montserrat(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.38), 
-                                  fontSize: 10, 
-                                  fontWeight: FontWeight.bold
+                                  color: Colors.white.withOpacity(0.9), 
+                                  fontSize: 12, 
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
                                ),
                              ),
                            ],
@@ -664,13 +669,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDC143C).withOpacity(0.8), // Crimson for unavailable
+                          color: _getStatusColor(barber.availabilityStatus).withOpacity(0.9),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          barber.availabilityStatus == BarberAvailability.sick 
-                              ? 'MALATTIA' 
-                              : 'ASSENTE',
+                          _getStatusLabel(barber.availabilityStatus),
                           style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -745,6 +748,45 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
   }
 
+
+  Color _getStatusColor(BarberAvailability status) {
+    switch (status) {
+      case BarberAvailability.sick:
+        return const Color(0xFFDC143C); // Crimson
+      case BarberAvailability.vacation:
+        return Colors.blue.shade600;
+      case BarberAvailability.absence:
+        return Colors.grey.shade700;
+      default:
+        return const Color(0xFFDC143C);
+    }
+  }
+
+  String _getStatusLabel(BarberAvailability status) {
+    switch (status) {
+      case BarberAvailability.sick:
+        return 'MALATTIA';
+      case BarberAvailability.vacation:
+        return 'IN FERIE';
+      case BarberAvailability.absence:
+        return 'ASSENTE';
+      default:
+        return 'NON DISPONIBILE';
+    }
+  }
+
+  IconData _getStatusIcon(BarberAvailability status) {
+     switch (status) {
+      case BarberAvailability.sick:
+        return Icons.local_hospital;
+      case BarberAvailability.vacation:
+        return Icons.beach_access;
+      case BarberAvailability.absence:
+        return Icons.person_off;
+      default:
+        return Icons.block;
+    }
+  }
 
   Widget _buildTimeSelection() {
     if (_selectedBarber == null || _selectedService == null) {
@@ -1192,10 +1234,11 @@ class _SlotsGrid extends ConsumerWidget {
             title = 'MALATTIA';
             message = '${barber.name} non è disponibile.';
             icon = Icons.local_hospital;
-          } else if (barber.availabilityStatus == BarberAvailability.vacation) {
-            title = 'FERIE';
-            message = '${barber.name} è in ferie.';
-            icon = Icons.flight_takeoff;
+          } else if (barber.availabilityStatus == BarberAvailability.vacation || 
+                     barber.unavailableDates.any((d) => d.year == date.year && d.month == date.month && d.day == date.day)) {
+            title = 'IN FERIE';
+            message = '${barber.name} è in ferie in questa data.';
+            icon = Icons.beach_access;
           } else if (barber.daysOff.contains(date.weekday)) {
             title = 'GIORNO DI RIPOSO';
             message = '${barber.name} non lavora di ${DateFormat('EEEE', 'it').format(date)}.';
