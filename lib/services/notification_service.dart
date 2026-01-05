@@ -283,6 +283,11 @@ class NotificationService {
     }
   }
 
+  Future<void> cancelNotification(int id) async {
+    await _localNotifications.cancel(id);
+    if (kDebugMode) print("Notification cancelled: $id");
+  }
+
   Future<void> _saveTokenToFirestore(String token) async {
     final user = _auth.currentUser;
     if (user != null) {

@@ -7,7 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/barber_model.dart';
+import '../../models/barber_model.dart';
+import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/messaging_service.dart';
 
 class BarberManagementScreen extends ConsumerWidget {
   const BarberManagementScreen({super.key});
@@ -257,8 +260,165 @@ class _BarberManagementCard extends ConsumerWidget {
   }
 
   Future<void> _updateStatus(WidgetRef ref, BarberModel barber, BarberAvailability status) async {
-    final updatedBarber = barber.copyWith(availabilityStatus: status);
-    await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+    await _checkAndSetStatus(ref.context, ref, barber, status);
+  }
+
+  Future<void> _checkAndSetStatus(BuildContext context, WidgetRef ref, BarberModel barber, BarberAvailability status) async {
+    if (status == BarberAvailability.available) {
+      final updatedBarber = barber.copyWith(availabilityStatus: status);
+      await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stato aggiornato: Disponibile')));
+      }
+      return;
+    }
+
+    // Safer approach: Fetch ALL appointments and filter in memory to avoid date/query issues
+    final allApps = await ref.read(firestoreServiceProvider).getAllAppointmentsForBarber(barber.id).first;
+    
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final endOfTomorrow = startOfToday.add(const Duration(days: 2));
+
+    final conflictingAppointments = allApps.where((app) {
+      if (app.status != AppointmentStatus.confirmed) return false;
+      // Conflict if between [Today 00:00] and [Tomorrow 23:59] approx (actually start of day after tomorrow)
+      return app.date.isAfter(startOfToday) && app.date.isBefore(endOfTomorrow);
+    }).toList();
+
+    if (conflictingAppointments.isEmpty) {
+      final updatedBarber = barber.copyWith(availabilityStatus: status);
+      await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Stato aggiornato: ${_getStatusLabel(status)}')));
+      }
+    } else {
+      if (context.mounted) {
+        _showConflictDialog(context, ref, barber, status, conflictingAppointments, () async {
+            final updatedBarber = barber.copyWith(availabilityStatus: status);
+            await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+        });
+      }
+    }
+  }
+
+  String _getStatusLabel(BarberAvailability status) {
+    switch (status) {
+      case BarberAvailability.sick: return "Malattia";
+      case BarberAvailability.vacation: return "In Ferie";
+      case BarberAvailability.absence: return "Assenza";
+      case BarberAvailability.available: return "Disponibile";
+      default: return "";
+    }
+  }
+
+  void _showConflictDialog(
+    BuildContext context, 
+    WidgetRef ref, 
+    BarberModel barber, 
+    BarberAvailability newStatus, 
+    List<AppointmentModel> conflicts,
+    VoidCallback onConfirmForce
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.white,
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'CONFLITTO',
+                style: GoogleFonts.cinzel(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ci sono ${conflicts.length} appuntamenti nel periodo (${newStatus == BarberAvailability.sick ? "Oggi/Domani" : "Assenza"}).',
+                style: GoogleFonts.montserrat(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: conflicts.length,
+                  itemBuilder: (context, index) {
+                    final app = conflicts[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  app.customerName,
+                                  style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                Text(
+                                  '${DateFormat('dd/MM HH:mm').format(app.date)}',
+                                  style: GoogleFonts.montserrat(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.perm_phone_msg, color: Colors.green),
+                            onPressed: () {
+                              final phone = app.customerPhoneNumber;
+                              if (phone != null && phone.isNotEmpty) {
+                                String msg = 'Ciao ${app.customerName}, sono ${barber.name}. ';
+                                if (newStatus == BarberAvailability.sick) {
+                                  msg += 'Purtroppo oggi non sto bene e non ci sarò per il tuo appuntamento delle ${DateFormat('HH:mm').format(app.date)}. Scusami, contattaci per spostarlo.';
+                                } else {
+                                  msg += 'Purtroppo non potrò esserci per il tuo appuntamento delle ${DateFormat('HH:mm').format(app.date)} per un imprevisto. Scusami, contattaci per spostarlo.';
+                                }
+                                ref.read(messagingServiceProvider).sendWhatsAppMessage(phone, msg);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ANNULLA', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              onConfirmForce();
+              Navigator.pop(context);
+            },
+            child: Text('FORZA', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showBarberVacationDialog(BuildContext context, WidgetRef ref, BarberModel barber) {
@@ -421,16 +581,96 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () async {
-              final updatedBarber = widget.barber.copyWith(unavailableDates: _unavailableDates);
-              await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
-              if (context.mounted) Navigator.pop(context);
-            },
+            onPressed: () => _checkAndSave(ref),
             child: Text('SALVA', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _checkAndSave(WidgetRef ref) async {
+      final now = DateTime.now();
+      // Check ALL future unavailable dates for conflicts
+      final futureUnavailable = _unavailableDates.where((d) => d.isAfter(now.subtract(const Duration(days: 1)))).toList();
+      
+      List<AppointmentModel> allConflicts = [];
+
+      for (var date in futureUnavailable) {
+         final apps = await ref.read(firestoreServiceProvider).getAppointmentsForBarber(widget.barber.id, date).first;
+         allConflicts.addAll(apps.where((a) => a.status == AppointmentStatus.confirmed));
+      }
+
+      if (allConflicts.isNotEmpty) {
+        if (mounted) {
+             _showVacationConflictDialog(context, ref, allConflicts);
+        }
+      } else {
+         await _save(ref);
+      }
+  }
+
+  Future<void> _save(WidgetRef ref) async {
+      final updatedBarber = widget.barber.copyWith(unavailableDates: _unavailableDates);
+      await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+      if (mounted) Navigator.pop(context);
+  }
+
+  void _showVacationConflictDialog(BuildContext context, WidgetRef ref, List<AppointmentModel> conflicts) {
+     showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text('CONFLITTO FERIE', style: GoogleFonts.cinzel(fontWeight: FontWeight.bold, color: Colors.orange)),
+        content: SizedBox(
+           width: double.maxFinite,
+           child: Column(
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Text('Hai ${conflicts.length} appuntamenti nei giorni selezionati.', style: GoogleFonts.montserrat()),
+               const SizedBox(height: 16),
+               Flexible(
+                 child: ListView.builder(
+                   shrinkWrap: true,
+                   itemCount: conflicts.length,
+                   itemBuilder: (ctx, i) {
+                      final app = conflicts[i];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(app.customerName, style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+                        subtitle: Text(DateFormat('dd/MM HH:mm').format(app.date), style: GoogleFonts.montserrat(fontSize: 12)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.perm_phone_msg, color: Colors.green),
+                          onPressed: () {
+                              final phone = app.customerPhoneNumber;
+                              if (phone != null) {
+                                  ref.read(messagingServiceProvider).sendWhatsAppMessage(
+                                    phone, 
+                                    'Ciao ${app.customerName}, sono ${widget.barber.name}. Ho dovuto modificare i miei giorni di ferie e non ci sarò per il tuo appuntamento del ${DateFormat('dd/MM').format(app.date)}. Scusami, contattaci per riprogrammare.'
+                                  );
+                              }
+                          },
+                        ),
+                      );
+                   },
+                 ),
+               )
+             ],
+           ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('ANNULLA')),
+          ElevatedButton(
+            onPressed: () async {
+               Navigator.pop(context);
+               await _save(ref);
+            }, 
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('SALVA COMUNQUE'),
+          ),
+        ],
+      ),
+     );
   }
 }
 
