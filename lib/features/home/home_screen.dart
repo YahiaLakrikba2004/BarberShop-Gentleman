@@ -537,11 +537,13 @@ class _HomeCarouselState extends State<_HomeCarousel> {
     _ensureController(); // Lazy Init
 
     final List<String> galleryImages = [
-      'assets/images/gallery/haircut1.png',
-      'assets/images/gallery/haircut2.png',
-      'assets/images/gallery/haircut3.png',
-      'assets/images/gallery/haircut4.png',
-      'assets/images/gallery/haircut5.png',
+      'assets/images/gallery/gallery_user_1.jpg',
+      'assets/images/gallery/gallery_user_2.jpg',
+      'assets/images/gallery/gallery_user_3.jpg',
+      'assets/images/gallery/gallery_user_4.jpg',
+      'assets/images/gallery/gallery_user_5.jpg',
+      'assets/images/gallery/gallery_user_6.jpg',
+      'assets/images/gallery/gallery_user_7.jpg',
     ];
 
     return Container(

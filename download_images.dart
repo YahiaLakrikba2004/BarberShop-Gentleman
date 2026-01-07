@@ -1,0 +1,34 @@
+import 'dart:io';
+
+void main() async {
+  final urls = [
+    'https://scontent-mxp2-1.cdninstagram.com/v/t51.2885-15/540508645_17920985451148713_2820358244998614225_n.jpg?stp=dst-jpg_e15_p640x640_tt6&_nc_ht=scontent-mxp2-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=p3B81V1iQmAQ7kNvwG51f-g&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Afr1epxOv2DjZ8yILxUmTFF9fl6fru_f0Y6yMqZMRzGFFg&oe=69642849&_nc_sid=8b3546',
+    'https://scontent-mxp2-1.cdninstagram.com/v/t51.2885-15/489821162_17904927522148713_4058699834140831137_n.jpg?stp=dst-jpg_e35_p640x640_sh0.08_tt6&_nc_ht=scontent-mxp2-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=5fT8JFjHYAwQ7kNvwHzDNfX&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfrIZ5svBynX7si1fxj3nuXY1PYM3fgTtZXZXCNyVl74Cw&oe=69642524&_nc_sid=8b3546',
+    'https://scontent-mxp1-1.cdninstagram.com/v/t51.2885-15/609194711_648156978320741_3591022854334122231_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-mxp1-1.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=H1NwDltwORoQ7kNvwFYedwI&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfqShBx8P6Dv8VjABIgmKSGiugFg4twRigDLaPsOn9sShA&oe=69644716&_nc_sid=8b3546',
+    'https://scontent-mxp2-1.cdninstagram.com/v/t51.2885-15/560313231_24707148145570772_66151923564228884_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-mxp2-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=-MpG3-a_ofYQ7kNvwG0tmnN&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfqViTP8fKKqXhiPb6_nc2dBeHjK8i9_ZxDBmtUPfdccaQ&oe=69644C16&_nc_sid=8b3546',
+    'https://scontent-mxp2-1.cdninstagram.com/v/t51.2885-15/542355630_17921594787148713_4881475113445480463_n.jpg?stp=dst-jpg_e35_s640x640_sh0.08_tt6&_nc_ht=scontent-mxp2-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=EP-g0_Oc6QoQ7kNvwHHPjXj&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfrctGmk4etkLAjFx0fwuARofPE3yD1guDx-4CRRp577Ag&oe=69643716&_nc_sid=8b3546',
+    'https://scontent-mxp2-1.cdninstagram.com/v/t51.2885-15/517267568_597785053384237_5595632756398186218_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-mxp2-1.cdninstagram.com&_nc_cat=101&_nc_oc=Q6cZ2QHmGaOcNkC-1zBbRx6OfDrLixC9Itqy7PFvMKXPln61M7SBj2fqO-QoU5oVbXva88k&_nc_ohc=qByKam6rG4UQ7kNvwFOJFbu&_nc_gid=fWyz0lzzQ2cc_hMxluIeCw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Afr-S4OfmXkbH9gD1eav3a0vF4mj0NXNb40Cl9kU8mVU-A&oe=69644516&_nc_sid=8b3546',
+  ];
+
+  final client = HttpClient();
+  
+  for (var i = 0; i < urls.length; i++) {
+    final fileName = 'assets/images/gallery/real_work${i + 1}.jpg';
+    try {
+      print('Downloading ${urls[i]} to $fileName');
+      final request = await client.getUrl(Uri.parse(urls[i]));
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final file = File(fileName);
+        await file.create(recursive: true);
+        await response.pipe(file.openWrite());
+        print('Saved $fileName');
+      } else {
+        print('Failed to download ${urls[i]}: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error downloading ${urls[i]}: $e');
+    }
+  }
+  client.close();
+}
