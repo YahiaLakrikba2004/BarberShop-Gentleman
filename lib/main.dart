@@ -117,7 +117,7 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
       builder: (context, child) {
         return Stack(
