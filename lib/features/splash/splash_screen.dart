@@ -13,6 +13,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -26,6 +27,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(
         parent: _controller,
         curve: Curves.easeIn, // Gentle entrance
+      ),
+    );
+
+    // Zoom OUT effect (1.1 -> 1.0)
+    _scaleAnimation = Tween<double>(begin: 1.1, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic, // Smooth landing
       ),
     );
 
@@ -62,57 +71,60 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // --- LOGO ---
-              // Fixed size, no movement, no scale
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1), // Very subtle upscale detail
-                    width: 1,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // --- LOGO ---
+                // Fixed size, no movement, no scale
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1), // Very subtle upscale detail
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/icon_premium_v2.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/icon_premium_v2.png',
-                    fit: BoxFit.cover,
+
+                const SizedBox(height: 48),
+
+                // --- TITLE ---
+                Text(
+                  'THE GENTLEMEN',
+                  style: GoogleFonts.cinzel(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 4, // Static, confident spacing
                   ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
 
-              const SizedBox(height: 48),
+                const SizedBox(height: 16),
 
-              // --- TITLE ---
-              Text(
-                'THE GENTLEMEN',
-                style: GoogleFonts.cinzel(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 4, // Static, confident spacing
+                // --- SUBTITLE ---
+                Text(
+                  'BARBERSTYLE',
+                  style: GoogleFonts.montserrat(
+                    color: const Color(0xFF888888), // Professional Grey
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 8,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 16),
-
-              // --- SUBTITLE ---
-              Text(
-                'BARBERSTYLE',
-                style: GoogleFonts.montserrat(
-                  color: const Color(0xFF888888), // Professional Grey
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 8,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

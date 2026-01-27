@@ -428,7 +428,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       orElse: () => [],
     );
     
-    final allBarbers = barbers;
+    final allBarbers = barbers.where((b) {
+      // Hide if not bookable OR if it's the specific Shop account name (Failsafe)
+      final isShop = b.name.toUpperCase() == 'NEGOZIO' || b.name.toUpperCase().contains('GENTLEMAN SHOP');
+      return b.isBookable && !isShop;
+    }).toList();
 
     if (allBarbers.isEmpty) {
       return Center(

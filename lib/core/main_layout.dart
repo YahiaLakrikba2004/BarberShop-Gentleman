@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../config/admin_config.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -73,7 +74,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                     icon: Icons.event_note_outlined,
                     selectedIcon: Icons.event_note,
                     label: 'Agenda',
-                    onTap: () => context.go('/calendar'),
+                    onTap: () {
+                      if (AdminConfig.isShopAccount(user.email)) {
+                        context.go('/team-agenda');
+                      } else {
+                        context.go('/calendar');
+                      }
+                    },
                   ),
                 
                 // Show Profile for Clients OR if user is null (to allow logout/fixing)

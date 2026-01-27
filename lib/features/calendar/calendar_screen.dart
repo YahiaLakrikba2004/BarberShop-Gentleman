@@ -8,6 +8,8 @@ import '../../models/appointment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../models/user_model.dart';
+import '../../config/admin_config.dart';
+import '../admin/team_agenda_screen.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -60,6 +62,37 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     letterSpacing: 2,
                   ),
                 ),
+              ),
+              // Special Button for Team Agenda (Shop Account/Admin)
+              userAsync.when(
+                  data: (user) {
+                   if (user != null && (user.role == UserRole.admin || AdminConfig.isShopAccount(user.email))) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const TeamAgendaScreen()),
+                          ),
+                          icon: const Icon(Icons.people_alt_outlined, color: Color(0xFFD4AF37)),
+                          label: Text(
+                            "AGENDA TEAM",
+                            style: GoogleFonts.cinzel(
+                              color: const Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFD4AF37)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
               ),
               Expanded(
                 child: userAsync.when(

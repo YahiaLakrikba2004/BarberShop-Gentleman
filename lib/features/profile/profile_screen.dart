@@ -24,41 +24,13 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
 
-    // If user is null (account deleted or error), show error and allow logout
+    // If user is null, we can return a simple loading indicator or empty widget.
+    // The redirect logic is handled by the AuthState listener in the app router.
     if (user == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
-        appBar: AppBar(
-          title: Text('ERRORE PROFILO', style: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.bold)),
-          backgroundColor: const Color(0xFF0A0A0A),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              onPressed: () => ref.read(authServiceProvider).signOut(),
-            ),
-          ],
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              const Text(
-                'Profilo non trovato.',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.read(authServiceProvider).signOut(),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                child: const Text('ESEGUI LOGOUT', style: TextStyle(color: Colors.black)),
-              ),
-            ],
-          ),
-        ),
-      );
+        return const Scaffold(
+          backgroundColor: Color(0xFF0A0A0A),
+          body: Center(child: CircularProgressIndicator(color: Colors.white)),
+        );
     }
 
     return DefaultTabController(
@@ -642,6 +614,7 @@ class ProfileScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UserModel user) {
     final nameController = TextEditingController(text: user.name);
     final phoneController = TextEditingController(text: user.phoneNumber);
+    final emailController = TextEditingController(text: user.email);
 
     showDialog(
       context: context,
@@ -663,46 +636,72 @@ class ProfileScreen extends ConsumerWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 16),
-              // Name Field
-              TextField(
-                controller: nameController,
-                style: GoogleFonts.montserrat(color: Colors.white),
-                cursorColor: Colors.white,
-                decoration: InputDecoration(
-                  labelText: 'NOME',
-                  labelStyle: GoogleFonts.montserrat(
-                      color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                  prefixIcon: Icon(Icons.person_outline, 
-                      color: Colors.white.withOpacity(0.7), size: 20),
-                  filled: true,
-                  fillColor: Colors.black.withOpacity(0.3),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                // Name Field
+                TextField(
+                  controller: nameController,
+                  style: GoogleFonts.montserrat(color: Colors.white),
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                    labelText: 'NOME',
+                    labelStyle: GoogleFonts.montserrat(
+                        color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                    prefixIcon: Icon(Icons.person_outline, 
+                        color: Colors.white.withOpacity(0.7), size: 20),
+                    filled: true,
+                    fillColor: Colors.black.withOpacity(0.3),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 ),
-              ),
-              const SizedBox(height: 20),
-              // Phone Field
+                const SizedBox(height: 20),
+                // Phone Field
+                TextField(
+                  controller: phoneController,
+                  style: GoogleFonts.montserrat(color: Colors.white),
+                  keyboardType: TextInputType.phone,
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                    labelText: 'TELEFONO',
+                    labelStyle: GoogleFonts.montserrat(
+                        color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                    prefixIcon: Icon(Icons.phone_outlined, 
+                        color: Colors.white.withOpacity(0.7), size: 20),
+                    filled: true,
+                    fillColor: Colors.black.withOpacity(0.3),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                    ),
+                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  ),
+                ),
+               const SizedBox(height: 20),
+              // Email Field (Editable)
               TextField(
-                controller: phoneController,
-                style: GoogleFonts.montserrat(color: Colors.white),
-                keyboardType: TextInputType.phone,
-                cursorColor: Colors.white,
-                decoration: InputDecoration(
-                  labelText: 'TELEFONO',
+                controller: emailController,
+                 style: GoogleFonts.montserrat(color: Colors.white),
+                 cursorColor: Colors.white,
+                 decoration: InputDecoration(
+                  labelText: 'EMAIL',
                   labelStyle: GoogleFonts.montserrat(
                       color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                  prefixIcon: Icon(Icons.phone_outlined, 
+                  prefixIcon: Icon(Icons.email_outlined, 
                       color: Colors.white.withOpacity(0.7), size: 20),
                   filled: true,
                   fillColor: Colors.black.withOpacity(0.3),
@@ -712,68 +711,49 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                     borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
                   ),
                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 ),
               ),
-             const SizedBox(height: 20),
-            // Email Field (Read Only)
-            TextField(
-              enabled: false,
-              controller: TextEditingController(text: user.email),
-              style: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.5)),
-              decoration: InputDecoration(
-                labelText: 'EMAIL',
-                labelStyle: GoogleFonts.montserrat(
-                    color: Colors.white.withOpacity(0.3), fontSize: 12, letterSpacing: 1.0),
-                prefixIcon: Icon(Icons.email_outlined, 
-                    color: Colors.white.withOpacity(0.3), size: 20),
-                filled: true,
-                fillColor: Colors.black.withOpacity(0.2),
-                disabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+
+                const SizedBox(height: 24),
+                // Password Reset Action
+                TextButton.icon(
+                  onPressed: () async {
+                     try {
+                       await ref.read(authServiceProvider).sendPasswordResetEmail(user.email);
+                       if (context.mounted) {
+                         Navigator.pop(context);
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(
+                             content: Text('Email di reset inviata a ${user.email}'),
+                             backgroundColor: Colors.green,
+                           ),
+                         );
+                       }
+                     } catch (e) {
+                        if (context.mounted) {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text('Errore durante l\'invio della mail')),
+                         );
+                       }
+                     }
+                  },
+                  icon: Icon(Icons.lock_reset, color: Colors.white.withOpacity(0.6), size: 18),
+                  label: Text(
+                    'CAMBIA PASSWORD',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white.withOpacity(0.6),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      letterSpacing: 1.0,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
-                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
+              ],
             ),
-             const SizedBox(height: 24),
-            // Password Reset Action
-            TextButton.icon(
-              onPressed: () async {
-                 try {
-                   await ref.read(authServiceProvider).sendPasswordResetEmail(user.email);
-                   if (context.mounted) {
-                     Navigator.pop(context);
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(
-                         content: Text('Email di reset inviata a ${user.email}'),
-                         backgroundColor: Colors.green,
-                       ),
-                     );
-                   }
-                 } catch (e) {
-                    if (context.mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       const SnackBar(content: Text('Errore durante l\'invio della mail')),
-                     );
-                   }
-                 }
-              },
-              icon: Icon(Icons.lock_reset, color: Colors.white.withOpacity(0.6), size: 18),
-              label: Text(
-                'CAMBIA PASSWORD',
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withOpacity(0.6),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  letterSpacing: 1.0,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-            ],
           ),
           actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           actions: [
@@ -804,13 +784,30 @@ class ProfileScreen extends ConsumerWidget {
                     onPressed: () async {
                       final newName = nameController.text.trim();
                       final newPhone = phoneController.text.trim();
+                      final newEmail = emailController.text.trim(); // Capture new email
+
                       if (newName.isNotEmpty) {
-                        final updatedUser =
-                            user.copyWith(name: newName, phoneNumber: newPhone);
-                        await ref
-                            .read(firestoreServiceProvider)
-                            .updateUser(updatedUser);
-                        if (context.mounted) Navigator.pop(context);
+                        try {
+                             // Update Firestore Only
+                             // We do NOT update Auth email because we are using deterministic phone-auth emails.
+                             // Changing auth email would break the 'Login' flow which expects phone->fakeEmail mapping.
+                             
+                             await ref.read(firestoreServiceProvider).updateUserFields(user.id, {
+                               'name': newName,
+                               'phoneNumber': newPhone,
+                               'email': newEmail
+                             });
+                           if (context.mounted) {
+                             Navigator.pop(context);
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text('Profilo aggiornato!')),
+                             );
+                           }
+                        } catch (e) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                               SnackBar(content: Text('Errore: $e')),
+                             );
+                        }
                       }
                     },
                      style: ElevatedButton.styleFrom(

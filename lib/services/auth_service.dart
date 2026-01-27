@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import 'firestore_service.dart';
 
 import '../core/initialization.dart';
+import '../config/admin_config.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(FirebaseAuth.instance, ref.read(firestoreServiceProvider));
@@ -53,6 +54,11 @@ class AuthService {
     );
 
     if (userCredential.user != null) {
+      final isShopAccount = AdminConfig.isShopAccount(email);
+      // Shop Account is technically a Barber but acts as Admin in practice (Ghost Barber)
+      // Allowed Admins get Admin role. Everyone else is Client.
+      final role = isShopAccount ? UserRole.barber : AdminConfig.isAllowedAdmin(email) ? UserRole.admin : UserRole.client;
+
       final newUser = UserModel(
         id: userCredential.user!.uid,
         email: email,
@@ -61,7 +67,28 @@ class AuthService {
         phoneNumber: phoneNumber,
       );
       await _firestoreService.createUser(newUser);
+
+      // Special Case: Shop Account is ALSO a Barber (Hybrid)
+      if (isShopAccount) {
+        await _firestoreService.createBarberProfile(newUser, isBookable: false); // Not bookable
+      }
     }
+  }
+
+  Future<void> createPhoneUser({
+    required String uid,
+    required String phoneNumber,
+    required String name,
+    UserRole role = UserRole.client,
+  }) async {
+    final newUser = UserModel(
+      id: uid,
+      email: '', // Phone auth users don't have email initially
+      name: name,
+      role: role,
+      phoneNumber: phoneNumber,
+    );
+    await _firestoreService.createUser(newUser);
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
@@ -80,5 +107,28 @@ class AuthService {
       // Delete from Firebase Auth
       await user.delete();
     }
+  }
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required void Function(PhoneAuthCredential) verificationCompleted,
+    required void Function(FirebaseAuthException) verificationFailed,
+    required void Function(String, int?) codeSent,
+    required void Function(String) codeAutoRetrievalTimeout,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: verificationCompleted,
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+    );
+  }
+
+  Future<void> signInWithCredential(AuthCredential credential) async {
+    await _auth.signInWithCredential(credential);
+  }
+
+  Future<void> signInAnonymously() async {
+    await _auth.signInAnonymously();
   }
 }

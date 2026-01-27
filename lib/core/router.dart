@@ -7,6 +7,7 @@ import '../features/home/home_screen.dart';
 import '../features/booking/booking_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/admin/admin_dashboard.dart';
+import '../features/admin/team_agenda_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../services/auth_service.dart';
 import 'main_layout.dart';
@@ -52,7 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             currentIndex = 0;
           } else if (location.startsWith('/booking')) {
             currentIndex = 1;
-          } else if (location.startsWith('/calendar')) {
+          } else if (location.startsWith('/calendar') || location.startsWith('/team-agenda')) {
             currentIndex = 2;
           } else if (location.startsWith('/profile')) {
              currentIndex = (user?.role == UserRole.client) ? 2 : 3;
@@ -104,6 +105,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               context: context,
               state: state,
               child: const ProfileScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/team-agenda',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              context: context,
+              state: state,
+              child: const TeamAgendaScreen(),
             ),
           ),
         ],

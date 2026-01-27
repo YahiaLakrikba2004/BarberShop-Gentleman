@@ -15,6 +15,8 @@ import 'dart:async';
 import '../../services/firestore_service.dart';
 import '../../models/shop_settings_model.dart';
 import 'home_screen_widgets.dart';
+import '../../services/notification_service.dart';
+import '../../models/appointment_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +57,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
+
+    // [NEW] Notification Sync Listening
+    // When we have a user, we listen to their appointments changes to sync notifications
+    if (user != null) {
+      ref.listen<AsyncValue<List<AppointmentModel>>>(
+        userAppointmentsProvider(user.id),
+        (previous, next) {
+          next.whenData((appointments) {
+            // Only reschedule if data actually changed or loaded
+            if (previous?.value != appointments) {
+               ref.read(notificationServiceProvider).rescheduleAllAppointments(appointments);
+            }
+          });
+        },
+      );
+    }
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBodyBehindAppBar: true,
@@ -67,6 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+
             // Hero Section - Neo-Classic Luxury Design
             FadeIn(
               duration: const Duration(milliseconds: 800),

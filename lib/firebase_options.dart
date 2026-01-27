@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions get android => FirebaseOptions(
         apiKey: 'AIzaSyDO7rE5JAxDS3xbucCe544f0i0lers4QAo',
-        appId: '1:635305520200:android:977a6cf6ffe4f4cbf73c7d',
+        appId: '1:635305520200:android:162794394f0aaf44f73c7d',
         messagingSenderId: '635305520200',
         projectId: 'barbershop-gentleman',
         storageBucket: 'barbershop-gentleman.firebasestorage.app',

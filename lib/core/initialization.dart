@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,16 @@ final appInitializationProvider = FutureProvider<void>((ref) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Initialize App Check
+    // DISABLED: User requested to avoid strict SHA/Play Integrity checks.
+    // This allows Test Phone Numbers to work instantly and forces reCAPTCHA for others.
+    /*
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      appleProvider: AppleProvider.appAttest,
+    );
+    */
 
     // 3. Initialize Date Formatting
     await initializeDateFormatting('it_IT', null);

@@ -11,6 +11,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
+import '../models/appointment_model.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -337,6 +339,36 @@ class NotificationService {
       details,
       payload: '/booking',
     );
+  }
+
+  Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {
+    if (kDebugMode) print("Rescheduling all ${appointments.length} appointments...");
+    
+    // Optional: Cancel all existing to ensure clean slate? 
+    // For now we just overwrite since we use consistent IDs.
+    await _localNotifications.cancelAll(); 
+
+    int scheduledCount = 0;
+    final now = DateTime.now();
+
+    for (final apt in appointments) {
+      if (apt.date.isAfter(now)) {
+        // Schedule 1 hour before
+        // This logic mimics the BookingScreen scheduling logic
+        // Ideally this logic should be centralized, but duplicating for safety here.
+        final scheduledDate = apt.date.subtract(const Duration(hours: 1));
+        if (scheduledDate.isAfter(now)) {
+             await scheduleNotification(
+               id: apt.id.hashCode,
+               title: 'Gentleman Barber Shop',
+               body: 'Non dimenticare il tuo appuntamento alle ${DateFormat('HH:mm').format(apt.date)}!',
+               scheduledDate: scheduledDate,
+             );
+             scheduledCount++;
+        }
+      }
+    }
+    if (kDebugMode) print("Rescheduled $scheduledCount notifications.");
   }
 
   Future<ByteArrayAndroidBitmap?> _getAssetBitmap(String assetPath) async {

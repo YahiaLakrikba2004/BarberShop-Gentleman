@@ -14,6 +14,7 @@ import '../calendar/calendar_screen.dart';
 import '../../services/auth_service.dart';
 import '../appointments/grouped_appointments_list.dart';
 import 'shop_management_screen.dart';
+import 'team_agenda_screen.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -231,6 +232,16 @@ class AdminDashboard extends ConsumerWidget {
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: [
+                            _QuickActionCard(
+                              icon: Icons.view_column_outlined,
+                              title: 'Agenda\nTeam',
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const TeamAgendaScreen()),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
                             _QuickActionCard(
                               icon: Icons.people_outline,
                               title: 'Gestione\nUtenti',

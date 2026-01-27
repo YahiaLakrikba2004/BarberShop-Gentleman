@@ -19,6 +19,7 @@ class BarberModel extends Equatable {
   final BarberAvailability availabilityStatus;
   final List<DateTime> unavailableDates; // Specific dates when barber is unavailable
   final List<int> daysOff; // 1=Mon ... 7=Sun
+  final bool isBookable;
 
   const BarberModel({
     required this.id,
@@ -30,6 +31,7 @@ class BarberModel extends Equatable {
     this.availabilityStatus = BarberAvailability.available,
     this.unavailableDates = const [],
     this.daysOff = const [],
+    this.isBookable = true,
   });
 
   factory BarberModel.fromMap(Map<String, dynamic> map, String id) {
@@ -48,6 +50,7 @@ class BarberModel extends Equatable {
           ?.map((ts) => DateTime.fromMillisecondsSinceEpoch(ts as int))
           .toList() ?? [],
       daysOff: (map['daysOff'] as List<dynamic>?)?.map((e) => e as int).toList() ?? [],
+      isBookable: map['isBookable'] ?? true,
     );
   }
 
@@ -61,6 +64,7 @@ class BarberModel extends Equatable {
       'availabilityStatus': availabilityStatus.name,
       'unavailableDates': unavailableDates.map((d) => d.millisecondsSinceEpoch).toList(),
       'daysOff': daysOff,
+      'isBookable': isBookable,
     };
   }
 
@@ -74,6 +78,7 @@ class BarberModel extends Equatable {
     BarberAvailability? availabilityStatus,
     List<DateTime>? unavailableDates,
     List<int>? daysOff,
+    bool? isBookable,
   }) {
     return BarberModel(
       id: id ?? this.id,
@@ -85,9 +90,10 @@ class BarberModel extends Equatable {
       availabilityStatus: availabilityStatus ?? this.availabilityStatus,
       unavailableDates: unavailableDates ?? this.unavailableDates,
       daysOff: daysOff ?? this.daysOff,
+      isBookable: isBookable ?? this.isBookable,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, imageUrl, specialties, startHour, endHour, availabilityStatus, unavailableDates, daysOff];
+  List<Object?> get props => [id, name, imageUrl, specialties, startHour, endHour, availabilityStatus, unavailableDates, daysOff, isBookable];
 }

@@ -3,8 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui' as ui;
 import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
+import '../../services/firestore_service.dart';
+
+
+enum AuthStep { phone, otp }
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -15,16 +21,25 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
+  // Phone Auth Controllers
+  final _phoneController = TextEditingController();
+  final _nameController = TextEditingController(); 
+  final _surnameController = TextEditingController(); // [NEW] Surname
+  final _profileEmailController = TextEditingController(); // [NEW] Optional Email
+
+  // Email Auth Controllers (Legacy/Fallback)
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+
   late AnimationController _rotationController;
-  bool _isLogin = true;
+  
+  // State
+  AuthStep _authStep = AuthStep.phone;
+  bool _isEmailMode = false;
+  bool _isLogin = true; 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  bool _isNewUser = false; // [NEW] Track if user needs to register
 
   @override
   void initState() {
@@ -38,74 +53,198 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   @override
   void dispose() {
     _rotationController.dispose();
+    _phoneController.dispose();
+    _nameController.dispose();
+    _surnameController.dispose();
+    _profileEmailController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _nameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  // --- Phone Auth Logic ---
+
+
+
+  Future<void> _verifyPhoneNumber() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      _showError("Inserisci il numero di telefono");
+      return;
+    }
+
+    if (_isNewUser) {
+       // --- REGISTER FLOW ---
+       if (_nameController.text.trim().isEmpty || _surnameController.text.trim().isEmpty) {
+         _showError("Nome e Cognome sono obbligatori");
+         return;
+       }
+
+       setState(() => _isLoading = true);
+       try {
+          final authService = ref.read(authServiceProvider);
+          // Deterministic Creds
+          String formattedPhone = phone.startsWith('+') ? phone : '+39$phone';
+          String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), '');
+          String fakeEmail = '$cleanPhone@gentleman.app';
+          String fakePassword = 'UserPass${cleanPhone}!';
+
+          // Combine Name + Surname
+          String fullName = "${_nameController.text.trim()} ${_surnameController.text.trim()}";
+
+          // Register
+          await authService.signUpWithEmailAndPassword(
+            email: fakeEmail,
+            password: fakePassword,
+            name: fullName,
+            phoneNumber: phone,
+          );
+
+          // Update Profile Email if provided (optional)
+          // Note: The Auth User email is currently the 'fake' one. 
+          // If we want to store the real email, we should do it in Firestore separately 
+          // or update the Auth email (but that might break the deterministic login if we rely on phone->email mapping).
+          // Ideally, store real email in Firestore 'email' field, and keep Auth email as unique ID.
+          if (_profileEmailController.text.isNotEmpty) {
+             final firestore = ref.read(firestoreServiceProvider);
+             final user = authService.currentUser;
+             if (user != null) {
+                // Update Firestore document with real email
+                await firestore.updateUserFields(user.uid, {'email': _profileEmailController.text.trim()});
+             }
+          }
+
+          // Check Migration
+          final currentUser = authService.currentUser;
+          if (currentUser != null) {
+            await _checkAndMigrate(currentUser, phone);
+          }
+          
+          if (mounted) context.go('/');
+
+       } catch (e) {
+         _showError("Errore registrazione: $e");
+         setState(() => _isLoading = false);
+       }
+
+    } else {
+      // --- CHECK / LOGIN FLOW ---
+      // For now, simplify flow: Just Anonymous Login + Phone assignment
+      // (As requested: "basta mettere il numero")
+      
+      // Check format
+      String formattedPhone = phone;
+      if (!phone.startsWith('+')) {
+        formattedPhone = '+39$phone';
+      }
+
+      setState(() => _isLoading = true);
+
+      try {
+        final authService = ref.read(authServiceProvider);
+        // GENERATE DETERMINISTIC EMAIL/PASSWORD from Phone
+        // This bypasses the need for Anonymous Auth (which is disabled) and OTP (which is skipped).
+        String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), ''); // Remove + and spaces
+        String fakeEmail = '$cleanPhone@gentleman.app';
+        String fakePassword = 'UserPass${cleanPhone}!'; // Simple deterministic password
+
+        try {
+          // 1. Try Login
+          await authService.signInWithEmailAndPassword(fakeEmail, fakePassword);
+          
+          // Login Success
+          final currentUser = authService.currentUser;
+          if (currentUser != null) {
+             await _checkAndMigrate(currentUser, phone);
+          }
+           if (mounted) context.go('/');
+
+        } catch (e) {
+          // 2. CHECK IF USER REALLY EXISTS
+          // INVALID_LOGIN_CREDENTIALS can mean "User Not Found" OR "Wrong Password".
+          // We need to know which one it is.
+          
+          bool userExistsInAuth = false;
+          try {
+             final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(fakeEmail);
+             userExistsInAuth = methods.isNotEmpty;
+          } catch (checkErr) {
+             // If this fails (e.g. strict protection), we might assume new user???
+             // Or maybe we treat it as generic error.
+          }
+
+          if (!userExistsInAuth) {
+             // User DOES NOT EXIST -> Go to Registration
+             if (mounted) {
+               setState(() {
+                 _isLoading = false;
+                 _isNewUser = true; // Expand UI
+               });
+             }
+             return;
+          } else {
+             // User EXISTS but Login Failed -> Password Mismatch / corrupted account
+             // We cannot register again (it will fail with email-in-use).
+             // We must inform the user.
+             _showError("Errore account: Password interna non valida. Contattare supporto o riprovare.");
+             setState(() => _isLoading = false);
+             return;
+          }
+        }
+
+      } catch (e) {
+        _showError("Errore accesso: $e");
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+
+
+
+
+  // --- Email Auth Logic (Legacy) ---
+
+
+  Future<void> _submitEmailAuth() async {
     setState(() => _isLoading = true);
     try {
       final authService = ref.read(authServiceProvider);
-      
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
-
-      if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-        throw Exception('Inserisci un\'email valida');
-      }
-      if (password.isEmpty) {
-        throw Exception('La password è obbligatoria');
-      }
 
       if (_isLogin) {
         await authService.signInWithEmailAndPassword(email, password);
       } else {
-        // Validation for Signup
-        final name = _nameController.text.trim();
-        final phone = _phoneController.text.trim();
-        final confirmPassword = _confirmPasswordController.text.trim();
-
-        if (name.isEmpty) throw Exception('Il nome è obbligatorio');
-        if (password.length < 6)
-          throw Exception('La password deve avere almeno 6 caratteri');
-        if (password != confirmPassword)
-          throw Exception('Le password non coincidono');
-        if (phone.isEmpty)
-          throw Exception('Il numero di telefono è obbligatorio');
-        
-        // Remove spaces/special chars for check
-        final cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
-        if (cleanPhone.length < 9)
-          throw Exception('Inserisci un numero di telefono valido');
-
+        // Register
         await authService.signUpWithEmailAndPassword(
           email: email,
           password: password,
-          name: name,
-          phoneNumber: phone,
+          name: _nameController.text.trim(), // Reusing name controller
+          phoneNumber: _phoneController.text.trim(), // Optional/Required?
         );
       }
       if (mounted) context.go('/');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: const Color(0xFFDC143C),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showError(e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFDC143C),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final goldColor = const Color(0xFFFFFFFF);
+    final goldColor = Colors.white; // Changed from Gold to White as per request
     final darkBlack = const Color(0xFF0A0A0A);
     final inputFill = const Color(0xFF1E1E1E);
 
@@ -116,10 +255,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           gradient: RadialGradient(
             center: Alignment.topCenter,
             radius: 1.5,
-            colors: [
-              Color(0xFF2C2C2C), // Lighter charcoal at top center
-              Color(0xFF0A0A0A), // Pure black at edges
-            ],
+            colors: [Color(0xFF2C2C2C), Color(0xFF0A0A0A)],
           ),
         ),
         child: SafeArea(
@@ -129,253 +265,74 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Rotating Light Logo Section
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Rotating Glow Ring
-                      RotationTransition(
-                        turns: _rotationController,
-                        child: Container(
-                          height: 130,
-                          width: 130,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: SweepGradient(
-                              colors: [
-                                goldColor.withOpacity(0),
-                                goldColor,
-                                goldColor.withOpacity(0),
-                              ],
-                              stops: const [0.0, 0.5, 1.0],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Static Logo Container
-                      Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: darkBlack,
-                          border: Border.all(
-                              color: goldColor.withOpacity(0.5), width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: goldColor.withOpacity(0.2),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Padding(
-                            padding: const EdgeInsets.all(1.0),
-                            child: Image.asset(
-                              'assets/images/icon_premium_v2.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Title
+                  // Logo (Same as before)
                   FadeInDown(
-                    duration: const Duration(milliseconds: 800),
-                    child: Column(
-                      children: [
-                        Text(
-                          _isLogin ? 'Bentornato' : 'Unisciti a Noi',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
+                    child: Container(
+                      height: 120,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: darkBlack,
+                        border: Border.all(color: goldColor.withOpacity(0.5), width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: goldColor.withOpacity(0.2),
+                            blurRadius: 15,
+                            spreadRadius: 1,
                           ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Image.asset('assets/images/icon_premium_v2.png', fit: BoxFit.contain), // Assuming this asset exists
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _isLogin
-                              ? 'Accedi al tuo account Gentlemen'
-                              : 'Crea il tuo profilo esclusivo',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 30),
 
-                  // Form Fields with Smooth Transitions
+                  Text(
+                    'GENTLEMAN',
+                    style: GoogleFonts.cinzel(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'BARBER SHOP',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      color: Colors.white54,
+                      letterSpacing: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 50),
+
+                  // MAIN AUTH CONTENT
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: Column(
-                      children: [
-                        if (!_isLogin) ...[
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildTextField(
-                              controller: _nameController,
-                              label: 'Nome Completo',
-                              icon: Icons.person_outline,
-                              goldColor: goldColor,
-                              fillColor: inputFill,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildTextField(
-                              controller: _phoneController,
-                              label: 'Numero di Telefono',
-                              icon: Icons.phone_outlined,
-                              goldColor: goldColor,
-                              fillColor: inputFill,
-                              keyboardType: TextInputType.phone,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    child: _isEmailMode ? _buildEmailAuth(goldColor, inputFill) : _buildPhoneAuth(goldColor, inputFill),
                   ),
 
-                  // Stable Fields (No Animation on Toggle)
-                  _buildTextField(
-                    controller: _emailController,
-                    label: 'Email',
-                    icon: Icons.email_outlined,
-                    goldColor: goldColor,
-                    fillColor: inputFill,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 40),
 
-                  _buildTextField(
-                    controller: _passwordController,
-                    label: 'Password',
-                    icon: Icons.lock_outline,
-                    goldColor: goldColor,
-                    fillColor: inputFill,
-                    isPassword: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: goldColor.withOpacity(0.5),
-                        size: 20,
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  // TOGGLE BUTTON (Phone <-> Email)
+                  if (!_isEmailMode && _authStep == AuthStep.phone)
+                    TextButton(
+                      onPressed: () => setState(() => _isEmailMode = true),
+                      child: Text("Usa Email e Password", style: TextStyle(color: Colors.white54, fontSize: 12)),
                     ),
-                  ),
                   
-                  if (!_isLogin) ...[
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: _confirmPasswordController,
-                      label: 'Conferma Password',
-                      icon: Icons.lock_reset_outlined,
-                      goldColor: goldColor,
-                      fillColor: inputFill,
-                      isPassword: _obscureConfirmPassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: goldColor.withOpacity(0.5),
-                          size: 20,
-                        ),
-                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                      ),
+                  if (_isEmailMode)
+                    TextButton(
+                      onPressed: () => setState(() => _isEmailMode = false),
+                      child: Text("Usa Numero di Telefono", style: TextStyle(color: goldColor, fontSize: 12)),
                     ),
-                  ],
-                  const SizedBox(height: 32),
 
-                  // Forgot Password (Login Only)
-                  if (_isLogin)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => _showForgotPasswordDialog(context),
-                        child: Text(
-                          'Password dimenticata?',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-
-                  // Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: goldColor,
-                        foregroundColor: darkBlack,
-                        elevation: 5,
-                        shadowColor: goldColor.withOpacity(0.4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              _isLogin ? 'ACCEDI' : 'REGISTRATI',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Toggle Mode
-                  TextButton(
-                    onPressed: () => setState(() => _isLogin = !_isLogin),
-                    style: TextButton.styleFrom(
-                      foregroundColor: goldColor,
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                        children: [
-                          TextSpan(
-                            text: _isLogin
-                                ? 'Non hai un account? '
-                                : 'Hai già un account? ',
-                          ),
-                          TextSpan(
-                            text: _isLogin ? 'Registrati' : 'Accedi',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -385,7 +342,210 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildPhoneAuth(Color goldColor, Color inputFill) {
+    return Column(
+      children: [
+        if (_isNewUser)
+          Text(
+            "COMPLETA REGISTRAZIONE",
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, letterSpacing: 1, fontWeight: FontWeight.bold),
+          )
+        else
+          Text(
+            "ACCEDI CON TELEFONO",
+            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, letterSpacing: 1),
+          ),
+        
+        const SizedBox(height: 20),
+        
+        // PHONE INPUT (Always visible)
+        _buildTextField(
+          controller: _phoneController,
+          label: 'Numero di Telefono',
+          icon: Icons.phone_android,
+          goldColor: goldColor,
+          fillColor: inputFill,
+          keyboardType: TextInputType.phone,
+          hint: "333 1234567",
+          // Disable editing if we are in registration phase to avoid changing number mid-flow? 
+          // Optional: enabled: !_isNewUser
+        ),
+
+        // ANIMATED REGISTRATION FIELDS
+        AnimatedSize(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutQuart,
+          child: _isNewUser 
+            ? Column(
+                children: [
+                   const SizedBox(height: 16),
+                   Row(
+                     children: [
+                       Expanded(
+                         child: _buildTextField(
+                           controller: _nameController,
+                           label: 'Nome',
+                           icon: Icons.person,
+                           goldColor: goldColor,
+                           fillColor: inputFill,
+                         ),
+                       ),
+                       const SizedBox(width: 16),
+                       Expanded(
+                         child: _buildTextField(
+                           controller: _surnameController,
+                           label: 'Cognome',
+                           icon: Icons.person_outline,
+                           goldColor: goldColor,
+                           fillColor: inputFill,
+                         ),
+                       ),
+                     ],
+                   ),
+                   const SizedBox(height: 16),
+                   _buildTextField(
+                      controller: _profileEmailController,
+                      label: 'Email (Opzionale)',
+                      icon: Icons.email_outlined,
+                      goldColor: goldColor,
+                      fillColor: inputFill,
+                      keyboardType: TextInputType.emailAddress,
+                   ),
+                ],
+              ) 
+            : const SizedBox.shrink(),
+        ),
+
+         const SizedBox(height: 24),
+         
+         SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _verifyPhoneNumber,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: goldColor,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _isLoading 
+              ? const CircularProgressIndicator(color: Colors.black)
+              : Text(
+                  _isNewUser ? "REGISTRATI" : "AVANTI", 
+                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)
+                ),
+          ),
+        ),
+        
+        // Back button if in Registration mode
+        if (_isNewUser)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: TextButton(
+              onPressed: () {
+                 setState(() {
+                   _isNewUser = false;
+                 });
+              },
+              child: const Text("Annulla", style: TextStyle(color: Colors.white54)),
+            ),
+          )
+      ],
+    );
+  }
+
+  Widget _buildEmailAuth(Color goldColor, Color inputFill) {
+    return Column(
+      children: [
+         // LOGIN / REGISTER TABS
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _authTab("ACCEDI", _isLogin, () => setState(() => _isLogin = true), goldColor),
+            const SizedBox(width: 20),
+            _authTab("REGISTRATI", !_isLogin, () => setState(() => _isLogin = false), goldColor),
+          ],
+        ),
+        const SizedBox(height: 30),
+
+        if (!_isLogin) ...[
+          _buildTextField(
+             controller: _nameController,
+             label: 'Nome Completo',
+             icon: Icons.person,
+             goldColor: goldColor,
+             fillColor: inputFill
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+             controller: _phoneController, // Reusing phone controller
+             label: 'Telefono',
+             icon: Icons.phone,
+             goldColor: goldColor,
+             fillColor: inputFill
+          ),
+           const SizedBox(height: 16),
+        ],
+
+        _buildTextField(
+            controller: _emailController,
+            label: 'Email',
+            icon: Icons.email,
+            goldColor: goldColor,
+            fillColor: inputFill
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+            controller: _passwordController,
+            label: 'Password',
+            icon: Icons.lock,
+            goldColor: goldColor,
+            fillColor: inputFill,
+            isPassword: _obscurePassword,
+            suffixIcon: IconButton(
+              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            )
+        ),
+        
+        const SizedBox(height: 24),
+         SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _submitEmailAuth,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white24, // Subtle for secondary
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isLoading 
+                ? const CircularProgressIndicator(color: Colors.white)
+                : Text(_isLogin ? "ACCEDI CON EMAIL" : "REGISTRATI", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _authTab(String title, bool isActive, VoidCallback onTap, Color color) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(title, style: TextStyle(
+            color: isActive ? color : Colors.white24,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            letterSpacing: 1
+          )),
+          const SizedBox(height: 4),
+          if (isActive) Container(height: 2, width: 40, color: color)
+        ],
+      ),
+    );
+  }
+
+   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -394,6 +554,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     bool isPassword = false,
     TextInputType? keyboardType,
     Widget? suffixIcon,
+    String? hint,
   }) {
     return TextField(
       controller: controller,
@@ -403,157 +564,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       cursorColor: goldColor,
       decoration: InputDecoration(
         labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.white12),
         labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
         prefixIcon: Icon(icon, color: goldColor.withOpacity(0.8)),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: fillColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: goldColor),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: goldColor)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
   }
+  Future<void> _checkAndMigrate(User currentUser, String inputPhone) async {
+    try {
+      final firestore = ref.read(firestoreServiceProvider);
 
-  void _showForgotPasswordDialog(BuildContext context) {
-    final emailController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
-          ),
-          title: Text(
-            'RECUPERA PASSWORD',
-            style: GoogleFonts.cinzel(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              letterSpacing: 2.0,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Inserisci la tua email per ricevere il link di ripristino.',
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: emailController,
-                style: GoogleFonts.montserrat(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'EMAIL',
-                  labelStyle: GoogleFonts.montserrat(
-                      color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                  prefixIcon: Icon(Icons.email_outlined, 
-                      color: Colors.white.withOpacity(0.7), size: 20),
-                  filled: true, // Reusing premium inputs
-                  fillColor: Colors.black.withOpacity(0.3),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.white.withOpacity(0.1))
-                      ),
-                    ),
-                    child: Text('ANNULLA', 
-                        style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.6), 
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0
-                        )
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (emailController.text.isNotEmpty) {
-                        try {
-                           await ref.read(authServiceProvider).sendPasswordResetEmail(emailController.text.trim());
-                           if (context.mounted) {
-                             Navigator.pop(context);
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(
-                                 content: Text('Email inviata a ${emailController.text}'),
-                                 backgroundColor: Colors.green,
-                               ),
-                             );
-                           }
-                        } catch (e) {
-                           if (context.mounted) {
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               const SnackBar(content: Text('Errore: Email non trovata o invalida')),
-                             );
-                           }
-                        }
-                      }
-                    },
-                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text('INVIA', 
-                        style: GoogleFonts.montserrat(
-                            color: Colors.black, 
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0
-                        )
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+      // Formatted +39
+      String formatted = inputPhone.startsWith('+') ? inputPhone : '+39$inputPhone';
+
+      // 1. Search by formatted (+39...)
+      UserModel? oldUser = await firestore.getUserByPhone(formatted, excludeUserId: currentUser.uid);
+
+      // 2. Search by raw input
+      if (oldUser == null && inputPhone != formatted) {
+        oldUser = await firestore.getUserByPhone(inputPhone, excludeUserId: currentUser.uid);
+      }
+
+      // 3. Search by stripped digits
+      if (oldUser == null) {
+        final stripped = inputPhone.replaceAll(RegExp(r'\D'), '');
+        if (stripped.isNotEmpty) {
+           oldUser = await firestore.getUserByPhone(stripped, excludeUserId: currentUser.uid);
+        }
+      }
+
+      // If found AND it's a different ID than current (dangling profile)
+      if (oldUser != null && oldUser.id != currentUser.uid) {
+        // Found a dangling old profile! Migrate it to this current account.
+        await firestore.migrateUser(oldUser.id, currentUser.uid);
+      }
+    } catch (e) {
+      print("Migration Check Failed: $e");
+    }
   }
 }

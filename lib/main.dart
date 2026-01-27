@@ -61,6 +61,14 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
       }
     });
 
+    // Re-Initialize/Update Token on Auth Change (Login/Logout)
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.hasValue && next.value != null) {
+         // User logged in: Ensure token is uploaded
+         ref.read(notificationServiceProvider).initialize();
+      }
+    });
+
     // Handle notification navigation (Background/Terminated Open)
     ref.listen(notificationOpenProvider, (previous, next) {
       next.whenData((path) {

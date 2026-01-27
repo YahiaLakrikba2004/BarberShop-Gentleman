@@ -23,32 +23,43 @@ class FirestoreService {
     await _firestore.collection('users').doc(user.id).set(user.toMap());
   }
 
+  Future<void> createBarberProfile(UserModel user, {bool isBookable = true}) async { // Add parameter
+    final barber = BarberModel(
+      id: user.id,
+      name: user.name,
+      imageUrl: user.imageUrl ?? '',
+      specialties: ['Taglio', 'Barba'], 
+      startHour: 9,
+      endHour: 20,
+      isBookable: isBookable, // Pass it
+    );
+    await _firestore.collection('barbers').doc(user.id).set(barber.toMap());
+  }
+
   Future<void> updateUserRole(String userId, UserRole newRole) async {
     await _firestore.collection('users').doc(userId).update({
       'role': newRole.name,
     });
 
-    // If promoted to Barber, create a corresponding Barber profile
+    // Handle Barber Profile Logic
     if (newRole == UserRole.barber) {
+      // Create/Ensure Barber profile exists
       final userDoc = await _firestore.collection('users').doc(userId).get();
       if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final barber = BarberModel(
-          id: userId, // Link ID
-          name: userData['name'] ?? 'Barbiere',
-          imageUrl: userData['imageUrl'] ?? '',
-          specialties: ['Taglio', 'Barba'], // Default specialties
-          startHour: 9,
-          endHour: 20,
-        );
-        await _firestore.collection('barbers').doc(userId).set(barber.toMap());
+        final userData = UserModel.fromMap(userDoc.data()!, userDoc.id);
+        await createBarberProfile(userData);
       }
-    } else {
-      // If demoted from Barber (or role changed to something else), remove the Barber profile
-      // We attempt to delete it regardless of whether it exists, as delete is idempotent-ish in this context
-      // (or we can check existence, but delete is cheaper/easier)
+    } else if (newRole == UserRole.client) {
+      // Demoted to Client: REMOVE Barber profile
       await _firestore.collection('barbers').doc(userId).delete();
     }
+    // If Admin: DO NOTHING. 
+    // This allows an Admin to HAVE a barber profile (if created via auth) 
+    // or NOT have one (default). We don't auto-delete it.
+  }
+
+  Future<void> updateUserFields(String userId, Map<String, dynamic> data) async {
+    await _firestore.collection('users').doc(userId).update(data);
   }
 
   Future<void> updateUser(UserModel user) async {
@@ -77,6 +88,28 @@ class FirestoreService {
       }
       return null;
     });
+  }
+
+  Future<UserModel?> getUser(String uid) async {
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    if (snapshot.exists) {
+      return UserModel.fromMap(snapshot.data()!, snapshot.id);
+    }
+    return null;
+  }
+
+  Future<UserModel?> getUserByPhone(String phoneNumber, {String? excludeUserId}) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .where('phoneNumber', isEqualTo: phoneNumber)
+        .limit(5) // Fetch a few in case of duplicates
+        .get();
+        
+    for (var doc in snapshot.docs) {
+       if (excludeUserId != null && doc.id == excludeUserId) continue;
+       return UserModel.fromMap(doc.data(), doc.id);
+    }
+    return null;
   }
 
   Stream<List<UserModel>> getAllUsers() {
@@ -244,6 +277,64 @@ class FirestoreService {
         .collection('settings')
         .doc('shop')
         .set(settings.toMap(), SetOptions(merge: true));
+  }
+  Future<void> migrateUser(String oldUserId, String newUserId) async {
+    // 1. Get Old User Data
+    final oldUserDoc = await _firestore.collection('users').doc(oldUserId).get();
+    if (!oldUserDoc.exists) return; // Nothing to migrate
+
+    final oldData = oldUserDoc.data()!;
+    // Preserve new Auth ID but take everything else
+    oldData['id'] = newUserId;
+    oldData['email'] = oldData['email'] ?? ''; // Ensure email field exists
+
+    // 2. Get New User Data (Current Login)
+    final newUserDoc = await _firestore.collection('users').doc(newUserId).get();
+    Map<String, dynamic> newData = {};
+    if (newUserDoc.exists && newUserDoc.data() != null) {
+      newData = newUserDoc.data()!;
+    }
+
+    // 3. Merge Data: Old Data + New Data overrides
+    // We want to KEEP the new name/email if the user just entered them.
+    // So we start with oldData, but if newData has values, we use them.
+    
+    // Actually, we want to bring history (from old) to the new profile.
+    // So base = oldData.
+    // Overrides = newData (Name, Email, Phone, Role if set).
+    
+    Map<String, dynamic> mergedData = Map<String, dynamic>.from(oldData);
+    
+    // Specific fields we want to PRESERVE from the NEW registration:
+    if (newData.containsKey('name') && newData['name'].toString().isNotEmpty) {
+      mergedData['name'] = newData['name'];
+    }
+    if (newData.containsKey('email') && newData['email'].toString().isNotEmpty && !newData['email'].toString().contains('gentleman.app')) {
+       // Only keep new email if it's NOT the fake one, OR if we want to allow overwriting with real email.
+       // Actually, the fake email is generated from phone. 
+       // If the user input a real email in the new flow, we keep it.
+       mergedData['email'] = newData['email'];
+    }
+    // Always keep the new ID
+    mergedData['id'] = newUserId;
+    
+    // 4. Update New User with Merged Data
+    await _firestore.collection('users').doc(newUserId).set(mergedData, SetOptions(merge: true));
+
+    // 3. Migrate Appointments
+    final appointmentsSnapshot = await _firestore
+        .collection('appointments')
+        .where('customerId', isEqualTo: oldUserId)
+        .get();
+
+    final batch = _firestore.batch();
+    for (var doc in appointmentsSnapshot.docs) {
+      batch.update(doc.reference, {'customerId': newUserId});
+    }
+    await batch.commit();
+
+    // 4. Delete Old User
+    await _firestore.collection('users').doc(oldUserId).delete();
   }
 }
 

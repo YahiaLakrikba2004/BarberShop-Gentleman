@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
+import '../../config/admin_config.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
@@ -300,6 +301,23 @@ class _UserCard extends ConsumerWidget {
   }
 
   Future<void> _updateRole(WidgetRef ref, String userId, UserRole newRole, BuildContext context) async {
+    // Restrict Admin role assignment
+    if (newRole == UserRole.admin) {
+      final user = await ref.read(firestoreServiceProvider).getUser(userId);
+      if (user != null && !AdminConfig.isAllowedAdmin(user.email)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Errore: Questo account non è autorizzato ad essere Admin'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     try {
       await ref.read(firestoreServiceProvider).updateUserRole(userId, newRole);
       if (context.mounted) {
