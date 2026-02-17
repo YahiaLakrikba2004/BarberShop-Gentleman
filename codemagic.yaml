@@ -20,12 +20,12 @@ workflows:
       - name: Debug - List EVERYTHING
         script: |
           echo "Listing Certificates:"
-          app-store-connect certificates list || true
+          app-store-connect certificates list --type DISTRIBUTION || true
           echo "Listing Profiles:"
           app-store-connect profiles list || true
       - name: Fetch signing files
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type DISTRIBUTION --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
       - name: Add certificates to keychain
         script: |
           keychain add-certificates
