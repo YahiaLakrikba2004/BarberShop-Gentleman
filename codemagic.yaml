@@ -17,12 +17,15 @@ workflows:
       - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
         script: |
           keychain initialize
-      - name: List existing certificates (Debug)
+      - name: Debug - List EVERYTHING
         script: |
-          app-store-connect certificates list --type DISTRIBUTION || true
+          echo "Listing Certificates:"
+          app-store-connect certificates list || true
+          echo "Listing Profiles:"
+          app-store-connect profiles list || true
       - name: Fetch signing files
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type DISTRIBUTION --create
       - name: Add certificates to keychain
         script: |
           keychain add-certificates
