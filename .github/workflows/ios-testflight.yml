@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - gestione_tema
   workflow_dispatch:
 
 jobs:
