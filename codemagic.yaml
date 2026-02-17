@@ -5,33 +5,18 @@ workflows:
     max_build_duration: 60
     environment:
       groups:
-        - app_store_connect # We will create this group in Codemagic UI
+        - app_store_connect
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: "com.gentleman.barber"
       vars:
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-        BUNDLE_ID: "com.gentleman.barber" # Update this to your ACTUAL Bundle ID if different
+        BUNDLE_ID: "com.gentleman.barber"
       flutter: stable
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
-        script: |
-          keychain initialize
-      - name: Debug - List EVERYTHING
-        script: |
-          echo "Listing Certificates:"
-          app-store-connect certificates list --type DISTRIBUTION || true
-          echo "Listing Profiles:"
-          app-store-connect profiles list || true
-      - name: Fetch signing files
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-      - name: Add certificates to keychain
-        script: |
-          keychain add-certificates
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
