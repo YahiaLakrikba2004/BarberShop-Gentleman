@@ -14,6 +14,9 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
+      - name: Set up keychain
+        script: |
+          keychain initialize
       - name: Force Create Certificate (Debug)
         script: |
           echo "Attempting to create certificate..."
