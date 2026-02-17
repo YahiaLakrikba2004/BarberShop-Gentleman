@@ -19,7 +19,7 @@ workflows:
           keychain initialize
       - name: List existing certificates (Debug)
         script: |
-          app-store-connect certificates list --type IOS_APP_STORE || true
+          app-store-connect certificates list --type DISTRIBUTION --save || true
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
