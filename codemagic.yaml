@@ -6,9 +6,6 @@ workflows:
     environment:
       groups:
         - app_store_connect
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: "com.gentleman.barber"
       vars:
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
@@ -17,6 +14,13 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
+      - name: Force Create Certificate (Debug)
+        script: |
+          echo "Attempting to create certificate..."
+          app-store-connect create-certificate --type IOS_DISTRIBUTION --save || echo "Certificate creation failed"
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
       - name: Get Flutter packages
         script: |
           flutter packages pub get
