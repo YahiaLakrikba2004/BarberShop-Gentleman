@@ -9,7 +9,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-        BUNDLE_ID: "com.example.barberShopApp" # Update this to your ACTUAL Bundle ID if different
+        BUNDLE_ID: "com.gentleman.barber" # Update this to your ACTUAL Bundle ID if different
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -38,11 +38,10 @@ workflows:
         script: |
           flutter build ipa --release \
             --export-options-plist=/usr/local/share/workspace/ios/Runner/ExportOptions.plist
+      - name: Publish to TestFlight
+        script: |
+          app-store-connect publish --path $(find build/ios/ipa -name "*.ipa")
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
-    publishing:
-      app_store_connect:
-        auth: integration # Uses the API Key integrated in Codemagic UI
-        submit_to_testflight: true
