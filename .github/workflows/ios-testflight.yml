@@ -64,8 +64,7 @@ jobs:
             --release \
             --export-options-plist=ios/ExportOptions.plist \
             --build-name=1.0.1 \
-            --build-number=${{ github.run_number }} \
-            --xcargs "PROVISIONING_PROFILE_SPECIFIER=BarberShop_TestFlight,CODE_SIGN_STYLE=Manual"
+            --build-number=${{ github.run_number }}
       
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v1
