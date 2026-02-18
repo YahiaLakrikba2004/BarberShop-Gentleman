@@ -12,5 +12,10 @@
     <true/>
     <key>compileBitcode</key>
     <false/>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.gentleman.barber</key>
+        <string>profile</string>
+    </dict>
 </dict>
 </plist>
