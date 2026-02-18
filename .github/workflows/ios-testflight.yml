@@ -30,7 +30,8 @@ jobs:
 
       - name: Install Apple Certificate
         env:
-          CERTIFICATE_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+          DIST_KEY_BASE64: ${{ secrets.IOS_DIST_KEY_BASE64 }}
+          DIST_PEM_BASE64: ${{ secrets.IOS_DIST_PEM_BASE64 }}
           P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
           KEYCHAIN_PASSWORD: "buildpassword"
         run: |
@@ -40,8 +41,14 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
 
-          # Import certificate from secrets
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          # Decode key and certificate
+          printf '%s' "$DIST_KEY_BASE64" | base64 --decode > dist.key
+          printf '%s' "$DIST_PEM_BASE64" | base64 --decode > dist.pem
+
+          # Generate P12 on the runner (guarantees compatibility)
+          openssl pkcs12 -export -inkey dist.key -in dist.pem -out certificate.p12 -passout pass:"$P12_PASSWORD"
+
+          # Import into keychain
           security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
 
