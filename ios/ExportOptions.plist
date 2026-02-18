@@ -6,6 +6,13 @@
     <string>app-store</string>
     <key>teamID</key>
     <string>4YT4673XX2</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.gentleman.barber</key>
+        <string>BarberShop_TestFlight</string>
+    </dict>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
