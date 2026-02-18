@@ -54,6 +54,10 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/BarberShop_TestFlight.mobileprovision
 
+      - name: Create GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" > ios/Runner/GoogleService-Info.plist
+
       - name: Build iOS app
         run: |
           flutter build ipa \
@@ -61,7 +65,7 @@ jobs:
             --export-options-plist=ios/ExportOptions.plist \
             --build-name=1.0.1 \
             --build-number=${{ github.run_number }} \
-            --dart-define=IS_TESTFLIGHT=true
+            --xcargs "PROVISIONING_PROFILE_SPECIFIER=BarberShop_TestFlight,CODE_SIGN_STYLE=Manual"
       
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v1
