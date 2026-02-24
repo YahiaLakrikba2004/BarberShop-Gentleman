@@ -373,7 +373,7 @@ class _BarberManagementCard extends ConsumerWidget {
                                   style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                                 Text(
-                                  '${DateFormat('dd/MM HH:mm').format(app.date)}',
+                                  DateFormat('dd/MM HH:mm').format(app.date),
                                   style: GoogleFonts.montserrat(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ),
                               ],

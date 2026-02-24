@@ -20,7 +20,7 @@ class AppTheme {
 
   static final lightTheme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.light(
+    colorScheme: const ColorScheme.light(
       primary: luxuryGold,
       onPrimary: richBlack,
       primaryContainer: lightGold,
@@ -31,7 +31,7 @@ class AppTheme {
       onSecondaryContainer: barberRed,
       surface: Colors.white,
       onSurface: deepBlack,
-      surfaceVariant: Color(0xFFFAF8F3),
+      surfaceContainerHighest: Color(0xFFFAF8F3),
       onSurfaceVariant: charcoal,
       outline: darkGold,
       error: barberRed,
@@ -59,7 +59,7 @@ class AppTheme {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: barberLightGray, width: 1),
+        side: const BorderSide(color: barberLightGray, width: 1),
       ),
       color: barberWhite,
     ),
@@ -90,7 +90,7 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: luxuryGold,
-        side: BorderSide(color: luxuryGold, width: 2),
+        side: const BorderSide(color: luxuryGold, width: 2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
@@ -100,15 +100,15 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberGray),
+        borderSide: const BorderSide(color: barberGray),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberGray),
+        borderSide: const BorderSide(color: barberGray),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberBlack, width: 2),
+        borderSide: const BorderSide(color: barberBlack, width: 2),
       ),
       filled: true,
       fillColor: barberWhite,
@@ -118,7 +118,7 @@ class AppTheme {
 
   static final darkTheme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: barberWhite,
       onPrimary: barberBlack,
       primaryContainer: Color(0xFF2C2C2C),
@@ -129,7 +129,7 @@ class AppTheme {
       onSecondaryContainer: barberRed,
       surface: barberBlack,
       onSurface: barberWhite,
-      surfaceVariant: Color(0xFF2C2C2C),
+      surfaceContainerHighest: Color(0xFF2C2C2C),
       onSurfaceVariant: barberLightGray,
       outline: barberGray,
       error: barberRed,
@@ -157,9 +157,9 @@ class AppTheme {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Color(0xFF2C2C2C), width: 1),
+        side: const BorderSide(color: Color(0xFF2C2C2C), width: 1),
       ),
-      color: Color(0xFF1E1E1E),
+      color: const Color(0xFF1E1E1E),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -186,7 +186,7 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: barberWhite,
-        side: BorderSide(color: barberWhite, width: 1),
+        side: const BorderSide(color: barberWhite, width: 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
@@ -196,19 +196,19 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberGray),
+        borderSide: const BorderSide(color: barberGray),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberGray),
+        borderSide: const BorderSide(color: barberGray),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: barberWhite, width: 2),
+        borderSide: const BorderSide(color: barberWhite, width: 2),
       ),
       filled: true,
-      fillColor: Color(0xFF1E1E1E),
+      fillColor: const Color(0xFF1E1E1E),
     ),
-    dividerColor: Color(0xFF2C2C2C),
+    dividerColor: const Color(0xFF2C2C2C),
   );
 }

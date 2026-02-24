@@ -142,7 +142,7 @@ class BarberDailyColumn extends StatelessWidget {
 
 
           // Timeline
-          Container(
+          SizedBox(
              height: (endHour - startHour) * hourHeight, // Fixed total height
              child: Stack(
                 children: [

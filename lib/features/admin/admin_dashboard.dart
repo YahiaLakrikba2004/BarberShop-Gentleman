@@ -438,7 +438,7 @@ class _RevenueChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        gridData: FlGridData(show: false),
+        gridData: const FlGridData(show: false),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
@@ -460,9 +460,9 @@ class _RevenueChart extends StatelessWidget {
               interval: 1,
             ),
           ),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -472,7 +472,7 @@ class _RevenueChart extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
@@ -495,7 +495,7 @@ class _RevenueChart extends StatelessWidget {
 class _StatusPieChart extends StatelessWidget {
   final Map<String, dynamic> stats;
 
-  const _StatusPieChart({super.key, required this.stats});
+  const _StatusPieChart({required this.stats});
 
   @override
   Widget build(BuildContext context) {

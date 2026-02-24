@@ -125,7 +125,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     required VoidCallback onTap,
   }) {
     final isSelected = widget.currentIndex == index;
-    final goldColor = const Color(0xFFD4AF37); // Classic Gold
+    const goldColor = Color(0xFFD4AF37); // Classic Gold
 
     return InkWell(
       onTap: onTap,

@@ -444,18 +444,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  HoursRow(
+                                  const HoursRow(
                                       day: 'Lun - Gio',
                                       hours: '10:00-12:30 | 14:30-20:00'),
                                   const SizedBox(height: 8),
-                                  HoursRow(
+                                  const HoursRow(
                                       day: 'Venerdì',
                                       hours: '10:00-12:30 | 14:00-20:30'),
                                   const SizedBox(height: 8),
-                                  HoursRow(
+                                  const HoursRow(
                                       day: 'Sabato', hours: '09:00 - 20:00'),
                                   const SizedBox(height: 8),
-                                  HoursRow(
+                                  const HoursRow(
                                       day: 'Domenica', hours: '10:00 - 18:00'),
                                 ],
                               ),
@@ -464,7 +464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             const SizedBox(height: 32),
 
                             // Social Actions
-                            Row(
+                            const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 SocialButton(
@@ -472,7 +472,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   url:
                                       'https://www.instagram.com/the_gentlemen_barberstyle/',
                                 ),
-                                const SizedBox(width: 20),
+                                SizedBox(width: 20),
                                 SocialButton(
                                   icon: FontAwesomeIcons.whatsapp,
                                   url: 'https://wa.me/393514823048',
@@ -521,12 +521,10 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   }
 
   void _ensureController() {
-    if (_pageController == null) {
-      _pageController = PageController(
+    _pageController ??= PageController(
         viewportFraction: _viewportFraction,
         initialPage: _initialPage,
       );
-    }
   }
 
   void _startAutoPlay() {
@@ -892,7 +890,7 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
 }
 
 class _ServicesCarousel extends StatefulWidget {
-  const _ServicesCarousel({super.key});
+  const _ServicesCarousel();
 
   @override
   State<_ServicesCarousel> createState() => _ServicesCarouselState();
@@ -1004,7 +1002,7 @@ class _ServicesCarouselState extends State<_ServicesCarousel> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTabletOrWeb = screenWidth > 600;
     final cardWidth = isTabletOrWeb ? 500.0 : 360.0;
-    final cardHeight = 340.0;
+    const cardHeight = 340.0;
 
     return Column(
       children: [

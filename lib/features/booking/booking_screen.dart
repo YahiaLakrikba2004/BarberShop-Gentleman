@@ -1446,7 +1446,6 @@ class _PremiumServiceCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const _PremiumServiceCard({
-    super.key,
     required this.service,
     required this.isSelected,
     required this.onTap,

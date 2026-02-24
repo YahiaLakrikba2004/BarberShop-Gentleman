@@ -34,7 +34,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   late AnimationController _rotationController;
   
   // State
-  AuthStep _authStep = AuthStep.phone;
+  final AuthStep _authStep = AuthStep.phone;
   bool _isEmailMode = false;
   bool _isLogin = true; 
   bool _isLoading = false;
@@ -87,7 +87,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           String formattedPhone = phone.startsWith('+') ? phone : '+39$phone';
           String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), '');
           String fakeEmail = '$cleanPhone@gentleman.app';
-          String fakePassword = 'UserPass${cleanPhone}!';
+          String fakePassword = 'UserPass$cleanPhone!';
 
           // Combine Name + Surname
           String fullName = "${_nameController.text.trim()} ${_surnameController.text.trim()}";
@@ -146,7 +146,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         // This bypasses the need for Anonymous Auth (which is disabled) and OTP (which is skipped).
         String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), ''); // Remove + and spaces
         String fakeEmail = '$cleanPhone@gentleman.app';
-        String fakePassword = 'UserPass${cleanPhone}!'; // Simple deterministic password
+        String fakePassword = 'UserPass$cleanPhone!'; // Simple deterministic password
 
         try {
           // 1. Try Login
@@ -244,9 +244,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
-    final goldColor = Colors.white; // Changed from Gold to White as per request
-    final darkBlack = const Color(0xFF0A0A0A);
-    final inputFill = const Color(0xFF1E1E1E);
+    const goldColor = Colors.white; // Changed from Gold to White as per request
+    const darkBlack = Color(0xFF0A0A0A);
+    const inputFill = Color(0xFF1E1E1E);
 
     return Scaffold(
       backgroundColor: darkBlack,
@@ -324,7 +324,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   if (!_isEmailMode && _authStep == AuthStep.phone)
                     TextButton(
                       onPressed: () => setState(() => _isEmailMode = true),
-                      child: Text("Usa Email e Password", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      child: const Text("Usa Email e Password", style: TextStyle(color: Colors.white54, fontSize: 12)),
                     ),
                   
                   if (_isEmailMode)
@@ -565,7 +565,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white12),
+        hintStyle: const TextStyle(color: Colors.white12),
         labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
         prefixIcon: Icon(icon, color: goldColor.withOpacity(0.8)),
         suffixIcon: suffixIcon,

@@ -19,7 +19,7 @@ class _VideoHeaderState extends State<VideoHeader> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
   bool _hasError = false;
-  String _errorMessage = '';
+  final String _errorMessage = '';
 
   @override
   void initState() {

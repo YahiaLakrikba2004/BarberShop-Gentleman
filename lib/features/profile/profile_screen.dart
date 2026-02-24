@@ -68,12 +68,12 @@ class ProfileScreen extends ConsumerWidget {
                     const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0A0A0A),
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF1A1A1A),
-                      const Color(0xFF0A0A0A),
+                      Color(0xFF1A1A1A),
+                      Color(0xFF0A0A0A),
                     ],
                   ),
                   border: Border(
@@ -162,8 +162,8 @@ class ProfileScreen extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.email_outlined,
-                                size: 14, color: const Color(0xFFFFFFFF)),
+                            const Icon(Icons.email_outlined,
+                                size: 14, color: Color(0xFFFFFFFF)),
                             const SizedBox(width: 8),
                             Text(
                               user.email,
@@ -181,8 +181,8 @@ class ProfileScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.phone_outlined,
-                                  size: 14, color: const Color(0xFFFFFFFF)),
+                              const Icon(Icons.phone_outlined,
+                                  size: 14, color: Color(0xFFFFFFFF)),
                               const SizedBox(width: 8),
                               Text(
                                 user.phoneNumber!,

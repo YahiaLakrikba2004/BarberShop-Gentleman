@@ -4,9 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../services/firestore_service.dart';
 import '../../models/appointment_model.dart';
-import '../../models/barber_model.dart';
 import 'widgets/barber_daily_column.dart';
-import 'dart:convert';
 
 class TeamAgendaScreen extends ConsumerStatefulWidget {
   const TeamAgendaScreen({super.key});

@@ -38,6 +38,6 @@ final appInitializationProvider = FutureProvider<void>((ref) async {
   } catch (e, stack) {
     debugPrint('App Initialization Error: $e');
     debugPrint(stack.toString());
-    throw e; // Re-throw to let the UI handle the error state
+    rethrow; // Re-throw to let the UI handle the error state
   }
 });

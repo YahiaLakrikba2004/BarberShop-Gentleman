@@ -28,7 +28,7 @@ class FirestoreService {
       id: user.id,
       name: user.name,
       imageUrl: user.imageUrl ?? '',
-      specialties: ['Taglio', 'Barba'], 
+      specialties: const ['Taglio', 'Barba'], 
       startHour: 9,
       endHour: 20,
       isBookable: isBookable, // Pass it
