@@ -2,7 +2,7 @@ name: Deploy to TestFlight
 
 on:
   push:
-    branches: [main]
+    branches: [gestione_tema]
   # oppure manuale:
   workflow_dispatch:
 
