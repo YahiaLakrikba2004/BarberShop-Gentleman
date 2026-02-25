@@ -23,6 +23,11 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Create .env file
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: echo "$ENV_FILE" > .env
+
       - name: Install Apple Certificate
         env:
           P12_CERTIFICATE: ${{ secrets.P12_CERTIFICATE }}
@@ -49,7 +54,18 @@ jobs:
           PP_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $PP_PATH))
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
+      - name: Setup API Key
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+
       - name: Build IPA
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
@@ -58,16 +74,13 @@ jobs:
           pod install --repo-update
           cd ..
           xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -sdk iphoneos -configuration Release -archivePath $RUNNER_TEMP/Runner.xcarchive archive -destination "generic/platform=iOS" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="4YT4673XX2" CODE_SIGN_IDENTITY="Apple Distribution" OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/app-signing.keychain-db"
-          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath build/ios/ipa
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath build/ios/ipa -allowProvisioningUpdates -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8 -authenticationKeyID $APP_STORE_CONNECT_KEY_ID -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
 
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
-          mkdir -p ~/.private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
           echo "Uploading: $IPA_PATH"
           xcrun altool --upload-app --type ios --file "$IPA_PATH" --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
@@ -78,3 +91,6 @@ jobs:
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
           rm -f $RUNNER_TEMP/certificate.p12
           rm -f $RUNNER_TEMP/profile.mobileprovision
+          rm -rf ~/.private_keys 
+          
+          
