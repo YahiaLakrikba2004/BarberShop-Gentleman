@@ -81,16 +81,13 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
-          echo "Uploading: $IPA_PATH"
-          xcrun altool --upload-app --type ios --file "$IPA_PATH" --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+          echo "=== Cercando IPA ==="
+          find $RUNNER_TEMP -name "*.ipa" 2>/dev/null || true
+          find build -name "*.ipa" 2>/dev/null || true
+          find /Users/runner -name "*.ipa" -maxdepth 5 2>/dev/null || true
+          echo "=== Contenuto build/ios/ ==="
+          ls -R build/ios/ 2>/dev/null || echo "build/ios non esiste"
+          echo "=== Contenuto export path ==="
+          ls -R $RUNNER_TEMP/Runner.xcarchive/Products/ 2>/dev/null || true
+          
 
-      - name: Clean up
-        if: always()
-        run: |
-          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
-          rm -f $RUNNER_TEMP/certificate.p12
-          rm -f $RUNNER_TEMP/profile.mobileprovision
-          rm -rf ~/.private_keys 
-          
-          
