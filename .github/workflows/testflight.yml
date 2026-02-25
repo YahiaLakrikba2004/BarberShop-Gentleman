@@ -65,14 +65,16 @@ jobs:
       # 6. Build dell'IPA
       - name: Build IPA
         run: |
+          # Forza il Team ID e la firma manuale direttamente nel progetto Xcode
+          sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
+
           cd ios
           pod install --repo-update
           cd ..
 
-          # Build con flutter solo il bundle (senza firma)
-          flutter build ios --release --no-codesign
-
-          # Archive con xcodebuild
+          # Archive
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -sdk iphoneos \
