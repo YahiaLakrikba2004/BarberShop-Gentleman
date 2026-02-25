@@ -82,7 +82,9 @@ jobs:
             -archivePath $RUNNER_TEMP/Runner.xcarchive \
             archive \
             CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="4YT4673XX2" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="BarberShop_AppStore_Distribution" \
             OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/app-signing.keychain-db"
 
           xcodebuild -exportArchive \
