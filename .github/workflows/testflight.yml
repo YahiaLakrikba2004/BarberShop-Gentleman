@@ -11,45 +11,34 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      # 1. Checkout del codice
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      # 3. Installa dipendenze
       - name: Flutter pub get
         run: flutter pub get
 
-      # 4. Installa il certificato di distribuzione
       - name: Install Apple Certificate
         env:
           P12_CERTIFICATE: ${{ secrets.P12_CERTIFICATE }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
         run: |
-          # Crea un keychain temporaneo
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          # Importa il certificato
           CERT_PATH=$RUNNER_TEMP/certificate.p12
           echo "$P12_CERTIFICATE" | base64 --decode > $CERT_PATH
-          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 \
-            -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" \
-            $KEYCHAIN_PATH
+          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-      # 5. Installa il Provisioning Profile
       - name: Install Provisioning Profile
         env:
           PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
@@ -57,71 +46,32 @@ jobs:
           PP_PATH=$RUNNER_TEMP/profile.mobileprovision
           echo "$PROVISIONING_PROFILE" | base64 --decode > $PP_PATH
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-
-          # Copia con l'UUID come nome file (come fa Xcode)
           PP_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $PP_PATH))
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
-      # 6. Build dell'IPA
       - name: Build IPA
         run: |
-          # Forza signing SOLO nel target Runner
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
-
-          # Inserisci PROVISIONING_PROFILE_SPECIFIER solo dove c'è il bundle ID di Runner
-          sed -i '' '/PRODUCT_BUNDLE_IDENTIFIER = com\.gentleman\.barber;/{
-            n
-            s/$/\
-				        PROVISIONING_PROFILE_SPECIFIER = "BarberShop_AppStore_Distribution";/
-          }' ios/Runner.xcodeproj/project.pbxproj
-
+          sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = com\.gentleman\.barber;/PRODUCT_BUNDLE_IDENTIFIER = com.gentleman.barber; PROVISIONING_PROFILE_SPECIFIER = "BarberShop_AppStore_Distribution";/g' ios/Runner.xcodeproj/project.pbxproj
           cd ios
           pod install --repo-update
           cd ..
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -sdk iphoneos -configuration Release -archivePath $RUNNER_TEMP/Runner.xcarchive archive -destination "generic/platform=iOS" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="4YT4673XX2" CODE_SIGN_IDENTITY="Apple Distribution" OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/app-signing.keychain-db"
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/Runner.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath build/ios/ipa
 
-          # Archive - NO provisioning profile nella command line (evita che si applichi ai Pods)
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            archive \
-            -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="4YT4673XX2" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/app-signing.keychain-db"
-
-          # Esporta IPA
-          xcodebuild -exportArchive \
-            -archivePath $RUNNER_TEMP/Runner.xcarchive \
-            -exportOptionsPlist ios/ExportOptions.plist \
-            -exportPath build/ios/ipa
-
-      # 7. Upload su TestFlight
       - name: Upload to TestFlight
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
-          # Salva la API key
           mkdir -p ~/.private_keys
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
-
-          # Trova il file IPA
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
           echo "Uploading: $IPA_PATH"
+          xcrun altool --upload-app --type ios --file "$IPA_PATH" --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
 
-          # Upload con xcrun
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
-
-      # 8. Pulizia
       - name: Clean up
         if: always()
         run: |
