@@ -446,7 +446,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
         ),
         value: value,
         onChanged: onChanged,
-        activeThumbColor: isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary,
+        activeColor: isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary,
         activeTrackColor: (isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary).withOpacity(0.2),
         inactiveThumbColor: Colors.grey,
         inactiveTrackColor: Colors.grey.withOpacity(0.2),
