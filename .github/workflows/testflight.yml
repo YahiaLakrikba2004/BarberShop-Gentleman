@@ -3,7 +3,6 @@ name: Deploy to TestFlight
 on:
   push:
     branches: [gestione_tema]
-  # oppure manuale:
   workflow_dispatch:
 
 jobs:
@@ -20,7 +19,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.2'
           channel: 'stable'
           cache: true
 
@@ -59,32 +57,40 @@ jobs:
           PP_PATH=$RUNNER_TEMP/profile.mobileprovision
           echo "$PROVISIONING_PROFILE" | base64 --decode > $PP_PATH
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
 
+          # Copia con l'UUID come nome file (come fa Xcode)
+          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $PP_PATH))
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$PP_UUID.mobileprovision
 
       # 6. Build dell'IPA
       - name: Build IPA
         run: |
-          # Forza il Team ID e la firma manuale direttamente nel progetto Xcode
+          # Forza signing SOLO nel target Runner
           sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = 4YT4673XX2;/g' ios/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
+
+          # Inserisci PROVISIONING_PROFILE_SPECIFIER solo dove c'è il bundle ID di Runner
+          sed -i '' '/PRODUCT_BUNDLE_IDENTIFIER = com\.gentleman\.barber;/{
+            n
+            s/$/\
+				        PROVISIONING_PROFILE_SPECIFIER = "BarberShop_AppStore_Distribution";/
+          }' ios/Runner.xcodeproj/project.pbxproj
 
           cd ios
           pod install --repo-update
           cd ..
 
-          # Archive
+          # Archive - NO provisioning profile nella command line (evita che si applichi ai Pods)
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -sdk iphoneos \
             -configuration Release \
             -archivePath $RUNNER_TEMP/Runner.xcarchive \
             archive \
+            -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="4YT4673XX2" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="BarberShop_AppStore_Distribution" \
             OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/app-signing.keychain-db"
 
           # Esporta IPA
