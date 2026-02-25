@@ -81,13 +81,8 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
-          echo "=== Cercando IPA ==="
-          find $RUNNER_TEMP -name "*.ipa" 2>/dev/null || true
-          find build -name "*.ipa" 2>/dev/null || true
-          find /Users/runner -name "*.ipa" -maxdepth 5 2>/dev/null || true
-          echo "=== Contenuto build/ios/ ==="
-          ls -R build/ios/ 2>/dev/null || echo "build/ios non esiste"
-          echo "=== Contenuto export path ==="
-          ls -R $RUNNER_TEMP/Runner.xcarchive/Products/ 2>/dev/null || true
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+          echo "Uploading: $IPA_PATH"
+          xcrun altool --upload-app --type ios --file "$IPA_PATH" --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
           
 
