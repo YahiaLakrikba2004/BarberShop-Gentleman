@@ -253,9 +253,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment.topCenter,
-            radius: 1.5,
-            colors: [Color(0xFF2C2C2C), Color(0xFF0A0A0A)],
+            center: Alignment.center,
+            radius: 1.2,
+            colors: [
+              Color(0xFF161616), // Dark center
+              Color(0xFF000000), // Pure black edges
+            ],
+            stops: [0.0, 1.0],
           ),
         ),
         child: SafeArea(
@@ -272,13 +276,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       width: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: darkBlack,
-                        border: Border.all(color: goldColor.withOpacity(0.5), width: 1),
+                        color: Colors.black,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: goldColor.withOpacity(0.2),
-                            blurRadius: 15,
-                            spreadRadius: 1,
+                            color: Colors.white.withOpacity(0.08),
+                            blurRadius: 40,
+                            spreadRadius: 4,
                           ),
                         ],
                       ),

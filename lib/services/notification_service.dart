@@ -46,6 +46,13 @@ class NotificationService {
       );
       if (kDebugMode) print('User granted permission: ${settings.authorizationStatus}');
 
+      // iOS: Enable foreground notifications (banner + sound + badge)
+      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
       // 2. Initialize Local Notifications
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -118,16 +125,15 @@ class NotificationService {
         if (kDebugMode) print("Error handling FCM Token (ignoring for local notifications): $e");
       }
 
-      // 5. Handle Foreground Messages
+      // 5. Handle Foreground Messages (Android + iOS)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         if (kDebugMode) print('Got a message whilst in the foreground!');
-        
-        RemoteNotification? notification = message.notification;
-        AndroidNotification? android = message.notification?.android;
 
-        // Show standard system notification in foreground
-        if (notification != null && android != null) {
-          _showForegroundNotification(notification, android);
+        RemoteNotification? notification = message.notification;
+
+        // Show local notification in foreground on both Android and iOS
+        if (notification != null) {
+          _showForegroundNotification(notification);
         }
       });
       
@@ -230,9 +236,7 @@ class NotificationService {
     }
   }
 
-  Future<void> _showForegroundNotification(
-      RemoteNotification notification, AndroidNotification android) async {
-    
+  Future<void> _showForegroundNotification(RemoteNotification notification) async {
     final details = await _getPremiumNotificationDetails(
       title: notification.title,
       body: notification.body,
