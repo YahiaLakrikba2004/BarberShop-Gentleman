@@ -16,6 +16,7 @@ import '../../services/auth_service.dart';
 import '../appointments/grouped_appointments_list.dart';
 import 'shop_management_screen.dart';
 import 'team_agenda_screen.dart';
+import '../../services/notification_service.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -25,6 +26,41 @@ class AdminDashboard extends ConsumerWidget {
     final appointmentsAsync = ref.watch(allAppointmentsProvider);
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
+
+    // Listen for new or cancelled appointments to show admin notifications
+    ref.listen(allAppointmentsProvider, (previous, next) {
+      if (previous?.hasValue == true && next.hasValue) {
+        final prevAppointments = previous!.value!;
+        final nextAppointments = next.value!;
+        
+        // 1. Check for new appointments
+        if (nextAppointments.length > prevAppointments.length) {
+          final newApts = nextAppointments.where((n) => !prevAppointments.any((p) => p.id == n.id)).toList();
+          for (final apt in newApts) {
+            ref.read(notificationServiceProvider).showImmediateNotification(
+              title: 'Nuova Prenotazione',
+              body: '${apt.customerName} ha prenotato ${apt.serviceName} per il ${DateFormat('dd/MM HH:mm').format(apt.date)}',
+              payload: '/team-agenda',
+            );
+          }
+        }
+        
+        // 2. Check for cancellations (status change to cancelled)
+        for (final nextApt in nextAppointments) {
+          final prevApt = prevAppointments.where((p) => p.id == nextApt.id).firstOrNull;
+          if (prevApt != null && 
+              prevApt.status != AppointmentStatus.cancelled && 
+              nextApt.status == AppointmentStatus.cancelled) {
+            
+            ref.read(notificationServiceProvider).showImmediateNotification(
+              title: 'Prenotazione Annullata',
+              body: '${nextApt.customerName} ha annullato l\'appuntamento per ${nextApt.serviceName} del ${DateFormat('dd/MM HH:mm').format(nextApt.date)}',
+              payload: '/team-agenda',
+            );
+          }
+        }
+      }
+    });
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 

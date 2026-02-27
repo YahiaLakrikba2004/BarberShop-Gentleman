@@ -12,6 +12,7 @@ import '../../models/barber_model.dart';
 import '../../models/service_model.dart';
 import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/slot_service.dart';
 import '../../services/auth_service.dart';
 import 'package:animate_do/animate_do.dart';
@@ -1291,6 +1292,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
     try {
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
+      
+      // Trigger immediate local notification
+      ref.read(notificationServiceProvider).showImmediateNotification(
+        title: 'Prenotazione Confermata',
+        body: 'Il tuo appuntamento per ${_selectedService!.name} è stato registrato per il ${DateFormat('dd/MM HH:mm').format(_selectedSlot!)}',
+        payload: '/calendar',
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -11,6 +11,7 @@ import '../../services/firestore_service.dart';
 import '../../models/user_model.dart';
 import '../../config/admin_config.dart';
 import '../admin/team_agenda_screen.dart';
+import '../../services/notification_service.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -893,10 +894,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ),
                     child: Text(
-                      'ANNULLA',
+                      'ELIMINA APPUNTAMENTO',
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 10, // Slightly smaller to fit
                         letterSpacing: 1,
                       ),
                     ),
@@ -1010,6 +1011,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     .read(firestoreServiceProvider)
                     .updateAppointmentStatus(
                         appointment.id, AppointmentStatus.cancelled);
+                
+                // Trigger immediate notification for cancellation
+                ref.read(notificationServiceProvider).showImmediateNotification(
+                  title: 'Appuntamento Annullato',
+                  body: 'L\'appuntamento per ${appointment.serviceName} del ${DateFormat('dd/MM HH:mm').format(appointment.date)} è stato annullato.',
+                );
+                
+                // Cancel scheduled local reminder
+                ref.read(notificationServiceProvider).cancelNotification(appointment.id.hashCode);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
@@ -66,8 +67,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         userAppointmentsProvider(user.id),
         (previous, next) {
           next.whenData((appointments) {
-            // Only reschedule if data actually changed or loaded
-            if (previous?.value != appointments) {
+            final prevAppointments = previous?.value;
+            
+            // Only process if we have previous data and it actually changed
+            if (prevAppointments != null && prevAppointments != appointments) {
+               // 1. Check for status/time changes initiated by admin
+               for (final apt in appointments) {
+                 final oldApt = prevAppointments.where((p) => p.id == apt.id).firstOrNull;
+                 if (oldApt != null) {
+                   // If status changed to cancelled (and not by current user action in this session)
+                   if (oldApt.status != apt.status && apt.status == AppointmentStatus.cancelled) {
+                     ref.read(notificationServiceProvider).showImmediateNotification(
+                       title: 'Appuntamento Annullato',
+                       body: 'Il tuo appuntamento per ${apt.serviceName} del ${DateFormat('dd/MM HH:mm').format(apt.date)} è stato annullato dal salone.',
+                       payload: '/calendar',
+                     );
+                   }
+                   // If date/time changed
+                   else if (!oldApt.date.isAtSameMomentAs(apt.date)) {
+                     ref.read(notificationServiceProvider).showImmediateNotification(
+                       title: 'Orario Modificato',
+                       body: 'L\'orario del tuo appuntamento per ${apt.serviceName} è stato spostato al ${DateFormat('dd/MM HH:mm').format(apt.date)}.',
+                       payload: '/calendar',
+                     );
+                   }
+                 }
+               }
+               
+               // 2. Reschedule all reminders
+               ref.read(notificationServiceProvider).rescheduleAllAppointments(appointments);
+            } else if (prevAppointments == null) {
+               // First load: just schedule reminders
                ref.read(notificationServiceProvider).rescheduleAllAppointments(appointments);
             }
           });
@@ -935,55 +965,20 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
   }
 }
 
-class _ServicesCarousel extends StatefulWidget {
-  const _ServicesCarousel();
+class _ServicesCarousel extends ConsumerStatefulWidget {
+  const _ServicesCarousel({super.key});
 
   @override
-  State<_ServicesCarousel> createState() => _ServicesCarouselState();
+  ConsumerState<_ServicesCarousel> createState() => _ServicesCarouselState();
 }
 
-class _ServicesCarouselState extends State<_ServicesCarousel> {
+class _ServicesCarouselState extends ConsumerState<_ServicesCarousel> {
   late PageController _pageController;
   int _currentPage = 0;
   double _currentViewportFraction = 0.75;
   Timer? _autoPlayTimer;
   static const int _infiniteCount = 10000;
   static const int _initialPage = _infiniteCount ~/ 2;
-
-  final List<Map<String, dynamic>> _services = [
-    {
-      'icon': Icons.content_cut,
-      'title': 'Taglio Capelli',
-      'description': 'Taglio classico o moderno eseguito con precisione e stile.',
-      'price': '15€',
-      'duration': '30 min',
-      'featured': false,
-    },
-    {
-      'icon': Icons.face,
-      'title': 'Regolazione Barba',
-      'description': 'Modellatura, rifinitura e trattamento panno caldo.',
-      'price': '7€',
-      'duration': '30 min',
-      'featured': false,
-    },
-    {
-      'icon': Icons.auto_awesome,
-      'title': 'Taglio + Barba',
-      'description': 'Il pacchetto completo per un look impeccabile e curato.',
-      'price': '22€',
-      'duration': '60 min',
-      'featured': true,
-    },
-    {
-      'icon': Icons.child_care,
-      'title': 'Taglio Bambino',
-      'description': 'Stile e divertimento per i più piccoli.',
-      'price': '12€',
-      'duration': '30 min',
-      'featured': false,
-    },
-  ];
 
   @override
   void initState() {
@@ -1043,125 +1038,137 @@ class _ServicesCarouselState extends State<_ServicesCarousel> {
     super.dispose();
   }
 
+  IconData _getIconForService(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('taglio') && n.contains('barba')) return Icons.auto_awesome;
+    if (n.contains('taglio') && n.contains('bambino')) return Icons.child_care;
+    if (n.contains('taglio')) return Icons.content_cut;
+    if (n.contains('barba')) return Icons.face;
+    return Icons.star_outline;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTabletOrWeb = screenWidth > 600;
-    final cardWidth = isTabletOrWeb ? 500.0 : 360.0;
-    const cardHeight = 340.0;
+    final servicesAsync = ref.watch(serviceListProvider);
 
-    return Column(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            // Stop auto-play on interaction
-            onPanDown: (_) => _stopAutoPlay(),
-            onPanCancel: () => _startAutoPlay(),
-            onPanEnd: (_) => _startAutoPlay(),
-            child: PageView.builder(
-              key: ValueKey(_currentViewportFraction), // Force recreate on viewport change
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              itemCount: _infiniteCount,
-              itemBuilder: (context, index) {
-                // Modulo for infinite looping
-                final serviceIndex = index % _services.length;
-                final service = _services[serviceIndex];
+    return servicesAsync.when(
+      data: (services) {
+        if (services.isEmpty) return const SizedBox.shrink();
 
-                // 3D Depth & Rotation Effect
-                return AnimatedBuilder(
-                  animation: _pageController,
-                  builder: (context, child) {
-                    double value = 0.0;
-                    if (_pageController.hasClients && 
-                        _pageController.positions.length == 1 &&
-                        _pageController.position.haveDimensions) {
-                      value = _pageController.page! - index;
-                    } else {
-                      // Initial state fallback
-                      value = (_currentPage - index).toDouble();
-                    }
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isTabletOrWeb = screenWidth > 600;
+        final cardWidth = isTabletOrWeb ? 500.0 : 360.0;
+        const cardHeight = 340.0;
 
-                    // Clamp to handle edge cases
-                    final double dist = value.clamp(-1.0, 1.0);
-                    
-                    // Style Calculations
-                    final double scale = 1.0 - (dist.abs() * 0.2);
-                    final double opacity = 1.0 - (dist.abs() * 0.4).clamp(0.0, 0.6);
-                    final double rotation = dist * 0.5; // Rotate Y
+        return Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onPanDown: (_) => _stopAutoPlay(),
+                onPanCancel: () => _startAutoPlay(),
+                onPanEnd: (_) => _startAutoPlay(),
+                child: PageView.builder(
+                  key: ValueKey(_currentViewportFraction),
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemCount: _infiniteCount,
+                  itemBuilder: (context, index) {
+                    final service = services[index % services.length];
 
-                    return Transform(
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001) // Perspective
-                        ..rotateY(rotation),
-                      alignment: Alignment.center,
-                      child: Opacity(
-                        opacity: opacity,
-                        child: Transform.scale(
-                          scale: scale,
-                          child: child,
+                    return AnimatedBuilder(
+                      animation: _pageController,
+                      builder: (context, child) {
+                        double value = 0.0;
+                        if (_pageController.hasClients &&
+                            _pageController.positions.length == 1 &&
+                            _pageController.position.haveDimensions) {
+                          value = _pageController.page! - index;
+                        } else {
+                          value = (_currentPage - index).toDouble();
+                        }
+
+                        final double dist = value.clamp(-1.0, 1.0);
+                        final double scale = 1.0 - (dist.abs() * 0.2);
+                        final double opacity = 1.0 - (dist.abs() * 0.4).clamp(0.0, 0.6);
+                        final double rotation = dist * 0.5;
+
+                        return Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateY(rotation),
+                          alignment: Alignment.center,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: Transform.scale(
+                              scale: scale,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: SizedBox(
+                          height: cardHeight,
+                          width: cardWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: _PremiumServiceCard(
+                              icon: _getIconForService(service.name),
+                              title: service.name,
+                              description: service.description,
+                              price: '${service.price.toInt()}€',
+                              duration: '${service.durationMinutes} min',
+                              featured: service.price > 20,
+                              compact: false,
+                            ),
+                          ),
                         ),
                       ),
                     );
                   },
-                  child: Center(
-                    child: SizedBox(
-                      height: cardHeight,
-                      width: cardWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: _PremiumServiceCard(
-                          icon: service['icon'],
-                          title: service['title'],
-                          description: service['description'],
-                          price: service['price'],
-                          duration: service['duration'],
-                          featured: service['featured'],
-                          compact: false,
-                        ),
-                      ),
-                    ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(services.length, (index) {
+                final activeIndex = _currentPage % services.length;
+                final isActive = activeIndex == index;
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isActive ? 32 : 8,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFFFFFFFF)
+                        : const Color(0xFFFFFFFF).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.5),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : null,
                   ),
                 );
-              },
+              }),
             ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        // Page Indicators
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_services.length, (index) {
-            // Calculate active index from infinite scroll
-            final activeIndex = _currentPage % _services.length;
-            final isActive = activeIndex == index;
-
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: isActive ? 32 : 8, // Longer active indicator
-              height: 4,               // Slimmer
-              decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFFFFFFFF)
-                    : const Color(0xFFFFFFFF).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: isActive ? [
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.5),
-                    blurRadius: 6,
-                    spreadRadius: 1,
-                  )
-                ] : null,
-              ),
-            );
-          }),
-        ),
-      ],
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => const Center(
+          child: Icon(Icons.error_outline, color: Colors.redAccent)),
     );
   }
 }

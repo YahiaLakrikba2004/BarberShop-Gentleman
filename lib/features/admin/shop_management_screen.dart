@@ -20,6 +20,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
   bool _isShopClosedManually = false;
   List<DateTime> _closures = [];
   bool _isLoaded = false;
+  DateTime _focusedDay = DateTime.now();
 
   @override
   void dispose() {
@@ -174,9 +175,10 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                             border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
                           ),
                           child: TableCalendar(
+                            locale: 'it_IT',
                             firstDay: DateTime.now().subtract(const Duration(days: 30)),
                             lastDay: DateTime.now().add(const Duration(days: 365)),
-                            focusedDay: DateTime.now(),
+                            focusedDay: _focusedDay,
                             calendarFormat: CalendarFormat.month,
                             availableGestures: AvailableGestures.all,
                             headerStyle: HeaderStyle(
@@ -220,12 +222,16 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                             selectedDayPredicate: (day) => _closures.any((d) => isSameDay(d, day)),
                             onDaySelected: (selectedDay, focusedDay) {
                               setState(() {
+                                _focusedDay = focusedDay;
                                 if (_closures.any((d) => isSameDay(d, selectedDay))) {
                                   _closures.removeWhere((d) => isSameDay(d, selectedDay));
                                 } else {
                                   _closures.add(selectedDay);
                                 }
                               });
+                            },
+                            onPageChanged: (focusedDay) {
+                              _focusedDay = focusedDay;
                             },
                           ),
                         ),

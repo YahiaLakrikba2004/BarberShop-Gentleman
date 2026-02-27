@@ -439,6 +439,7 @@ class _BarberVacationDialog extends StatefulWidget {
 
 class _BarberVacationDialogState extends State<_BarberVacationDialog> {
   late List<DateTime> _unavailableDates;
+  DateTime _focusedDay = DateTime.now();
 
   @override
   void initState() {
@@ -492,9 +493,10 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                     border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                   ),
                   child: TableCalendar(
+                    locale: 'it_IT',
                     firstDay: DateTime.now().subtract(const Duration(days: 30)),
                     lastDay: DateTime.now().add(const Duration(days: 365)),
-                    focusedDay: DateTime.now(),
+                    focusedDay: _focusedDay,
                     calendarFormat: CalendarFormat.month,
                     headerStyle: HeaderStyle(
                       formatButtonVisible: false,
@@ -525,12 +527,16 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                     selectedDayPredicate: (day) => _unavailableDates.any((d) => isSameDay(d, day)),
                     onDaySelected: (selectedDay, focusedDay) {
                       setState(() {
+                        _focusedDay = focusedDay;
                         if (_unavailableDates.any((d) => isSameDay(d, selectedDay))) {
                           _unavailableDates.removeWhere((d) => isSameDay(d, selectedDay));
                         } else {
                           _unavailableDates.add(selectedDay);
                         }
                       });
+                    },
+                    onPageChanged: (focusedDay) {
+                      _focusedDay = focusedDay;
                     },
                   ),
                 ),

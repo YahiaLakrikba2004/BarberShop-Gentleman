@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/initialization.dart';
@@ -8,8 +10,9 @@ import 'features/splash/splash_screen.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('it_IT', null);
   
   // Register background handler early
   FirebaseMessaging.onBackgroundMessage(
@@ -126,6 +129,16 @@ class _BarberShopAppState extends ConsumerState<BarberShopApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('it', 'IT'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('it', 'IT'),
       builder: (context, child) {
         return Stack(
           children: [

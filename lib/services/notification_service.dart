@@ -346,21 +346,27 @@ class NotificationService {
     return status;
   }
 
-  // Keep for legacy/debug system notification testing
-  Future<void> showImmediateNotification() async {
+  // Show an immediate notification
+  Future<void> showImmediateNotification({
+    required String title,
+    required String body,
+    String? payload,
+    String? imagePath,
+  }) async {
     final details = await _getPremiumNotificationDetails(
-      title: 'The Gentlemen Club',
-      body: 'È il momento di rinnovare il tuo stile.',
-      imagePath: 'assets/images/gallery/haircut5.png',
+      title: title,
+      body: body,
+      imagePath: imagePath,
     );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'The Gentlemen Club',
-      'È il momento di rinnovare il tuo stile.',
+      title,
+      body,
       details,
-      payload: '/booking',
+      payload: payload,
     );
+    if (kDebugMode) print("Immediate notification shown: $title");
   }
 
   Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {
