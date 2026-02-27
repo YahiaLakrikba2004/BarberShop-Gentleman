@@ -59,9 +59,9 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
           'AGENDA TEAM',
           style: GoogleFonts.cinzel(
             fontWeight: FontWeight.bold,
-            letterSpacing: 3,
+            letterSpacing: 4,
             fontSize: 18,
-            color: Theme.of(context).colorScheme.primary, // Gold title
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
@@ -86,45 +86,54 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
         children: [
           // Date Select Row
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
                   onPressed: () => _changeDate(-1),
-                  icon: const Icon(Icons.chevron_left, color: Colors.white54),
+                  icon: const Icon(Icons.chevron_left, color: Colors.white30),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
-                const SizedBox(width: 16),
-                GestureDetector(
-                  onTap: () => _selectDate(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-                      borderRadius: BorderRadius.circular(30),
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.calendar_month, size: 18, color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 12),
-                        Text(
-                          DateFormat('EEEE d MMMM', 'it').format(_selectedDate).toUpperCase(),
-                           style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.2,
-                            color: Theme.of(context).colorScheme.primary, // Gold date
-                          ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        borderRadius: BorderRadius.circular(30),
+                        color: Colors.white.withOpacity(0.05),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_month, size: 16, color: Colors.white70),
+                            const SizedBox(width: 8),
+                            Text(
+                              DateFormat('EEEE d MMMM', 'it').format(_selectedDate).toUpperCase(),
+                               style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => _changeDate(1),
-                  icon: const Icon(Icons.chevron_right, color: Colors.white54),
+                  icon: const Icon(Icons.chevron_right, color: Colors.white30),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -280,8 +289,13 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                  child: ElevatedButton(
                    onPressed: () => Navigator.pop(context),
                    style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).colorScheme.primary,
-                     foregroundColor: Colors.black,
+                     backgroundColor: Colors.white10,
+                     foregroundColor: Colors.white,
+                     elevation: 0,
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(12),
+                       side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                     ),
                    ),
                    child: const Text('CHIUDI'),
                  ),

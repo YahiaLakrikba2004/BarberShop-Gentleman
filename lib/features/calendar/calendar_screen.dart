@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'package:intl/intl.dart';
@@ -50,49 +51,50 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Custom Header
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Text(
-                  'I MIEI APPUNTAMENTI',
-                  style: GoogleFonts.cinzel(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-              // Special Button for Team Agenda (Shop Account/Admin)
-              userAsync.when(
-                  data: (user) {
-                   if (user != null && (user.role == UserRole.admin || AdminConfig.isShopAccount(user.email))) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: OutlinedButton.icon(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const TeamAgendaScreen()),
-                          ),
-                          icon: const Icon(Icons.people_alt_outlined, color: Color(0xFFD4AF37)),
-                          label: Text(
-                            "AGENDA TEAM",
-                            style: GoogleFonts.cinzel(
-                              color: const Color(0xFFD4AF37),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFD4AF37)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              // Custom Header - Compact & Premium
+              FadeInDown(
+                duration: const Duration(milliseconds: 800),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'APPUNTAMENTI',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                      ),
+                      // Special Button for Team Agenda (Shop Account/Admin)
+                      userAsync.when(
+                        data: (user) {
+                          if (user != null && (user.role == UserRole.admin || AdminConfig.isShopAccount(user.email))) {
+                            return _AgendaTeamButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const TeamAgendaScreen()),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               Expanded(
                 child: userAsync.when(
@@ -159,54 +161,53 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             controller: _eventController,
             child: Column(
               children: [
-                // View selector buttons
+                // View selector buttons - Compact Glass
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF222222),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1,
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              child: _ViewSelectorButton(
+                                title: 'GIORNO',
+                                icon: Icons.view_day_outlined,
+                                isSelected: _currentView == CalendarViewType.day,
+                                onTap: () => setState(() => _currentView = CalendarViewType.day),
+                              ),
+                            ),
+                            Expanded(
+                              child: _ViewSelectorButton(
+                                title: 'SETTIMANA',
+                                icon: Icons.calendar_view_week_outlined,
+                                isSelected: _currentView == CalendarViewType.week,
+                                onTap: () => setState(() => _currentView = CalendarViewType.week),
+                              ),
+                            ),
+                            Expanded(
+                              child: _ViewSelectorButton(
+                                title: 'MESE',
+                                icon: Icons.calendar_month_outlined,
+                                isSelected: _currentView == CalendarViewType.month,
+                                onTap: () => setState(() => _currentView = CalendarViewType.month),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: _ViewSelectorButton(
-                            title: 'Giorno',
-                            icon: Icons.view_day_outlined,
-                            isSelected: _currentView == CalendarViewType.day,
-                            onTap: () => setState(() => _currentView = CalendarViewType.day),
-                          ),
-                        ),
-                        Expanded(
-                          child: _ViewSelectorButton(
-                            title: 'Settimana',
-                            icon: Icons.calendar_view_week_outlined,
-                            isSelected: _currentView == CalendarViewType.week,
-                            onTap: () => setState(() => _currentView = CalendarViewType.week),
-                          ),
-                        ),
-                        Expanded(
-                          child: _ViewSelectorButton(
-                            title: 'Mese',
-                            icon: Icons.calendar_month_outlined,
-                            isSelected: _currentView == CalendarViewType.month,
-                            onTap: () => setState(() => _currentView = CalendarViewType.month),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -224,8 +225,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                             headerTextStyle: GoogleFonts.cinzel(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
                           dateStringBuilder: (date, {secondaryDate}) {
@@ -419,6 +421,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                           color: Colors.white,
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
                                         ),
                                       ),
                                       const Spacer(),
@@ -577,6 +580,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                           color: Colors.white,
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
                                         ),
                                       ),
                                       const Spacer(),
@@ -1053,32 +1057,92 @@ class _ViewSelectorButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.white.withOpacity(0.3),
+              blurRadius: 15,
+              spreadRadius: 2,
+            )
+          ] : [],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.black : Colors.white54,
+              color: isSelected ? Colors.black : Colors.white.withOpacity(0.4),
               size: 20,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              title,
+              title.toUpperCase(),
               style: GoogleFonts.montserrat(
-                color: isSelected ? Colors.black : Colors.white54,
-                fontSize: 10,
+                color: isSelected ? Colors.black : Colors.white.withOpacity(0.4),
+                fontSize: 9,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                letterSpacing: 1.2,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AgendaTeamButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _AgendaTeamButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    
+    return GestureDetector(
+      onTap: onPressed,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: goldColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: goldColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.people_alt_outlined,
+                  color: goldColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "TEAM",
+                  style: GoogleFonts.cinzel(
+                    color: goldColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

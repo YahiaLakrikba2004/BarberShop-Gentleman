@@ -23,7 +23,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   // Rotating arc around logo
   late AnimationController _ringController;
-
+ 
+  // Ambient dust/particles
+  late AnimationController _particleController;
+ 
   // Pulsing glow on logo
   late AnimationController _glowController;
   late Animation<double> _glowRadius;
@@ -68,6 +71,12 @@ class _SplashScreenState extends State<SplashScreen>
     _glowRadius = Tween<double>(begin: 28.0, end: 52.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
+ 
+    // Particles movement
+    _particleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _runSequence());
   }
@@ -92,6 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeOutController.dispose();
     _ringController.dispose();
     _glowController.dispose();
+    _particleController.dispose();
     super.dispose();
   }
 
@@ -101,49 +111,61 @@ class _SplashScreenState extends State<SplashScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: AnimatedBuilder(
-        animation: _fadeOutController,
-        builder: (context, child) => Opacity(
-          opacity: _screenOpacity.value,
-          child: child,
-        ),
-        child: Stack(
-          children: [
-            // --- RADIAL GRADIENT BACKGROUND ---
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 0.85,
-                    colors: [
-                      Color(0xFF1C1C1C), // near-black warm center
-                      Color(0xFF000000), // pure black edges
-                    ],
-                    stops: [0.0, 1.0],
+      body: SizedBox.expand(
+        child: AnimatedBuilder(
+          animation: _fadeOutController,
+          builder: (context, child) => Opacity(
+            opacity: _screenOpacity.value,
+            child: child,
+          ),
+          child: Stack(
+            children: [
+              // --- RADIAL GRADIENT BACKGROUND ---
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 0.85,
+                      colors: [
+                        Color(0xFF1C1C1C), // near-black warm center
+                        Color(0xFF000000), // pure black edges
+                      ],
+                      stops: [0.0, 1.0],
+                    ),
                   ),
                 ),
               ),
-            ),
-
-            // --- CORNER BRACKET ORNAMENTS ---
-            ..._buildCornerBrackets(size),
-
-            // --- MAIN CONTENT ---
-            AnimatedBuilder(
-              animation: _mainController,
-              builder: (context, child) => FadeTransition(
-                opacity: _mainFade,
-                child: ScaleTransition(
-                  scale: _mainScale,
-                  child: child,
+  
+              // --- ATMOSPHERIC PARTICLES ---
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _particleController,
+                  builder: (context, _) => CustomPaint(
+                    painter: _ParticlePainter(
+                      progress: _particleController.value,
+                    ),
+                  ),
                 ),
               ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    // Top spacer — positions logo at ~38% from top
-                    SizedBox(height: size.height * 0.22),
+  
+              // --- MAIN CONTENT ---
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _mainController,
+                  builder: (context, child) => FadeTransition(
+                    opacity: _mainFade,
+                    child: ScaleTransition(
+                      scale: _mainScale,
+                      child: child,
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                    // Top spacer — Increased for Dynamic Island safety (~28% from top)
+                    SizedBox(height: size.height * 0.28),
 
                     // --- LOGO with pulsing glow + rotating arc ---
                     SizedBox(
@@ -197,28 +219,8 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 40),
-
-                    // --- DECORATIVE TOP RULE ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _thinLine(),
-                        const SizedBox(width: 12),
-                        Text(
-                          '✦',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.25),
-                            fontSize: 9,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _thinLine(),
-                      ],
-                    ),
-
-                    const SizedBox(height: 22),
-
+                    const SizedBox(height: 60),
+ 
                     // --- TITLE ---
                     Text(
                       'THE GENTLEMEN',
@@ -263,62 +265,55 @@ class _SplashScreenState extends State<SplashScreen>
                   ],
                 ),
               ),
-            ),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _thinLine() {
-    return Container(
-      width: 48,
-      height: 0.5,
-      color: Colors.white.withOpacity(0.25),
-    );
-  }
-
-  List<Widget> _buildCornerBrackets(Size size) {
-    const double margin = 28;
-    const double length = 22;
-    const double thickness = 1.0;
-    final color = Colors.white.withOpacity(0.14);
-
-    Widget bracket({
-      required double top,
-      required double left,
-      required double? right,
-      required double? bottom,
-      required bool flipH,
-      required bool flipV,
-    }) {
-      return Positioned(
-        top: top,
-        left: left == -1 ? null : left,
-        right: right,
-        bottom: bottom,
-        child: SizedBox(
-          width: length,
-          height: length,
-          child: CustomPaint(
-            painter: _CornerPainter(
-              color: color,
-              thickness: thickness,
-              flipH: flipH,
-              flipV: flipV,
-            ),
-          ),
-        ),
+class _ParticlePainter extends CustomPainter {
+  final double progress;
+ 
+  _ParticlePainter({required this.progress});
+ 
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+ 
+    for (int i = 0; i < 30; i++) {
+      // Deterministic "pseudorandom" based on index
+      double xBase = ((i * 13.7) % 1.0) * size.width;
+      double yBase = ((i * 7.3) % 1.0) * size.height;
+      
+      // Floating movement upwards and slightly sideways
+      double x = xBase + (size.width * 0.1 * (progress + (i / 30.0) % 1.0));
+      double y = yBase - (size.height * 0.2 * (progress + (i / 30.0) % 1.0));
+ 
+      // Loop y and x coordinates within bounds
+      if (y < 0) y += size.height;
+      if (x > size.width) x -= size.width;
+ 
+      double pSize = (i % 3) + 0.6;
+      double pOpacity = 0.04 + (0.08 * ((i % 5) / 5.0));
+ 
+      canvas.drawCircle(
+        Offset(x, y), 
+        pSize, 
+        paint..color = Colors.white.withOpacity(pOpacity),
       );
     }
-
-    return [
-      bracket(top: margin, left: margin, right: null, bottom: null, flipH: false, flipV: false),
-      bracket(top: margin, left: -1, right: margin, bottom: null, flipH: true, flipV: false),
-      bracket(top: -1, left: margin, right: null, bottom: margin, flipH: false, flipV: true),
-      bracket(top: -1, left: -1, right: margin, bottom: margin, flipH: true, flipV: true),
-    ];
   }
+ 
+  @override
+  bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
+}
+ 
+class _Particle {
+  // Logic placeholder if needed for more complex particles
 }
 
 class _ArcPainter extends CustomPainter {
@@ -362,40 +357,4 @@ class _ArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ArcPainter old) => old.progress != progress;
-}
-
-class _CornerPainter extends CustomPainter {
-  final Color color;
-  final double thickness;
-  final bool flipH;
-  final bool flipV;
-
-  const _CornerPainter({
-    required this.color,
-    required this.thickness,
-    required this.flipH,
-    required this.flipV,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = thickness
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.square;
-
-    final double x = flipH ? size.width : 0;
-    final double y = flipV ? size.height : 0;
-    final double hx = flipH ? -size.width : size.width;
-    final double vy = flipV ? -size.height : size.height;
-
-    // Horizontal arm
-    canvas.drawLine(Offset(x, y), Offset(x + hx, y), paint);
-    // Vertical arm
-    canvas.drawLine(Offset(x, y), Offset(x, y + vy), paint);
-  }
-
-  @override
-  bool shouldRepaint(_CornerPainter oldDelegate) => false;
 }

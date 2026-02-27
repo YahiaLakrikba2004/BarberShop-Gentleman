@@ -112,6 +112,15 @@ class NotificationService {
            // ...
         } else {
            fcmToken = await _firebaseMessaging.getToken();
+           
+           // iOS Special: Check APNS token status
+           if (Platform.isIOS) {
+             final apnsToken = await _firebaseMessaging.getAPNSToken();
+             if (kDebugMode) print('APNS TOKEN: $apnsToken');
+             if (apnsToken == null && kDebugMode) {
+               print('WARNING: APNS Token is null. Push notifications will NOT work on real device until APNS is configured.');
+             }
+           }
         }
         if (kDebugMode) print('FCM TOKEN: $fcmToken');
         if (fcmToken != null) {
@@ -122,18 +131,22 @@ class NotificationService {
            _saveTokenToFirestore(token);
         });
       } catch (e) {
-        if (kDebugMode) print("Error handling FCM Token (ignoring for local notifications): $e");
+        if (kDebugMode) print("Error handling FCM Token: $e");
       }
 
       // 5. Handle Foreground Messages (Android + iOS)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (kDebugMode) print('Got a message whilst in the foreground!');
+        if (kDebugMode) print('Got a message whilst in the foreground: ${message.messageId}');
 
         RemoteNotification? notification = message.notification;
-
+        
         // Show local notification in foreground on both Android and iOS
+        // If it's a notification message, we show it. 
+        // If it's data-only, it depends on specific business logic.
         if (notification != null) {
           _showForegroundNotification(notification);
+        } else if (message.data.isNotEmpty && kDebugMode) {
+          print("Received data-only message in foreground: ${message.data}");
         }
       });
       
@@ -298,9 +311,13 @@ class NotificationService {
     final user = _auth.currentUser;
     if (user != null) {
       try {
-        await _firestore.collection('users').doc(user.uid).update({
+        // Use set with merge to avoid "document not found" errors during update
+        await _firestore.collection('users').doc(user.uid).set({
           'fcmToken': token,
-        });
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+          'platform': Platform.isIOS ? 'ios' : 'android',
+        }, SetOptions(merge: true));
+        
         if (kDebugMode) print('FCM Token saved to Firestore for user: ${user.uid}');
       } catch (e) {
         if (kDebugMode) print('Error saving FCM Token: $e');
@@ -308,6 +325,7 @@ class NotificationService {
     }
   }
 
+  @pragma('vm:entry-point')
   static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     if (kDebugMode) print("Handling a background message: ${message.messageId}");
   }

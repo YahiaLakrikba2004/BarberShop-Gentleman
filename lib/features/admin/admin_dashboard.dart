@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
@@ -29,15 +30,17 @@ class AdminDashboard extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('DASHBOARD AMMINISTRATORE',
+        title: Text('ADMINISTRATION',
             style: GoogleFonts.cinzel(
-                letterSpacing: 1.5,
-                fontSize: 16,
+                letterSpacing: 4,
+                fontSize: 18,
                 fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded, color: Colors.white70),
             onPressed: () {
               ref.read(authServiceProvider).signOut();
             },
@@ -55,23 +58,27 @@ class AdminDashboard extends ConsumerWidget {
               children: [
                 // Welcome Section
                 FadeInDown(
+                  duration: const Duration(milliseconds: 800),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Benvenuto, ${user?.name ?? 'Admin'}',
+                        'Benvenuto, ${user?.name ?? 'Admin'}'.toUpperCase(),
                         style: GoogleFonts.montserrat(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        'Panoramica',
+                        'PANORAMICA',
                         style: GoogleFonts.cinzel(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 32,
+                          color: Colors.white,
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
                         ),
                       ),
                     ],
@@ -82,64 +89,70 @@ class AdminDashboard extends ConsumerWidget {
 
                 // Revenue Chart Section
                 FadeInUp(
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF161616) : Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                  duration: const Duration(milliseconds: 800),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
                         ),
-                      ],
-                      border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Andamento Ricavi',
-                                  style: GoogleFonts.montserrat(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                    fontSize: 14,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ANDAMENTO RICAVI',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white.withOpacity(0.4),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '€${stats['revenue']}',
+                                      style: GoogleFonts.cinzel(
+                                        color: Colors.white,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '€${stats['revenue']}',
-                                  style: GoogleFonts.cinzel(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                                   ),
+                                  child: const Icon(Icons.auto_graph_rounded,
+                                      color: Colors.white),
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.show_chart,
-                                  color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              height: 180,
+                              child: _RevenueChart(appointments: appointments),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          height: 200,
-                          child: _RevenueChart(appointments: appointments),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -155,17 +168,15 @@ class AdminDashboard extends ConsumerWidget {
                       child: Column(
                         children: [
                           _StatCard(
-                            icon: Icons.calendar_today,
-                            title: 'Totali',
+                            icon: Icons.calendar_today_rounded,
+                            title: 'TOTALI',
                             value: stats['total'].toString(),
-                            color: Colors.white, // Monochrome
                           ),
                           const SizedBox(height: 16),
                           _StatCard(
-                            icon: Icons.check_circle_outline,
-                            title: 'Confermati',
+                            icon: Icons.check_circle_outline_rounded,
+                            title: 'CONFERMATI',
                             value: stats['confirmed'].toString(),
-                            color: Colors.white, // Monochrome
                           ),
                         ],
                       ),
@@ -173,37 +184,39 @@ class AdminDashboard extends ConsumerWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       flex: 4,
-                      child: Container(
-                        height: 220,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF161616) : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                          border:
-                              Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Stato Appuntamenti',
-                              style: GoogleFonts.montserrat(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            height: 220,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.1),
+                                width: 1,
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            Expanded(
-                              child: _StatusPieChart(stats: stats),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'STATO APPUNTAMENTI',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: _StatusPieChart(stats: stats),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -219,11 +232,12 @@ class AdminDashboard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Azioni Rapide',
+                        'AZIONI RAPIDE',
                         style: GoogleFonts.cinzel(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 20,
+                          color: Colors.white,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -304,11 +318,12 @@ class AdminDashboard extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Appuntamenti Recenti',
+                            'RECENTI',
                             style: GoogleFonts.cinzel(
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
                           TextButton(
@@ -449,9 +464,9 @@ class _RevenueChart extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      DateFormat('E', 'it').format(last7Days[index]),
+                      DateFormat('E', 'it').format(last7Days[index]).toUpperCase(),
                       style:
-                          const TextStyle(color: Colors.white54, fontSize: 10),
+                          GoogleFonts.montserrat(color: Colors.white24, fontSize: 8, fontWeight: FontWeight.bold),
                     ),
                   );
                 }
@@ -469,19 +484,19 @@ class _RevenueChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: Theme.of(context).colorScheme.primary,
+            color: Colors.white,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.05),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.0),
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.0),
                 ],
               ),
             ),
@@ -512,42 +527,41 @@ class _StatusPieChart extends StatelessWidget {
 
     return PieChart(
       PieChartData(
-        sectionsSpace: 2, // Added space for definition
+        sectionsSpace: 4,
         centerSpaceRadius: 30,
         sections: [
           if (confirmed > 0)
             PieChartSectionData(
-              color: Theme.of(context).colorScheme.primary,
+              color: Colors.white,
               value: confirmed.toDouble(),
               title: '${(confirmed / total * 100).toStringAsFixed(0)}%',
               radius: 40,
               titleStyle: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimary),
+                  color: Colors.black),
             ),
           if (pending > 0)
             PieChartSectionData(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              color: Colors.white.withOpacity(0.3),
               value: pending.toDouble(),
               title: '${(pending / total * 100).toStringAsFixed(0)}%',
-              radius: 40,
+              radius: 35,
               titleStyle: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface),
+                  color: Colors.white),
             ),
           if (cancelled > 0)
             PieChartSectionData(
-              color: Theme.of(context).dividerColor.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.1),
               value: cancelled.toDouble(),
               title: '${(cancelled / total * 100).toStringAsFixed(0)}%',
-              radius: 38,
-              borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3), width: 1),
+              radius: 30,
               titleStyle: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                  color: Colors.white24),
             ),
         ],
       ),
@@ -559,67 +573,69 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
-  final Color color;
 
   const _StatCard({
     required this.icon,
     required this.title,
     required this.value,
-    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161616) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                value,
-                style: GoogleFonts.cinzel(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
                 ),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
-              Text(
-                title,
-                style: GoogleFonts.montserrat(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  fontSize: 11,
-                ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                  Text(
+                    value,
+                    style: GoogleFonts.cinzel(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
               ),
+            ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -638,39 +654,49 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 120,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161616) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cinzel(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            width: 120,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
               ),
             ),
-          ],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cinzel(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

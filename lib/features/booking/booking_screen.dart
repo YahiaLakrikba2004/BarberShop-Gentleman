@@ -104,11 +104,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         : ['Barbiere', 'Servizio', 'Orario', 'Conferma'];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.05))),
-      ),
+    padding: const EdgeInsets.fromLTRB(24, 32, 24, 24), // Adjusted padding
+    decoration: BoxDecoration(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
       child: Row(
         children: [
           for (int i = 0; i < steps.length; i++) ...[
@@ -121,74 +127,126 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildStepCircle(int step, String label) {
-    final isActive = _currentStep >= step;
-    final isCurrent = _currentStep == step;
-    
-    return Expanded(
-      child: Column(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: isCurrent ? 36 : 28, // Slightly smaller
-            height: isCurrent ? 36 : 28,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isActive 
-                  ? Theme.of(context).colorScheme.primary 
-                  : Colors.transparent,
-              border: Border.all(
-                color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                width: 1.5,
+  final isActive = _currentStep >= step;
+  final isCurrent = _currentStep == step;
+  final isDone = _currentStep > step;
+  
+  return Expanded(
+    child: Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Glow effect for current/active step
+            if (isCurrent)
+              FadeIn(
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: isCurrent ? 34 : 26,
+              height: isCurrent ? 34 : 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDone 
+                    ? Theme.of(context).colorScheme.primary 
+                    : isCurrent 
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                        : Colors.transparent,
+                border: Border.all(
+                  color: isActive 
+                      ? Theme.of(context).colorScheme.primary 
+                      : Theme.of(context).dividerColor.withOpacity(0.3),
+                  width: 1.2,
+                ),
+                boxShadow: isCurrent ? [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                  )
+                ] : null,
+              ),
+              child: Center(
+                child: isDone
+                    ? Icon(
+                        Icons.check,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      )
+                    : Text(
+                        '${step + 1}',
+                        style: GoogleFonts.montserrat(
+                          color: isActive 
+                              ? (isCurrent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface)
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          fontSize: isCurrent ? 14 : 11,
+                        ),
+                      ),
               ),
             ),
-            child: Center(
-              child: isActive
-                  ? Icon(
-                      Icons.check,
-                      size: isCurrent ? 20 : 16,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    )
-                  : Text(
-                      '${step + 1}',
-                      style: GoogleFonts.montserrat(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                        fontWeight: FontWeight.bold,
-                        fontSize: isCurrent ? 14 : 12,
-                      ),
-                    ),
-            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: GoogleFonts.cinzel(
+            fontSize: 9, 
+            color: isCurrent 
+                ? Theme.of(context).colorScheme.primary 
+                : isActive 
+                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.8)
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+            letterSpacing: 1.2,
           ),
-          const SizedBox(height: 8),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
-            style: GoogleFonts.montserrat(
-              fontSize: 9, // Smaller clean font
-              color: isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-            child: Text(
-              label.toUpperCase(),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          child: Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildProgressLine(int step) {
-    final isActive = _currentStep > step;
-    return Expanded(
-      child: Container(
-        height: 1, // Thinner line
-        margin: const EdgeInsets.only(bottom: 20),
-        color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
+  final isActive = _currentStep > step;
+  return Expanded(
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      height: 1.5,
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: isActive 
+            ? Theme.of(context).colorScheme.primary 
+            : Theme.of(context).dividerColor.withOpacity(0.15),
+        gradient: isActive ? LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          ],
+        ) : null,
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildStepContent(bool isPrivileged) {
     int adjustedStep = _currentStep;
@@ -472,32 +530,25 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             });
           } : null,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.5) 
+                    : Theme.of(context).dividerColor.withOpacity(0.1),
                 width: 1.5,
               ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      )
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.5 : 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isSelected ? 0.4 : 0.2),
+                  blurRadius: isSelected ? 20 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(24),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -557,35 +608,77 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                     ),
                   ),
 
-                  // 3. Unavailable Overlay
-                  if (!isAvailable)
+                  // 3. Glass Overlay for Content Area
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: ClipRRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          height: 85,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white.withOpacity(0.0),
+                                Colors.white.withOpacity(0.05),
+                              ],
+                            ),
+                            border: Border(
+                              top: BorderSide(color: Colors.white.withOpacity(0.1)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 4. Selection Border Overlay (Internal)
+                  if (isSelected)
                     Container(
-                      color: Colors.black.withOpacity(0.75),
-                      child: Center(
-                         child: Column(
-                           mainAxisSize: MainAxisSize.min,
-                           children: [
-                             Icon(
-                               _getStatusIcon(barber.availabilityStatus), 
-                               color: _getStatusColor(barber.availabilityStatus).withOpacity(0.8), 
-                               size: 32
-                             ),
-                             const SizedBox(height: 8),
-                             Text(
-                               _getStatusLabel(barber.availabilityStatus),
-                               style: GoogleFonts.montserrat(
-                                  color: Colors.white.withOpacity(0.9), 
-                                  fontSize: 12, 
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                               ),
-                             ),
-                           ],
-                         ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          width: 2,
+                        ),
                       ),
                     ),
 
-                  // 4. Content Content
+                  // 5. Unavailable Overlay
+                  if (!isAvailable)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.6),
+                        child: Center(
+                           child: Column(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               Icon(
+                                 _getStatusIcon(barber.availabilityStatus), 
+                                 color: _getStatusColor(barber.availabilityStatus).withOpacity(0.8), 
+                                 size: 32
+                               ),
+                               const SizedBox(height: 8),
+                               Text(
+                                 _getStatusLabel(barber.availabilityStatus),
+                                 style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.9), 
+                                    fontSize: 12, 
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                 ),
+                               ),
+                             ],
+                           ),
+                        ),
+                      ),
+                    ),
+
+                  // 6. Content Content
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -596,10 +689,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         Text(
                           barber.name.toUpperCase(),
                           style: GoogleFonts.cinzel(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, // High contrast on gradient
-                            letterSpacing: 1.0,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                            shadows: [
+                              Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 10),
+                            ],
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1018,62 +1114,91 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildNavigationButtons(bool isPrivileged) {
-    final maxSteps = isPrivileged ? 4 : 3;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              if (_currentStep > 0)
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => setState(() => _currentStep--),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    child: Text('INDIETRO', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
-                  ),
+  final maxSteps = isPrivileged ? 4 : 3;
+  final canProceed = _canProceed(isPrivileged);
+  
+  return Container(
+    padding: EdgeInsets.only(
+      bottom: MediaQuery.of(context).padding.bottom > 0 ? 0 : 16,
+    ),
+    decoration: BoxDecoration(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 10,
+          offset: const Offset(0, -5),
+        ),
+      ],
+    ),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              flex: 1,
+              child: OutlinedButton(
+                onPressed: () => setState(() => _currentStep--),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.15)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: Colors.transparent,
                 ),
-              if (_currentStep > 0) const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: FilledButton(
-                  onPressed: _canProceed(isPrivileged) ? () => _onNext(maxSteps) : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    disabledBackgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
-                    disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _currentStep == maxSteps ? 'CONFERMA' : 'AVANTI',
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      letterSpacing: 1,
-                    ),
+                child: Text(
+                  'INDIETRO', 
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  )
+                ),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: canProceed ? [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  )
+                ] : null,
+              ),
+              child: FilledButton(
+                onPressed: canProceed ? () => _onNext(maxSteps) : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  disabledBackgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
+                  disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  _currentStep == maxSteps ? 'CONFERMA' : 'AVANTI',
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 2,
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   bool _canProceed(bool isPrivileged) {
     if (isPrivileged) {

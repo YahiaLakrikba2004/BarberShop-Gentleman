@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -182,30 +183,33 @@ class AnnouncementBanner extends ConsumerWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       Theme.of(context).brightness == Brightness.dark 
-                          ? const Color(0xFF151515) 
+                          ? Colors.white.withOpacity(0.08) 
                           : Colors.white,
                       Theme.of(context).brightness == Brightness.dark 
-                          ? const Color(0xFF1E1E1E) 
+                          ? Colors.white.withOpacity(0.02) 
                           : const Color(0xFFF5F5F5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                    width: 1,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    width: 0.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 0),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      blurRadius: 15,
                       spreadRadius: 1,
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -242,8 +246,10 @@ class AnnouncementBanner extends ConsumerWidget {
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
+    );
+  },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );

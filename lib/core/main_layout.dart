@@ -30,89 +30,91 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
     return Scaffold(
       body: widget.child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0A0A0A),
-          border: Border(
-            top: BorderSide(
-              color: const Color(0xFFFFFFFF).withOpacity(0.3),
-              width: 1,
+      bottomNavigationBar: Stack(
+        children: [
+          ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  border: Border(
+                    top: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(
+                          index: 0,
+                          icon: Icons.home_outlined,
+                          selectedIcon: Icons.home,
+                          label: 'Home',
+                          onTap: () => context.go('/'),
+                        ),
+                        _buildNavItem(
+                          index: 1,
+                          icon: Icons.calendar_today_outlined,
+                          selectedIcon: Icons.calendar_today,
+                          label: 'Prenota',
+                          onTap: () => context.go('/booking'),
+                        ),
+                        // Only show Agenda for Staff (Barbers/Admins), NOT for null (loading/guest)
+                        if (user != null && user.role != UserRole.client)
+                          _buildNavItem(
+                            index: 2,
+                            icon: Icons.event_note_outlined,
+                            selectedIcon: Icons.event_note,
+                            label: 'Agenda',
+                            onTap: () {
+                              if (AdminConfig.isShopAccount(user.email)) {
+                                context.go('/team-agenda');
+                              } else {
+                                context.go('/calendar');
+                              }
+                            },
+                          ),
+                        
+                        // Show Profile for Clients OR if user is null (to allow logout/fixing)
+                        if (user == null || user.role == UserRole.client)
+                          _buildNavItem(
+                            index: 2, // Keep index 2 for Client layout
+                            icon: Icons.person_outline,
+                            selectedIcon: Icons.person,
+                            label: 'Profilo',
+                            onTap: () => context.go('/profile'),
+                          ),
+        
+                        if (user?.role == UserRole.barber)
+                          _buildNavItem(
+                            index: 3,
+                            icon: Icons.person_outline,
+                            selectedIcon: Icons.person,
+                            label: 'Profilo',
+                            onTap: () => context.go('/profile'),
+                          ),
+                        if (user?.role == UserRole.admin)
+                          _buildNavItem(
+                            index: 3,
+                            icon: Icons.admin_panel_settings_outlined,
+                            selectedIcon: Icons.admin_panel_settings,
+                            label: 'Admin',
+                            onTap: () => context.go('/admin'),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFFFFF).withOpacity(0.05), // Lighter opacity
-              blurRadius: 10, // Optimized from 20
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  label: 'Home',
-                  onTap: () => context.go('/'),
-                ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.calendar_today_outlined,
-                  selectedIcon: Icons.calendar_today,
-                  label: 'Prenota',
-                  onTap: () => context.go('/booking'),
-                ),
-                // Only show Agenda for Staff (Barbers/Admins), NOT for null (loading/guest)
-                if (user != null && user.role != UserRole.client)
-                  _buildNavItem(
-                    index: 2,
-                    icon: Icons.event_note_outlined,
-                    selectedIcon: Icons.event_note,
-                    label: 'Agenda',
-                    onTap: () {
-                      if (AdminConfig.isShopAccount(user.email)) {
-                        context.go('/team-agenda');
-                      } else {
-                        context.go('/calendar');
-                      }
-                    },
-                  ),
-                
-                // Show Profile for Clients OR if user is null (to allow logout/fixing)
-                if (user == null || user.role == UserRole.client)
-                  _buildNavItem(
-                    index: 2, // Keep index 2 for Client layout
-                    icon: Icons.person_outline,
-                    selectedIcon: Icons.person,
-                    label: 'Profilo',
-                    onTap: () => context.go('/profile'),
-                  ),
-
-                if (user?.role == UserRole.barber)
-                  _buildNavItem(
-                    index: 3,
-                    icon: Icons.person_outline,
-                    selectedIcon: Icons.person,
-                    label: 'Profilo',
-                    onTap: () => context.go('/profile'),
-                  ),
-                if (user?.role == UserRole.admin)
-                  _buildNavItem(
-                    index: 3,
-                    icon: Icons.admin_panel_settings_outlined,
-                    selectedIcon: Icons.admin_panel_settings,
-                    label: 'Admin',
-                    onTap: () => context.go('/admin'),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
