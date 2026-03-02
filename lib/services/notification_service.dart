@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -12,6 +13,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import '../firebase_options.dart';
 import '../models/appointment_model.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -35,7 +37,8 @@ class NotificationService {
     try {
       // Initialize time zones
       tz.initializeTimeZones();
-      if (kDebugMode) print('NotificationService: Time zones initialized');
+      tz.setLocalLocation(tz.getLocation('Europe/Rome'));
+      if (kDebugMode) print('NotificationService: Time zones initialized (Europe/Rome)');
 
       // 1. Request permissions (Firebase)
       NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -64,7 +67,7 @@ class NotificationService {
         requestSoundPermission: true,
       );
 
-      final InitializationSettings initializationSettings = InitializationSettings(
+      const InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
         iOS: initializationSettingsIOS,
       );
@@ -100,6 +103,10 @@ class NotificationService {
           // Explicitly request notification permission for Android 13+
           final granted = await androidImplementation.requestNotificationsPermission();
           if (kDebugMode) print('NotificationService: Android Notification Permission granted: $granted');
+
+          // Request exact alarm permission once at init (Android 12+)
+          final exactAlarmGranted = await androidImplementation.requestExactAlarmsPermission();
+          if (kDebugMode) print('NotificationService: Exact Alarm Permission granted: $exactAlarmGranted');
         }
       } catch (e) {
          if (kDebugMode) print("Error creating Android channel: $e");
@@ -272,14 +279,6 @@ class NotificationService {
   }) async {
     try {
       if (kDebugMode) print("Attempting to schedule notification: $title at $scheduledDate");
-      
-      if(!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-         final androidImplementation = _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-         if(androidImplementation != null) {
-            bool? granted = await androidImplementation.requestExactAlarmsPermission();
-            if (kDebugMode) print("Exact Alarm Permission Granted: $granted");
-         }
-      }
 
       final details = await _getPremiumNotificationDetails(
         title: title,
@@ -327,7 +326,54 @@ class NotificationService {
 
   @pragma('vm:entry-point')
   static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("Firebase init error in background: $e");
+    }
+
     if (kDebugMode) print("Handling a background message: ${message.messageId}");
+
+    // If it's a data-only message (no notification payload), Android/iOS won't show it automatically.
+    // We show a local notification manually.
+    if (message.notification == null && message.data.isNotEmpty) {
+      final title = message.data['title'] ?? 'Gentleman Barber Shop';
+      final body = message.data['body'] ?? 'Nuovo aggiornamento';
+      final path = message.data['path'];
+
+      final FlutterLocalNotificationsPlugin localNotif = FlutterLocalNotificationsPlugin();
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings();
+      const InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
+      );
+      
+      await localNotif.initialize(initializationSettings);
+
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        color: Color(0xFFD4AF37),
+      );
+      const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+      await localNotif.show(
+        message.hashCode,
+        title,
+        body,
+        details,
+        payload: path,
+      );
+    }
   }
 
   Future<Map<String, dynamic>> debugNotificationPermissions() async {

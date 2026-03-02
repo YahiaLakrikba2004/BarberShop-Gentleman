@@ -89,30 +89,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           String fakeEmail = '$cleanPhone@gentleman.app';
           String fakePassword = 'UserPass$cleanPhone!';
 
+          // Se l'utente fornisce una email reale, usa quella come email Auth
+          // (così l'account è raggiungibile anche via email reale)
+          final realEmail = _profileEmailController.text.trim();
+          final authEmail = realEmail.isNotEmpty ? realEmail : fakeEmail;
+
           // Combine Name + Surname
           String fullName = "${_nameController.text.trim()} ${_surnameController.text.trim()}";
 
-          // Register
+          // Register usando l'email reale se fornita, altrimenti il fake
           await authService.signUpWithEmailAndPassword(
-            email: fakeEmail,
+            email: authEmail,
             password: fakePassword,
             name: fullName,
             phoneNumber: phone,
           );
-
-          // Update Profile Email if provided (optional)
-          // Note: The Auth User email is currently the 'fake' one. 
-          // If we want to store the real email, we should do it in Firestore separately 
-          // or update the Auth email (but that might break the deterministic login if we rely on phone->email mapping).
-          // Ideally, store real email in Firestore 'email' field, and keep Auth email as unique ID.
-          if (_profileEmailController.text.isNotEmpty) {
-             final firestore = ref.read(firestoreServiceProvider);
-             final user = authService.currentUser;
-             if (user != null) {
-                // Update Firestore document with real email
-                await firestore.updateUserFields(user.uid, {'email': _profileEmailController.text.trim()});
-             }
-          }
 
           // Check Migration
           final currentUser = authService.currentUser;
@@ -174,11 +165,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           }
 
           if (!userExistsInAuth) {
-             // User DOES NOT EXIST -> Go to Registration
+             // User not found with fake email — check if registered with real email
+             try {
+               final firestore = ref.read(firestoreServiceProvider);
+               final existing = await firestore.getUserByPhone(formattedPhone);
+               if (existing != null &&
+                   existing.email.isNotEmpty &&
+                   !existing.email.endsWith('@gentleman.app')) {
+                 // Trovato: prova login con email reale + stessa password deterministica
+                 await authService.signInWithEmailAndPassword(existing.email, fakePassword);
+                 final currentUser = authService.currentUser;
+                 if (currentUser != null) await _checkAndMigrate(currentUser, phone);
+                 if (mounted) context.go('/');
+                 return;
+               }
+             } catch (_) {}
+
+             // Nessun account trovato → Registrazione
              if (mounted) {
                setState(() {
                  _isLoading = false;
-                 _isNewUser = true; // Expand UI
+                 _isNewUser = true;
                });
              }
              return;
@@ -337,7 +344,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   if (_isEmailMode)
                     TextButton(
                       onPressed: () => setState(() => _isEmailMode = false),
-                      child: Text("Usa Numero di Telefono", style: TextStyle(color: goldColor, fontSize: 12)),
+                      child: const Text("Usa Numero di Telefono", style: TextStyle(color: goldColor, fontSize: 12)),
                     ),
 
                 ],
@@ -355,7 +362,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         if (_isNewUser)
           Text(
             "COMPLETA REGISTRAZIONE",
-            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, letterSpacing: 1, fontWeight: FontWeight.bold),
+            style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2, fontWeight: FontWeight.bold),
           )
         else
           Text(
@@ -365,7 +372,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         
         const SizedBox(height: 20),
         
-        // PHONE INPUT (Always visible)
+        // PHONE INPUT (Always visible, locked in registration phase)
         _buildTextField(
           controller: _phoneController,
           label: 'Numero di Telefono',
@@ -374,8 +381,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           fillColor: inputFill,
           keyboardType: TextInputType.phone,
           hint: "333 1234567",
-          // Disable editing if we are in registration phase to avoid changing number mid-flow? 
-          // Optional: enabled: !_isNewUser
+          enabled: !_isNewUser,
         ),
 
         // ANIMATED REGISTRATION FIELDS
@@ -425,7 +431,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
          const SizedBox(height: 24),
          
-         SizedBox(
+        SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
@@ -435,11 +441,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: _isLoading 
+            child: _isLoading
               ? const CircularProgressIndicator(color: Colors.black)
               : Text(
-                  _isNewUser ? "REGISTRATI" : "AVANTI", 
-                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)
+                  _isNewUser ? "REGISTRATI" : "AVANTI",
+                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
                 ),
           ),
         ),
@@ -559,6 +565,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     required Color goldColor,
     required Color fillColor,
     bool isPassword = false,
+    bool enabled = true,
     TextInputType? keyboardType,
     Widget? suffixIcon,
     String? hint,
@@ -567,7 +574,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       controller: controller,
       obscureText: isPassword,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      enabled: enabled,
+      style: TextStyle(color: enabled ? Colors.white : Colors.white38),
       cursorColor: goldColor,
       decoration: InputDecoration(
         labelText: label,

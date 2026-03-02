@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
-import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
@@ -12,7 +11,6 @@ import '../../models/user_model.dart';
 import '../../models/appointment_model.dart';
 import '../appointments/grouped_appointments_list.dart';
 import 'package:intl/intl.dart';
-import '../../services/notification_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -159,22 +157,44 @@ class ProfileScreen extends ConsumerWidget {
                     // Minimalist Contact Info
                     Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.email_outlined,
-                                size: 14, color: Color(0xFFFFFFFF)),
-                            const SizedBox(width: 8),
-                            Text(
-                              user.email,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.7),
-                                letterSpacing: 0.5,
+                        if (user.email.isNotEmpty)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.email_outlined,
+                                  size: 14, color: Color(0xFFFFFFFF)),
+                              const SizedBox(width: 8),
+                              Text(
+                                user.email,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.7),
+                                  letterSpacing: 0.5,
+                                ),
                               ),
+                            ],
+                          )
+                        else
+                          GestureDetector(
+                            onTap: () => _showEditProfileDialog(context, ref, user),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_circle_outline,
+                                    size: 14, color: const Color(0xFFD4AF37).withOpacity(0.7)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Aggiungi email',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 13,
+                                    color: const Color(0xFFD4AF37).withOpacity(0.7),
+                                    letterSpacing: 0.5,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
                         if (user.phoneNumber != null &&
                             user.phoneNumber!.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -615,68 +635,95 @@ class ProfileScreen extends ConsumerWidget {
     final nameController = TextEditingController(text: user.name);
     final phoneController = TextEditingController(text: user.phoneNumber);
     final emailController = TextEditingController(text: user.email);
+    final isSaving = ValueNotifier<bool>(false);
 
     showDialog(
       context: context,
       builder: (context) => BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
-          ),
-          title: Text(
-            'MODIFICA PROFILO',
-            style: GoogleFonts.cinzel(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              letterSpacing: 2.0,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: isSaving,
+          builder: (context, saving, child) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
             ),
-            textAlign: TextAlign.center,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 16),
-                // Name Field
-                TextField(
-                  controller: nameController,
-                  style: GoogleFonts.montserrat(color: Colors.white),
-                  cursorColor: Colors.white,
-                  decoration: InputDecoration(
-                    labelText: 'NOME',
-                    labelStyle: GoogleFonts.montserrat(
-                        color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                    prefixIcon: Icon(Icons.person_outline, 
-                        color: Colors.white.withOpacity(0.7), size: 20),
-                    filled: true,
-                    fillColor: Colors.black.withOpacity(0.3),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+            title: Text(
+              'MODIFICA PROFILO',
+              style: GoogleFonts.cinzel(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                letterSpacing: 2.0,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 16),
+                  // Name Field
+                  TextField(
+                    controller: nameController,
+                    enabled: !saving,
+                    style: GoogleFonts.montserrat(color: Colors.white),
+                    cursorColor: Colors.white,
+                    decoration: InputDecoration(
+                      labelText: 'NOME',
+                      labelStyle: GoogleFonts.montserrat(
+                          color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                      prefixIcon: Icon(Icons.person_outline, 
+                          color: Colors.white.withOpacity(0.7), size: 20),
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.3),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
-                ),
-                const SizedBox(height: 20),
-                // Phone Field
+                  const SizedBox(height: 20),
+                  // Phone Field (read-only — tied to Firebase Auth login)
+                  TextField(
+                    controller: phoneController,
+                    enabled: false,
+                    style: GoogleFonts.montserrat(color: Colors.white38),
+                    keyboardType: TextInputType.phone,
+                    cursorColor: Colors.white,
+                    decoration: InputDecoration(
+                      labelText: 'TELEFONO',
+                      labelStyle: GoogleFonts.montserrat(
+                          color: Colors.white.withOpacity(0.3), fontSize: 12, letterSpacing: 1.0),
+                      prefixIcon: Icon(Icons.phone_outlined,
+                          color: Colors.white.withOpacity(0.3), size: 20),
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.15),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    ),
+                  ),
+                 const SizedBox(height: 20),
+                // Email Field (Editable)
                 TextField(
-                  controller: phoneController,
-                  style: GoogleFonts.montserrat(color: Colors.white),
-                  keyboardType: TextInputType.phone,
-                  cursorColor: Colors.white,
-                  decoration: InputDecoration(
-                    labelText: 'TELEFONO',
+                  controller: emailController,
+                  enabled: !saving,
+                   style: GoogleFonts.montserrat(color: Colors.white),
+                   cursorColor: Colors.white,
+                   decoration: InputDecoration(
+                    labelText: 'EMAIL',
                     labelStyle: GoogleFonts.montserrat(
                         color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                    prefixIcon: Icon(Icons.phone_outlined, 
+                    prefixIcon: Icon(Icons.email_outlined, 
                         color: Colors.white.withOpacity(0.7), size: 20),
                     filled: true,
                     fillColor: Colors.black.withOpacity(0.3),
@@ -686,150 +733,148 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                       borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
                     ),
                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
                 ),
-               const SizedBox(height: 20),
-              // Email Field (Editable)
-              TextField(
-                controller: emailController,
-                 style: GoogleFonts.montserrat(color: Colors.white),
-                 cursorColor: Colors.white,
-                 decoration: InputDecoration(
-                  labelText: 'EMAIL',
-                  labelStyle: GoogleFonts.montserrat(
-                      color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
-                  prefixIcon: Icon(Icons.email_outlined, 
-                      color: Colors.white.withOpacity(0.7), size: 20),
-                  filled: true,
-                  fillColor: Colors.black.withOpacity(0.3),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                     borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
-                  ),
-                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                ),
-              ),
-
-                const SizedBox(height: 24),
-                // Password Reset Action
-                TextButton.icon(
-                  onPressed: () async {
-                     try {
-                       await ref.read(authServiceProvider).sendPasswordResetEmail(user.email);
-                       if (context.mounted) {
-                         Navigator.pop(context);
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(
-                             content: Text('Email di reset inviata a ${user.email}'),
-                             backgroundColor: Colors.green,
-                           ),
-                         );
-                       }
-                     } catch (e) {
-                        if (context.mounted) {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text('Errore durante l\'invio della mail')),
-                         );
-                       }
-                     }
-                  },
-                  icon: Icon(Icons.lock_reset, color: Colors.white.withOpacity(0.6), size: 18),
-                  label: Text(
-                    'CAMBIA PASSWORD',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withOpacity(0.6),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      letterSpacing: 1.0,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.white.withOpacity(0.1))
-                      ),
-                    ),
-                    child: Text('ANNULLA', 
-                        style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.6), 
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0
-                        )
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final newName = nameController.text.trim();
-                      final newPhone = phoneController.text.trim();
-                      final newEmail = emailController.text.trim(); // Capture new email
-
-                      if (newName.isNotEmpty) {
-                        try {
-                             // Update Firestore Only
-                             // We do NOT update Auth email because we are using deterministic phone-auth emails.
-                             // Changing auth email would break the 'Login' flow which expects phone->fakeEmail mapping.
-                             
-                             await ref.read(firestoreServiceProvider).updateUserFields(user.id, {
-                               'name': newName,
-                               'phoneNumber': newPhone,
-                               'email': newEmail
-                             });
+  
+                  // Show password reset only for real email accounts (not phone-auth fake emails)
+                  if (user.email.isNotEmpty && !user.email.endsWith('@gentleman.app')) ...[
+                    const SizedBox(height: 24),
+                    TextButton.icon(
+                      onPressed: saving ? null : () async {
+                         try {
+                           await ref.read(authServiceProvider).sendPasswordResetEmail(user.email);
                            if (context.mounted) {
                              Navigator.pop(context);
                              ScaffoldMessenger.of(context).showSnackBar(
-                               const SnackBar(content: Text('Profilo aggiornato!')),
+                               SnackBar(
+                                 content: Text('Email di reset inviata a ${user.email}'),
+                                 backgroundColor: Colors.green,
+                               ),
                              );
                            }
-                        } catch (e) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(content: Text('Errore: $e')),
+                         } catch (e) {
+                            if (context.mounted) {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text('Errore durante l\'invio della mail')),
                              );
-                        }
-                      }
-                    },
-                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                           }
+                         }
+                      },
+                      icon: Icon(Icons.lock_reset, color: Colors.white.withOpacity(0.6), size: 18),
+                      label: Text(
+                        'CAMBIA PASSWORD',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white.withOpacity(0.6),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          letterSpacing: 1.0,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
-                    child: Text('SALVA', 
-                        style: GoogleFonts.montserrat(
-                            color: Colors.black, 
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0
-                        )
+                  ],
+                ],
+              ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: saving ? null : () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.white.withOpacity(0.1))
+                        ),
+                      ),
+                      child: Text('ANNULLA', 
+                          style: GoogleFonts.montserrat(
+                              color: Colors.white.withOpacity(0.6), 
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.0
+                          )
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: saving ? null : () async {
+                        final newName = nameController.text.trim();
+                        final newEmail = emailController.text.trim();
+
+                        if (newName.isNotEmpty) {
+                          isSaving.value = true;
+                          try {
+                            final authService = ref.read(authServiceProvider);
+
+                            // 1. Update Display Name if changed
+                            if (newName != user.name) {
+                              await authService.updateDisplayName(newName);
+                            }
+
+                            // 2. Update Firestore (phone and Auth email are locked — deterministic login)
+                            await ref.read(firestoreServiceProvider).updateUserFields(user.id, {
+                              'name': newName,
+                              'email': newEmail
+                            });
+  
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profilo aggiornato con successo!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                             if (context.mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 SnackBar(
+                                   content: Text('Errore durante l\'aggiornamento: $e'),
+                                   backgroundColor: Colors.redAccent,
+                                 ),
+                               );
+                             }
+                          } finally {
+                            isSaving.value = false;
+                          }
+                        }
+                      },
+                       style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: saving 
+                        ? const SizedBox(
+                            height: 20, 
+                            width: 20, 
+                            child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+                          )
+                        : Text('SALVA', 
+                            style: GoogleFonts.montserrat(
+                                color: Colors.black, 
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0
+                            )
+                        ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

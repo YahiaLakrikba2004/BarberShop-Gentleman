@@ -99,6 +99,24 @@ class AuthService {
     await _auth.signOut();
   }
 
+  Future<void> updateEmail(String newEmail) async {
+    final user = _auth.currentUser;
+    if (user != null && user.email != newEmail) {
+      await user.updateEmail(newEmail);
+      // Also update Firestore to keep it in sync
+      await _firestoreService.updateUserFields(user.uid, {'email': newEmail});
+    }
+  }
+
+  Future<void> updateDisplayName(String newName) async {
+    final user = _auth.currentUser;
+    if (user != null && user.displayName != newName) {
+      await user.updateDisplayName(newName);
+      // Also update Firestore if needed (though ProfileScreen usually handles this)
+      await _firestoreService.updateUserFields(user.uid, {'name': newName});
+    }
+  }
+
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user != null) {

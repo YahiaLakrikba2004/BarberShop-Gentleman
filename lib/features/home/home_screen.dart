@@ -562,6 +562,7 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   PageController? _pageController; // Nullable for safety
   int _currentPage = 0;
   Timer? _autoPlayTimer;
+  bool _active = true; // tracks whether widget is still in tree
   static const int _infiniteCount = 10000;
   static const int _initialPage = _infiniteCount ~/ 2;
 
@@ -571,6 +572,7 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   @override
   void initState() {
     super.initState();
+    _active = true;
     // Initialize defaults
     _currentPage = _initialPage;
     _startAutoPlay();
@@ -584,10 +586,17 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   }
 
   void _startAutoPlay() {
+    // ensure that timer is restarted only when widget is active
+    _stopAutoPlay();
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_pageController != null && _pageController!.hasClients) {
+      // if state has been disposed, deactivated, or otherwise inactive, stop further work
+      if (!_active || !mounted || _pageController == null) {
+        timer.cancel();
+        return;
+      }
+      if (_pageController!.hasClients) {
         _pageController!.nextPage(
-          duration: const Duration(milliseconds: 1000), 
+          duration: const Duration(milliseconds: 1000),
           curve: Curves.fastOutSlowIn,
         );
       }
@@ -597,6 +606,14 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   void _stopAutoPlay() {
     _autoPlayTimer?.cancel();
     _autoPlayTimer = null;
+  }
+
+  @override
+  void deactivate() {
+    // widget is leaving the tree; prevent timer callbacks while deactivated
+    _active = false;
+    _stopAutoPlay();
+    super.deactivate();
   }
 
   @override
@@ -966,7 +983,7 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
 }
 
 class _ServicesCarousel extends ConsumerStatefulWidget {
-  const _ServicesCarousel({super.key});
+  const _ServicesCarousel();
 
   @override
   ConsumerState<_ServicesCarousel> createState() => _ServicesCarouselState();
@@ -977,12 +994,14 @@ class _ServicesCarouselState extends ConsumerState<_ServicesCarousel> {
   int _currentPage = 0;
   double _currentViewportFraction = 0.75;
   Timer? _autoPlayTimer;
+  bool _active = true;
   static const int _infiniteCount = 10000;
   static const int _initialPage = _infiniteCount ~/ 2;
 
   @override
   void initState() {
     super.initState();
+    _active = true;
     _pageController = PageController(
       viewportFraction: _currentViewportFraction,
       initialPage: _initialPage,
@@ -992,7 +1011,12 @@ class _ServicesCarouselState extends ConsumerState<_ServicesCarousel> {
   }
 
   void _startAutoPlay() {
+    _stopAutoPlay();
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!_active || !mounted) {
+        timer.cancel();
+        return;
+      }
       if (_pageController.hasClients) {
         _pageController.nextPage(
           duration: const Duration(milliseconds: 800),
@@ -1005,6 +1029,14 @@ class _ServicesCarouselState extends ConsumerState<_ServicesCarousel> {
   void _stopAutoPlay() {
     _autoPlayTimer?.cancel();
     _autoPlayTimer = null;
+  }
+
+  @override
+  void deactivate() {
+    _active = false;
+    // stop while the widget is removed from the tree (e.g. navigating away)
+    _stopAutoPlay();
+    super.deactivate();
   }
 
   @override

@@ -216,10 +216,44 @@ class FirestoreService {
     });
   }
 
+  Future<int> countAppointmentsForUserInWeek(String userId, DateTime date) async {
+    final int daysToSubtract = date.weekday - 1; // 1 (Monday) -> 0, 7 (Sunday) -> 6
+    final DateTime startOfWeek = DateTime(date.year, date.month, date.day).subtract(Duration(days: daysToSubtract));
+    final DateTime endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+    final snapshot = await _firestore
+        .collection('appointments')
+        .where('customerId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfWeek))
+        .where('date', isLessThan: Timestamp.fromDate(endOfWeek))
+        .get();
+
+    int count = 0;
+    for (var doc in snapshot.docs) {
+      final status = doc.data()['status'] as String?;
+      if (status != AppointmentStatus.cancelled.name) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   Stream<List<AppointmentModel>> getAllAppointmentsForBarber(String barberId) {
     return _firestore
         .collection('appointments')
         .where('barberId', isEqualTo: barberId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => AppointmentModel.fromMap(doc.data(), doc.id))
+          .toList();
+    });
+  }
+
+  Stream<List<AppointmentModel>> getAllAppointmentsForCustomer(String customerId) {
+    return _firestore
+        .collection('appointments')
+        .where('customerId', isEqualTo: customerId)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs

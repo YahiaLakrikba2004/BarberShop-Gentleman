@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart'; // Added Google Fonts
 import 'package:uuid/uuid.dart';
-import 'package:carousel_slider/carousel_slider.dart' hide CarouselController;
 import '../../models/user_model.dart';
 import '../../models/barber_model.dart';
 import '../../models/service_model.dart';
@@ -16,7 +15,6 @@ import '../../services/notification_service.dart';
 import '../../services/slot_service.dart';
 import '../../services/auth_service.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:shimmer/shimmer.dart';
 import 'dart:ui'; // For BackdropFilter
 
 class BookingScreen extends ConsumerStatefulWidget {
@@ -26,7 +24,7 @@ class BookingScreen extends ConsumerStatefulWidget {
   ConsumerState<BookingScreen> createState() => _BookingScreenState();
 }
 
-class _BookingScreenState extends ConsumerState<BookingScreen> {
+class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProviderStateMixin {
   int _currentStep = 0;
   UserModel? _selectedCustomer;
   bool _isGuestBooking = false;
@@ -37,12 +35,31 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   ServiceModel? _selectedService;
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedSlot;
+  bool _bookingSuccess = false;
+  String _bookingMessage = '';
+  bool _bookingBlocked = false;
+  int _countdownSeconds = 3;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
     final isPrivileged = user?.role == UserRole.admin || user?.role == UserRole.barber;
+    
+    // Show blocked screen if booking was blocked
+    if (_bookingBlocked) {
+      return _buildBlockedScreen();
+    }
+    
+    // Show success screen if booking was successful
+    if (_bookingSuccess) {
+      return _buildSuccessScreen();
+    }
     
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -95,6 +112,272 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           // Navigation Buttons
           _buildNavigationButtons(isPrivileged),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedScreen() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Blocked icon with continuous rotation
+            FadeInUp(
+              duration: const Duration(milliseconds: 600),
+              child: RotationTransition(
+                turns: AlwaysStoppedAnimation(0.0),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  duration: const Duration(seconds: 2),
+                  builder: (context, value, child) {
+                    return Transform.rotate(
+                      angle: value * 6.28, // Full rotation
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.red.withOpacity(0.1),
+                      border: Border.all(
+                        color: Colors.red,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.4),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.block,
+                      size: 60,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            // Blocked message
+            FadeInUp(
+              delay: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 600),
+              child: Text(
+                'LIMITE RAGGIUNTO',
+                style: GoogleFonts.cinzel(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                  letterSpacing: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Explanation
+            FadeInUp(
+              delay: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 600),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'Hai raggiunto il limite di 2 prenotazioni per questa settimana.\n\nRiprova la prossima settimana.',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    height: 1.8,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+            
+            // Return button
+            FadeInUp(
+              delay: const Duration(milliseconds: 400),
+              duration: const Duration(milliseconds: 600),
+              child: FilledButton.icon(
+                onPressed: () {
+                  setState(() => _bookingBlocked = false);
+                },
+                icon: const Icon(Icons.arrow_back),
+                label: Text(
+                  'TORNA INDIETRO',
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessScreen() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Check mark with elegant bounce animation
+            FadeInUp(
+              duration: const Duration(milliseconds: 600),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.elasticOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 4,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                        blurRadius: 30,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 90,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+            
+            // Success message
+            FadeInUp(
+              delay: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 600),
+              child: Text(
+                'PRENOTAZIONE CONFERMATA',
+                style: GoogleFonts.cinzel(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: 2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            // Details card
+            FadeInUp(
+              delay: const Duration(milliseconds: 400),
+              duration: const Duration(milliseconds: 600),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark 
+                    ? const Color(0xFF111111) 
+                    : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      blurRadius: 15,
+                      spreadRadius: 3,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  _bookingMessage,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 15,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    height: 2.2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
+            
+            // Animated countdown with elegant styling
+            FadeInUp(
+              delay: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 600),
+              child: Column(
+                children: [
+                  Text(
+                    'Reindirizzamento in',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 1.0, end: 1.0),
+                    duration: const Duration(milliseconds: 500),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            '$_countdownSeconds s',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -965,7 +1248,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildConfirmation(bool isPrivileged) {
+    print('DEBUG _buildConfirmation: barber=${_selectedBarber?.name}, service=${_selectedService?.name}, slot=$_selectedSlot');
     if (_selectedBarber == null || _selectedService == null || _selectedSlot == null) {
+      print('DEBUG _buildConfirmation: MISSING DATA - barber null: ${_selectedBarber==null}, service null: ${_selectedService==null}, slot null: ${_selectedSlot==null}');
       return Center(child: Text('Informazioni mancanti.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))));
     }
     
@@ -1118,6 +1403,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   final maxSteps = isPrivileged ? 4 : 3;
   final canProceed = _canProceed(isPrivileged);
   
+  print('DEBUG _buildNavigationButtons: currentStep=$_currentStep, maxSteps=$maxSteps, canProceed=$canProceed');
+  print('DEBUG _buildNavigationButtons: barber=${_selectedBarber?.name}, service=${_selectedService?.name}, slot=$_selectedSlot');
+  
   return Container(
     padding: EdgeInsets.only(
       bottom: MediaQuery.of(context).padding.bottom > 0 ? 0 : 16,
@@ -1223,6 +1511,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   void _onNext(int maxSteps) {
+    print('DEBUG: _onNext called - currentStep: $_currentStep, maxSteps: $maxSteps');
+    
     if (_currentStep == 0 && _isGuestBooking) {
       if (_guestName.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1244,17 +1534,34 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       }
     }
 
+    print('DEBUG: About to check if _currentStep < maxSteps: $_currentStep < $maxSteps');
     if (_currentStep < maxSteps) {
+      print('DEBUG: Advancing to next step');
       setState(() => _currentStep++);
     } else {
+      print('DEBUG: Calling _confirmBooking');
       _confirmBooking();
     }
   }
 
   Future<void> _confirmBooking() async {
+    print('DEBUG: _confirmBooking started');
+    
+    // the method is asynchronous and the widget may disappear while the
+    // futures are resolving.  check `mounted` after every `await` and
+    // never call `ScaffoldMessenger.of(context)` on a deactivated state.
+
+    if (!mounted) {
+      print('DEBUG: Widget not mounted, returning early');
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context); // resolve once while mounted
+
     final currentUser = ref.read(currentUserProfileProvider).value;
+    print('DEBUG: currentUser: ${currentUser?.name}');
     if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      print('DEBUG: currentUser is null, showing login message');
+      messenger.showSnackBar(
         const SnackBar(content: Text('Devi effettuare il login per prenotare.')),
       );
       return;
@@ -1268,13 +1575,68 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       customerId = 'guest_${const Uuid().v4()}';
       customerName = _guestName;
       customerPhone = _guestPhone.isNotEmpty ? _guestPhone : null;
+      print('DEBUG: Guest booking - name: $customerName, phone: $customerPhone');
     } else {
       final targetUser = _selectedCustomer ?? currentUser;
       customerId = targetUser.id;
       customerName = targetUser.name;
       customerPhone = targetUser.phoneNumber;
+      print('DEBUG: Regular booking - customerId: $customerId, name: $customerName');
     }
 
+    // --- CHECK WEEKLY LIMIT (Only for non-privileged users or if booking for self) ---
+    final isPrivileged = currentUser.role == UserRole.admin || currentUser.role == UserRole.barber;
+    bool canCreateAppointment = true; // Flag to prevent booking if limit reached
+    
+    // se è cliente occasionale (guest) oppure è un admin che prenota per un cliente, 
+    // l'admin potrebbe voler bypassare il blocco. Lo applichiamo solo se è il cliente stesso a prenotare.
+    if (!isPrivileged && !_isGuestBooking) {
+      print('DEBUG: Checking weekly limit for user $customerId');
+      try {
+        // Fetch all appointments for this user and filter locally to avoid index requirement
+        final allUserAppointments = await ref.read(firestoreServiceProvider).getAllAppointmentsForCustomer(customerId).first;
+        
+        // Calculate week boundaries
+        final int daysToSubtract = _selectedSlot!.weekday - 1;
+        final DateTime startOfWeek = DateTime(_selectedSlot!.year, _selectedSlot!.month, _selectedSlot!.day).subtract(Duration(days: daysToSubtract));
+        final DateTime endOfWeek = startOfWeek.add(const Duration(days: 7));
+        
+        // Count non-cancelled appointments in this week
+        int weeklyCount = 0;
+        for (var apt in allUserAppointments) {
+          if (apt.status != AppointmentStatus.cancelled && apt.date.isAfter(startOfWeek) && apt.date.isBefore(endOfWeek)) {
+            weeklyCount++;
+          }
+        }
+        
+        print('DEBUG: User has $weeklyCount appointments this week');
+        if (!mounted) {
+          print('DEBUG: Widget unmounted during weekly limit check, returning');
+          return;
+        }
+        if (weeklyCount >= 2) {
+          print('DEBUG: BLOCKING BOOKING - User has reached weekly limit');
+          canCreateAppointment = false;
+          if (!mounted) return;
+          setState(() => _bookingBlocked = true);
+          return; // Stop booking
+        }
+      } catch (e) {
+        // If there's an error checking the limit, log it but don't block the booking
+        print('DEBUG: Warning - could not check weekly limit: $e');
+        print('DEBUG: Proceeding with booking anyway (limit check skipped)');
+      }
+    }
+
+    // Extra safety check before creating appointment
+    if (!canCreateAppointment) {
+      print('DEBUG: ABORT - canCreateAppointment is false');
+      return;
+    }
+
+    print('DEBUG: Validation passed, creating appointment');
+    print('DEBUG: Slot details - barberId: ${_selectedBarber!.id}, serviceId: ${_selectedService!.id}, date: $_selectedSlot');
+    
     final appointment = AppointmentModel(
       id: const Uuid().v4(),
       customerId: customerId,
@@ -1291,33 +1653,48 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
 
     try {
+      print('DEBUG: Creating appointment in Firestore');
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
-      
+      print('DEBUG: Appointment created successfully');
+
       // Trigger immediate local notification
       ref.read(notificationServiceProvider).showImmediateNotification(
         title: 'Prenotazione Confermata',
         body: 'Il tuo appuntamento per ${_selectedService!.name} è stato registrato per il ${DateFormat('dd/MM HH:mm').format(_selectedSlot!)}',
         payload: '/calendar',
       );
+
+      if (!mounted) {
+        print('DEBUG: Widget unmounted after createAppointment, returning');
+        return;
+      }
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Prenotazione confermata per $customerName!', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onPrimary)),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating, // Premium feel
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            action: SnackBarAction(label: 'OK', textColor: Theme.of(context).colorScheme.onPrimary, onPressed: () {}),
-          ),
-        );
-        context.go('/');
+      // Show success screen with appointment details
+      print('DEBUG: Setting booking success state');
+      _countdownSeconds = 3;
+      setState(() {
+        _bookingSuccess = true;
+        _bookingMessage = '''Appuntamento confermato per $customerName
+${_selectedBarber!.name} - ${_selectedService!.name}
+${DateFormat('d MMMM yyyy', 'it').format(_selectedSlot!)} alle ${DateFormat('HH:mm').format(_selectedSlot!)}
+€${_selectedService!.price.toStringAsFixed(2)}''';
+      });
+      
+      // Countdown timer
+      for (int i = 3; i > 0; i--) {
+        await Future.delayed(const Duration(seconds: 1));
+        if (!mounted) return;
+        setState(() => _countdownSeconds = i - 1);
       }
+      
+      if (!mounted) return;
+      context.go('/');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore durante la prenotazione: $e')),
-        );
-      }
+      print('DEBUG: Error creating appointment: $e');
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Errore durante la prenotazione: $e')),
+      );
     }
   }
 }

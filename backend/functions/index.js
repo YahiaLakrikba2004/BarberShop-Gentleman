@@ -118,7 +118,7 @@ exports.sendAppointmentStatusUpdate = onDocumentUpdated("appointments/{appointme
     if (newData.status === oldData.status) return null;
 
     // Gestiamo solo stati rilevanti per l'utente
-    if (newData.status !== "cancel" && newData.status !== "confirmed") return null;
+    if (newData.status !== "cancelled" && newData.status !== "confirmed") return null;
 
     const date = newData.date.toDate();
     const formattedDate = date.toLocaleDateString("it-IT");
@@ -130,7 +130,7 @@ exports.sendAppointmentStatusUpdate = onDocumentUpdated("appointments/{appointme
     let title = "Aggiornamento Appuntamento 📅";
     let body = `Lo stato del tuo appuntamento è cambiato.`;
 
-    if (newData.status === "cancel") {
+    if (newData.status === "cancelled") {
         title = "Appuntamento Cancellato ❌";
         body = `Il tuo appuntamento del ${formattedDate} alle ${formattedTime} è stato cancellato.`;
     } else if (newData.status === "confirmed") {
