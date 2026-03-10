@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:ui' as ui;
@@ -299,329 +300,265 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _showSettingsModal(BuildContext context, WidgetRef ref, UserModel user) {
+    final outerCtx = context;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, // Allow full height control
-      builder: (context) => BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Glass effect
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1E1E1E).withOpacity(0.95),
-                const Color(0xFF0A0A0A).withOpacity(0.98),
-              ],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border(
-              top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1), // Silver border
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.8),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      isScrollControlled: true,
+      builder: (context) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F0F0F),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 16),
-                    // Silver Drag Handle
-                    Container(
-                      width: 60,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2), // Simple Silver
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 14),
+                  // Drag Handle
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const SizedBox(height: 32),
-                    
-                    Text(
-                      'IMPOSTAZIONI',
-                      style: GoogleFonts.cinzel(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white, // Pure White
-                        letterSpacing: 4.0,
-                        shadows: [
-                          Shadow(color: Colors.white.withOpacity(0.1), blurRadius: 15),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
+                  ),
+                  const SizedBox(height: 24),
 
-                    // Account Section
-                    _buildSettingsSectionTitle('IL TUO ACCOUNT'),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildSettingsTile(
-                              icon: Icons.edit_outlined,
-                              title: 'Modifica Profilo',
-                              onTap: () {
-                                Navigator.pop(context);
-                                _showEditProfileDialog(context, ref, user);
-                              },
-                            ),
-                            // Removed Notifications Tile as requested
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 32),
-
-                      // Legal Section
-                      _buildSettingsSectionTitle('LEGAL & PRIVACY'),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(20),
-                           border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildSettingsTile(
-                              icon: Icons.privacy_tip_outlined,
-                              title: 'Privacy Policy',
-                              onTap: () async {
-                                final url = Uri.parse('https://barbershop-gentleman.web.app/privacy.html');
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
-                              },
-                            ),
-                             Divider(height: 1, color: Colors.white.withOpacity(0.05), indent: 60, endIndent: 20),
-                             _buildSettingsTile(
-                              icon: Icons.description_outlined,
-                              title: 'Termini di Servizio',
-                              onTap: () async {
-                                final url = Uri.parse('https://barbershop-gentleman.web.app/terms.html');
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Info Section
-                      _buildSettingsSectionTitle('INFORMAZIONI'),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.02),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        child: _buildSettingsTile(
-                          icon: Icons.storefront_outlined,
-                          title: 'Chi Siamo',
-                          onTap: () {
-                             Navigator.pop(context);
-                             _showAboutUsDialog(context);
-                          },
-                        ),
-                      ),
-
-                    const SizedBox(height: 32),
-
-                    // Danger Zone
-                    _buildSettingsSectionTitle('GESTIONE ACCOUNT'),
-                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF2A1010).withOpacity(0.4),
-                            Colors.black.withOpacity(0.4),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF8B0000).withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildSettingsTile(
-                            icon: Icons.logout,
-                            title: 'Esci',
-                            color: const Color(0xFFE0E0E0),
-                            onTap: () {
-                              Navigator.pop(context);
-                              ref.read(authServiceProvider).signOut();
-                            },
-                          ),
-                           Divider(height: 1, color: const Color(0xFF8B0000).withOpacity(0.2), indent: 60, endIndent: 20),
-                          _buildSettingsTile(
-                            icon: Icons.delete_forever_outlined,
-                            title: 'Elimina Account',
-                            color: const Color(0xFFFF453A),
-                            isDestructive: true,
-                            onTap: () {
-                              Navigator.pop(context);
-                              _showDeleteAccountDialog(context, ref);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Version & Credits
-                    Column(
+                  // Titolo + pulsante chiudi
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
                       children: [
-                        Text(
-                          'Version 1.0.3 (Build 240)',
-                          style: GoogleFonts.sourceCodePro(
-                            color: Colors.white.withOpacity(0.2),
-                            fontSize: 10,
-                            letterSpacing: 1.0,
+                        const SizedBox(width: 40),
+                        Expanded(
+                          child: Text(
+                            'IMPOSTAZIONI',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cinzel(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 3.0,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        
-                        // Developer Credits - Monochrome Badge
-                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
-                            border: Border.all(color: Colors.white.withOpacity(0.1)), // Silver border
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'CRAFTED BY ',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white.withOpacity(0.5),
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'YAHIA & OMAR',
-                                style: GoogleFonts.cinzel(
-                                  color: Colors.white.withOpacity(0.9), // Silver Names
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ],
+                        SizedBox(
+                          width: 40,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.45), size: 22),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // --- Sezione Account ---
+                  _buildSettingsSectionHeader('IL TUO ACCOUNT'),
+                  _buildSettingsCard([
+                    _buildSettingsTileNew(
+                      icon: Icons.edit_outlined,
+                      title: 'Modifica Profilo',
+                      subtitle: 'Nome, email e foto profilo',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showEditProfileDialog(context, ref, user);
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 20),
+
+                  // --- Sezione Legale ---
+                  _buildSettingsSectionHeader('LEGALE & PRIVACY'),
+                  _buildSettingsCard([
+                    _buildSettingsTileNew(
+                      icon: Icons.privacy_tip_outlined,
+                      title: 'Privacy Policy',
+                      subtitle: 'Informativa sulla privacy',
+                      onTap: () async {
+                        final url = Uri.parse('https://barbershop-gentleman.web.app/privacy.html');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                    ),
+                    Divider(height: 1, color: Colors.white.withValues(alpha: 0.06), indent: 60),
+                    _buildSettingsTileNew(
+                      icon: Icons.description_outlined,
+                      title: 'Termini di Servizio',
+                      subtitle: 'Condizioni d\'uso dell\'app',
+                      onTap: () async {
+                        final url = Uri.parse('https://barbershop-gentleman.web.app/terms.html');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                    ),
+                    Divider(height: 1, color: Colors.white.withValues(alpha: 0.06), indent: 60),
+                    _buildSettingsTileNew(
+                      icon: Icons.storefront_outlined,
+                      title: 'Chi Siamo',
+                      subtitle: 'La storia di Gentleman',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showAboutUsDialog(context);
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 20),
+
+                  // --- Sezione Gestione Account ---
+                  _buildSettingsSectionHeader('GESTIONE ACCOUNT'),
+                  _buildSettingsCard([
+                    _buildSettingsTileNew(
+                      icon: Icons.logout,
+                      title: 'Esci',
+                      subtitle: 'Disconnettiti dall\'account',
+                      onTap: () {
+                        ref.read(authServiceProvider).signOut();
+                        outerCtx.go('/auth');
+                      },
+                    ),
+                    Divider(height: 1, color: const Color(0xFFDC143C).withValues(alpha: 0.15), indent: 60),
+                    _buildSettingsTileNew(
+                      icon: Icons.delete_outline,
+                      title: 'Elimina Account',
+                      subtitle: 'Rimozione permanente dell\'account',
+                      isDestructive: true,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDeleteAccountDialog(outerCtx, ref);
+                      },
+                    ),
+                  ], isDestructive: true),
+
+                  const SizedBox(height: 36),
+
+                  Text(
+                    'Version 1.0.3',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                ],
               ),
             ),
           ),
         ),
-      ),
     );
   }
 
-  Widget _buildSettingsSectionTitle(String title) {
+  Widget _buildSettingsSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+      padding: const EdgeInsets.only(left: 36, bottom: 8),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: GoogleFonts.cinzel(
-            color: Colors.white.withOpacity(0.5), // Back to elegant Silver
-            fontSize: 11,
+          style: GoogleFonts.montserrat(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 10,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+            letterSpacing: 2.0,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSettingsTile({
+  Widget _buildSettingsCard(List<Widget> children, {bool isDestructive = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDestructive
+                ? const Color(0xFFDC143C).withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.07),
+          ),
+        ),
+        child: Column(children: children),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTileNew({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
-    Color color = const Color(0xFFE0E0E0),
     bool isDestructive = false,
   }) {
+    final iconColor = isDestructive ? const Color(0xFFDC143C) : Colors.white.withValues(alpha: 0.75);
+    final titleColor = isDestructive ? const Color(0xFFDC143C) : Colors.white;
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        splashColor: (isDestructive ? Colors.red : Colors.white).withOpacity(0.1),
-        highlightColor: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        splashColor: (isDestructive ? const Color(0xFFDC143C) : Colors.white).withValues(alpha: 0.06),
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           child: Row(
             children: [
-              // Icon Container
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: isDestructive 
-                    ? const Color(0xFF2A1010) 
-                    : const Color(0xFF1A1A1A),
+                  color: isDestructive
+                      ? const Color(0xFFDC143C).withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDestructive 
-                      ? const Color(0xFFFF453A).withOpacity(0.3)
-                      : Colors.white.withOpacity(0.1), // Silver border
-                  ),
                 ),
-                child: Icon(
-                  icon, 
-                  color: isDestructive ? const Color(0xFFFF453A) : Colors.white.withOpacity(0.9), // White icon
-                  size: 18
-                ),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
-              const SizedBox(width: 20),
-              // Text
+              const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    color: isDestructive ? const Color(0xFFFF453A) : color,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.montserrat(
+                        color: titleColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // Chevron
               Icon(
                 Icons.chevron_right,
-                color: (isDestructive ? Colors.red : Colors.white).withOpacity(0.2), 
-                size: 18
+                color: Colors.white.withValues(alpha: 0.2),
+                size: 18,
               ),
             ],
           ),
@@ -881,6 +818,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
+    final outerCtx = context;
     showDialog(
       context: context,
       builder: (context) => BackdropFilter(
@@ -940,9 +878,10 @@ class ProfileScreen extends ConsumerWidget {
                       Navigator.pop(context); // Close dialog
                       try {
                         await ref.read(authServiceProvider).deleteAccount();
+                        if (outerCtx.mounted) outerCtx.go('/auth');
                       } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (outerCtx.mounted) {
+                          ScaffoldMessenger.of(outerCtx).showSnackBar(
                             SnackBar(content: Text('Errore: $e')),
                           );
                         }
@@ -1065,17 +1004,17 @@ class _AppointmentsList extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
         ),
-        title: const Text('Annulla Appuntamento',
+        title: const Text('ELIMINA APPUNTAMENTO',
             style: TextStyle(
                 color: Colors.redAccent, fontWeight: FontWeight.bold)),
         content: Text(
-          'Sei sicuro di voler annullare l\'appuntamento del ${DateFormat('dd/MM/yyyy HH:mm').format(apt.date)}?',
+          'Sei sicuro di voler eliminare l\'appuntamento del ${DateFormat('dd/MM/yyyy HH:mm').format(apt.date)}?\nL\'operazione non può essere annullata.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No', style: TextStyle(color: Colors.grey)),
+            child: const Text('NO, MANTIENI', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -1087,7 +1026,7 @@ class _AppointmentsList extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Appuntamento annullato con successo')),
+                        content: Text('Appuntamento eliminato con successo')),
                   );
                 }
               } catch (e) {
@@ -1098,7 +1037,7 @@ class _AppointmentsList extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('Sì, Annulla',
+            child: const Text('SÌ, ELIMINA',
                 style: TextStyle(
                     color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),

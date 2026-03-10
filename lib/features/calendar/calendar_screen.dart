@@ -27,7 +27,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   final GlobalKey<WeekViewState> _weekViewKey = GlobalKey<WeekViewState>();
   final GlobalKey<DayViewState> _dayViewKey = GlobalKey<DayViewState>();
   final GlobalKey<MonthViewState> _monthViewKey = GlobalKey<MonthViewState>();
-  CalendarViewType _currentView = CalendarViewType.week;
+  CalendarViewType _currentView = CalendarViewType.day;
   DateTime _focusedDate = DateTime.now();
 
   @override
@@ -761,6 +761,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 );
                               },
                               heightPerMinute: 1.5,
+                              minuteSlotSize: MinuteSlotSize.minutes30,
                               startHour: 8,
                               endHour: 22,
                               showLiveTimeLineInAllDays: true,
@@ -976,7 +977,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           side: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
         title: Text(
-          'ANNULLA APPUNTAMENTO',
+          'ELIMINA APPUNTAMENTO',
           style: GoogleFonts.cinzel(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -984,7 +985,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         ),
         content: Text(
-          'Sei sicuro di voler annullare l\'appuntamento di ${appointment.customerName}?\nL\'operazione non può essere annullata.',
+          'Sei sicuro di voler eliminare l\'appuntamento di ${appointment.customerName}?\nL\'operazione non può essere annullata.',
           style: GoogleFonts.montserrat(
             color: Colors.white70,
             fontSize: 14,
@@ -1023,7 +1024,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Appuntamento annullato con successo')),
+                        content: Text('Appuntamento eliminato con successo')),
                   );
                 }
               } catch (e) {
@@ -1035,7 +1036,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               }
             },
             child: Text(
-              'SÌ, ANNULLA',
+              'SÌ, ELIMINA',
               style: GoogleFonts.montserrat(
                 color: Colors.red, // Keep red for destructive action warning
                 fontWeight: FontWeight.bold,

@@ -168,7 +168,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
              // User not found with fake email — check if registered with real email
              try {
                final firestore = ref.read(firestoreServiceProvider);
-               final existing = await firestore.getUserByPhone(formattedPhone);
+               // Try multiple phone formats (user may have stored raw phone at registration)
+               final existing = await firestore.getUserByPhone(formattedPhone)
+                   ?? await firestore.getUserByPhone(phone)
+                   ?? await firestore.getUserByPhone(cleanPhone);
                if (existing != null &&
                    existing.email.isNotEmpty &&
                    !existing.email.endsWith('@gentleman.app')) {

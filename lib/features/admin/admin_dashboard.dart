@@ -3,11 +3,9 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart'; // Added Import
 import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
-import '../../services/seed_service.dart';
 import 'user_management_screen.dart';
 import 'barber_management_screen.dart';
 import 'service_management_screen.dart'; // Added Import
@@ -123,140 +121,120 @@ class AdminDashboard extends ConsumerWidget {
 
                 const SizedBox(height: 32),
 
-                // Revenue Chart Section
+                // Today's Summary
                 FadeInUp(
                   duration: const Duration(milliseconds: 800),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
-                            width: 1,
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'OGGI',
+                        style: GoogleFonts.cinzel(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ),
+                      const SizedBox(height: 16),
+                      // Revenue today — big card
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
+                            ),
+                            child: Row(
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'ANDAMENTO RICAVI',
+                                      'INCASSO OGGI',
                                       style: GoogleFonts.montserrat(
                                         color: Colors.white.withOpacity(0.4),
-                                        fontSize: 12,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        letterSpacing: 1,
+                                        letterSpacing: 1.5,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      '€${stats['revenue']}',
+                                      '€${stats['todayRevenue']}',
                                       style: GoogleFonts.cinzel(
                                         color: Colors.white,
-                                        fontSize: 32,
+                                        fontSize: 36,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                                  ),
-                                  child: const Icon(Icons.auto_graph_rounded,
-                                      color: Colors.white),
+                                const Spacer(),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'SETTIMANA',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white.withOpacity(0.3),
+                                        fontSize: 9,
+                                        letterSpacing: 1.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '€${stats['weekRevenue']}',
+                                      style: GoogleFonts.cinzel(
+                                        color: Colors.white.withOpacity(0.6),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              height: 180,
-                              child: _RevenueChart(appointments: appointments),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Stats Grid & Pie Chart
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
+                      const SizedBox(height: 12),
+                      // 3 small stat tiles
+                      Row(
                         children: [
-                          _StatCard(
-                            icon: Icons.calendar_today_rounded,
-                            title: 'TOTALI',
-                            value: stats['total'].toString(),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.calendar_today_rounded,
+                              title: 'OGGI',
+                              value: stats['todayTotal'].toString(),
+                            ),
                           ),
-                          const SizedBox(height: 16),
-                          _StatCard(
-                            icon: Icons.check_circle_outline_rounded,
-                            title: 'CONFERMATI',
-                            value: stats['confirmed'].toString(),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.check_circle_outline_rounded,
+                              title: 'CONFERMATI',
+                              value: stats['todayConfirmed'].toString(),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.hourglass_top_rounded,
+                              title: 'IN ATTESA',
+                              value: stats['pending'].toString(),
+                              highlight: (stats['pending'] as int) > 0,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 4,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            height: 220,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.1),
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'STATO APPUNTAMENTI',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white.withOpacity(0.6),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: _StatusPieChart(stats: stats),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 40),
@@ -432,6 +410,18 @@ class AdminDashboard extends ConsumerWidget {
   }
 
   Map<String, dynamic> _calculateStats(List<AppointmentModel> appointments) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+
+    final todayApts = appointments.where((a) =>
+        a.date.isAfter(todayStart.subtract(const Duration(seconds: 1))) &&
+        a.date.isBefore(todayEnd)).toList();
+
+    final weekApts = appointments.where((a) =>
+        a.date.isAfter(weekStart.subtract(const Duration(seconds: 1)))).toList();
+
     int total = appointments.length;
     int confirmed = appointments
         .where((a) => a.status == AppointmentStatus.confirmed)
@@ -447,228 +437,96 @@ class AdminDashboard extends ConsumerWidget {
             a.status == AppointmentStatus.completed)
         .fold(0.0, (sum, a) => sum + a.price);
 
+    final todayTotal = todayApts.length;
+    final todayConfirmed = todayApts
+        .where((a) => a.status == AppointmentStatus.confirmed).length;
+    final todayRevenue = todayApts
+        .where((a) => a.status == AppointmentStatus.confirmed || a.status == AppointmentStatus.completed)
+        .fold(0.0, (sum, a) => sum + a.price);
+
+    final weekRevenue = weekApts
+        .where((a) => a.status == AppointmentStatus.confirmed || a.status == AppointmentStatus.completed)
+        .fold(0.0, (sum, a) => sum + a.price);
+    final weekTotal = weekApts.length;
+
     return {
       'total': total,
       'confirmed': confirmed,
       'pending': pending,
       'cancelled': cancelled,
       'revenue': revenue.toStringAsFixed(0),
+      'todayTotal': todayTotal,
+      'todayConfirmed': todayConfirmed,
+      'todayRevenue': todayRevenue.toStringAsFixed(0),
+      'weekRevenue': weekRevenue.toStringAsFixed(0),
+      'weekTotal': weekTotal,
     };
   }
 }
 
-class _RevenueChart extends StatelessWidget {
-  final List<AppointmentModel> appointments;
-
-  const _RevenueChart({required this.appointments});
-
-  @override
-  Widget build(BuildContext context) {
-    // Calculate daily revenue for the last 7 days
-    final now = DateTime.now();
-    final last7Days = List.generate(7, (index) {
-      final day = now.subtract(Duration(days: 6 - index));
-      return DateTime(day.year, day.month, day.day);
-    });
-
-    final spots = last7Days.asMap().entries.map((entry) {
-      final index = entry.key;
-      final day = entry.value;
-
-      final dailyRevenue = appointments
-          .where((a) =>
-              (a.status == AppointmentStatus.confirmed ||
-                  a.status == AppointmentStatus.completed) &&
-              a.date.year == day.year &&
-              a.date.month == day.month &&
-              a.date.day == day.day)
-          .fold(0.0, (sum, a) => sum + a.price);
-
-      return FlSpot(index.toDouble(), dailyRevenue);
-    }).toList();
-
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < last7Days.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      DateFormat('E', 'it').format(last7Days[index]).toUpperCase(),
-                      style:
-                          GoogleFonts.montserrat(color: Colors.white24, fontSize: 8, fontWeight: FontWeight.bold),
-                    ),
-                  );
-                }
-                return const SizedBox();
-              },
-              interval: 1,
-            ),
-          ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: Colors.white,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.white.withOpacity(0.05),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withOpacity(0.2),
-                  Colors.white.withOpacity(0.0),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPieChart extends StatelessWidget {
-  final Map<String, dynamic> stats;
-
-  const _StatusPieChart({required this.stats});
-
-  @override
-  Widget build(BuildContext context) {
-    final confirmed = stats['confirmed'] as int;
-    final pending = stats['pending'] as int;
-    final cancelled = stats['cancelled'] as int;
-    final total = confirmed + pending + cancelled;
-
-    if (total == 0) {
-      return Center(
-          child: Text('Dati insufficienti',
-              style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 12)));
-    }
-
-    return PieChart(
-      PieChartData(
-        sectionsSpace: 4,
-        centerSpaceRadius: 30,
-        sections: [
-          if (confirmed > 0)
-            PieChartSectionData(
-              color: Colors.white,
-              value: confirmed.toDouble(),
-              title: '${(confirmed / total * 100).toStringAsFixed(0)}%',
-              radius: 40,
-              titleStyle: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
-          if (pending > 0)
-            PieChartSectionData(
-              color: Colors.white.withOpacity(0.3),
-              value: pending.toDouble(),
-              title: '${(pending / total * 100).toStringAsFixed(0)}%',
-              radius: 35,
-              titleStyle: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-          if (cancelled > 0)
-            PieChartSectionData(
-              color: Colors.white.withOpacity(0.1),
-              value: cancelled.toDouble(),
-              title: '${(cancelled / total * 100).toStringAsFixed(0)}%',
-              radius: 30,
-              titleStyle: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white24),
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
+  final bool highlight;
 
   const _StatCard({
     required this.icon,
     required this.title,
     required this.value,
+    this.highlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = highlight
+        ? Theme.of(context).colorScheme.primary
+        : Colors.white;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: highlight
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.1),
+              color: highlight
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.1),
               width: 1,
             ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+              Icon(icon, color: accentColor.withValues(alpha: 0.7), size: 18),
+              const SizedBox(height: 10),
+              Text(
+                value,
+                style: GoogleFonts.cinzel(
+                  color: accentColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  Text(
-                    value,
-                    style: GoogleFonts.cinzel(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withOpacity(0.4),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: GoogleFonts.montserrat(
+                  color: accentColor.withValues(alpha: 0.45),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
             ],
           ),
         ),

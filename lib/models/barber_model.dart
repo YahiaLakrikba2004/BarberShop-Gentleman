@@ -13,9 +13,13 @@ class BarberModel extends Equatable {
   final String name;
   final String imageUrl; // Placeholder or real URL
   final List<String> specialties; // e.g., ['Hair', 'Beard']
-  // Simple working hours: Start and End hour (24h format)
+  // Working hours: Start and End hour (24h format)
   final int startHour;
   final int endHour;
+  // Double shift support: optional break in the middle of the day
+  final bool hasDoubleShift;
+  final int breakStartHour; // When the break starts (e.g., 12)
+  final int breakEndHour;   // When the break ends / afternoon shift starts (e.g., 14)
   final BarberAvailability availabilityStatus;
   final List<DateTime> unavailableDates; // Specific dates when barber is unavailable
   final List<int> daysOff; // 1=Mon ... 7=Sun
@@ -28,6 +32,9 @@ class BarberModel extends Equatable {
     required this.specialties,
     required this.startHour,
     required this.endHour,
+    this.hasDoubleShift = false,
+    this.breakStartHour = 12,
+    this.breakEndHour = 14,
     this.availabilityStatus = BarberAvailability.available,
     this.unavailableDates = const [],
     this.daysOff = const [],
@@ -42,6 +49,9 @@ class BarberModel extends Equatable {
       specialties: List<String>.from(map['specialties'] ?? []),
       startHour: map['startHour'] ?? 9,
       endHour: map['endHour'] ?? 18,
+      hasDoubleShift: map['hasDoubleShift'] ?? false,
+      breakStartHour: map['breakStartHour'] ?? 12,
+      breakEndHour: map['breakEndHour'] ?? 14,
       availabilityStatus: BarberAvailability.values.firstWhere(
         (e) => e.name == map['availabilityStatus'],
         orElse: () => BarberAvailability.available,
@@ -61,6 +71,9 @@ class BarberModel extends Equatable {
       'specialties': specialties,
       'startHour': startHour,
       'endHour': endHour,
+      'hasDoubleShift': hasDoubleShift,
+      'breakStartHour': breakStartHour,
+      'breakEndHour': breakEndHour,
       'availabilityStatus': availabilityStatus.name,
       'unavailableDates': unavailableDates.map((d) => d.millisecondsSinceEpoch).toList(),
       'daysOff': daysOff,
@@ -75,6 +88,9 @@ class BarberModel extends Equatable {
     List<String>? specialties,
     int? startHour,
     int? endHour,
+    bool? hasDoubleShift,
+    int? breakStartHour,
+    int? breakEndHour,
     BarberAvailability? availabilityStatus,
     List<DateTime>? unavailableDates,
     List<int>? daysOff,
@@ -87,6 +103,9 @@ class BarberModel extends Equatable {
       specialties: specialties ?? this.specialties,
       startHour: startHour ?? this.startHour,
       endHour: endHour ?? this.endHour,
+      hasDoubleShift: hasDoubleShift ?? this.hasDoubleShift,
+      breakStartHour: breakStartHour ?? this.breakStartHour,
+      breakEndHour: breakEndHour ?? this.breakEndHour,
       availabilityStatus: availabilityStatus ?? this.availabilityStatus,
       unavailableDates: unavailableDates ?? this.unavailableDates,
       daysOff: daysOff ?? this.daysOff,
@@ -95,5 +114,5 @@ class BarberModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, imageUrl, specialties, startHour, endHour, availabilityStatus, unavailableDates, daysOff, isBookable];
+  List<Object?> get props => [id, name, imageUrl, specialties, startHour, endHour, hasDoubleShift, breakStartHour, breakEndHour, availabilityStatus, unavailableDates, daysOff, isBookable];
 }

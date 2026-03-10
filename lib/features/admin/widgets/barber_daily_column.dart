@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../../../models/barber_model.dart';
 import '../../../models/appointment_model.dart';
@@ -13,6 +12,10 @@ class BarberDailyColumn extends StatelessWidget {
   final double hourHeight; // Height for each hour slot
   final int startHour; // Shop opening hour
   final int endHour; // Shop closing hour
+
+  // Fixed header height used to align the time column in TeamAgendaScreen.
+  // Keep in sync with the actual header content below.
+  static const double headerHeight = 155.0;
 
   const BarberDailyColumn({
     super.key,
@@ -31,8 +34,11 @@ class BarberDailyColumn extends StatelessWidget {
     // Note: checking generic availability. specific date checks should be done in parent or here.
     // simpler to just render the column and show "OFF" if needed overlay
     
-    // Filter appointments for this barber (redundant if parent does it, but safer)
-    final myAppointments = appointments.where((a) => a.barberId == barber.id).toList();
+    // Filter appointments for this barber and exclude cancelled/no-shows
+    final myAppointments = appointments.where((a) => 
+      a.barberId == barber.id && 
+      a.status != AppointmentStatus.cancelled
+    ).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -44,9 +50,12 @@ class BarberDailyColumn extends StatelessWidget {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header (Barber Info)
-          Container(
+          // Header (Barber Info) — fixed height to align with time column
+          SizedBox(
+            height: headerHeight,
+            child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -76,70 +85,79 @@ class BarberDailyColumn extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                      width: 2,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
                   child: CircleAvatar(
-                    radius: 30, // Larger size
-                    backgroundImage: _getBarberImage(barber.name, barber.imageUrl),
-                    onBackgroundImageError: _getBarberImage(barber.name, barber.imageUrl) != null 
-                        ? (_, __) {} 
-                        : null,
-                    backgroundColor: const Color(0xFF1E1E1E),
-                    child: barber.imageUrl.isEmpty || _getBarberImage(barber.name, barber.imageUrl) == null
-                        ? Text(
-                            barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
-                            style: GoogleFonts.cinzel(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          )
-                        : null,
+                    radius: 32,
+                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                    child: CircleAvatar(
+                      radius: 30,
+                      backgroundImage: _getBarberImage(barber.name, barber.imageUrl),
+                      onBackgroundImageError: _getBarberImage(barber.name, barber.imageUrl) != null 
+                          ? (_, __) {} 
+                          : null,
+                      backgroundColor: const Color(0xFF1A1A1A),
+                      child: barber.imageUrl.isEmpty || _getBarberImage(barber.name, barber.imageUrl) == null
+                          ? Text(
+                              barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
+                              style: GoogleFonts.cinzel(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   barber.name.toUpperCase(),
                   style: GoogleFonts.cinzel(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    letterSpacing: 1.2,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 1.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      width: 0.5,
+                    ),
                   ),
                   child: Text(
                     "BARBER",
                     style: GoogleFonts.montserrat(
                       fontSize: 8,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.primary,
-                      letterSpacing: 2,
+                      letterSpacing: 2.5,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-
+          ),
 
           // Timeline
           SizedBox(
@@ -149,23 +167,57 @@ class BarberDailyColumn extends StatelessWidget {
                   // Grid Lines (Hours)
                   Column(
                     children: List.generate(endHour - startHour, (index) {
-                      final hour = startHour + index;
                       return Container(
                         height: hourHeight,
                         decoration: BoxDecoration(
                           border: Border(
-                             // Use dashed line logic or just very subtle divider
-                            top: BorderSide( 
-                              color: Theme.of(context).dividerColor.withOpacity(0.08), 
+                            top: BorderSide(
+                              color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
                               width: 1,
                             ),
                           ),
                         ),
-                        // Small hour indicator inside the column for reference? 
-                        // Maybe too cluttered. Let's stick to clean lines.
                       );
                     }),
                   ),
+
+                  // Break / Pausa overlay (double shift)
+                  if (barber.hasDoubleShift)
+                    Positioned(
+                      top: (barber.breakStartHour - startHour) * hourHeight,
+                      left: 0,
+                      right: 0,
+                      height: (barber.breakEndHour - barber.breakStartHour) * hourHeight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: ClipRect(
+                          child: CustomPaint(
+                            painter: DiagonalStripesPainter(
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'PAUSA',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // Appointments Overlay
                   if (myAppointments.isEmpty)
@@ -173,7 +225,6 @@ class BarberDailyColumn extends StatelessWidget {
                     const SizedBox()
                   else
                   ...myAppointments.map((apt) {
-                    final start = apt.date;
                     // Calculate offset from startHour
                     final startOfDay = DateTime(apt.date.year, apt.date.month, apt.date.day, startHour);
                     final durationSinceStart = apt.date.difference(startOfDay).inMinutes;
@@ -199,96 +250,137 @@ class BarberDailyColumn extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () => onAppointmentTap(apt),
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                            decoration: BoxDecoration(
-                            // Premium Gradient
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 4, 
+                            vertical: height <= 40 ? 0.25 : 1.0,
+                          ),
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                               colors: [
-                                statusColor,
-                                Color.lerp(statusColor, Colors.black, 0.3)!, // Darken slightly at bottom
+                                statusColor.withValues(alpha: 0.9),
+                                statusColor.withValues(alpha: 0.7),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(height <= 40 ? 8 : 12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.5),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: height <= 40 ? 2 : 6,
+                                offset: Offset(0, height <= 40 ? 1 : 3),
                               ),
                             ],
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                              width: 0.5,
+                              color: Colors.white.withValues(alpha: 0.15),
+                              width: 0.8,
                             ),
                           ),
-                          child: Stack(
-                            children: [
-                              // Accent Line on left (Gold for aesthetics if desired, but keep simple)
-                              // actually, let's make the accent line slightly brighter than the bg
-                              Positioned(
-                                left: 0, 
-                                top: 0, 
-                                bottom: 0, 
-                                width: 2, 
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(4),
-                                      bottomLeft: Radius.circular(4),
-                                    )
-                                  ),
-                                )
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0, top: 4.0, right: 4.0, bottom: 2.0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      apt.customerName,
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        shadows: [
-                                          Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 2),
-                                        ]
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(height <= 40 ? 8 : 12),
+                            child: Stack(
+                              children: [
+                                // Hide shine on very short slots to save rendering complexity
+                                if (height > 40)
+                                  Positioned(
+                                    top: -20,
+                                    right: -20,
+                                    child: Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withValues(alpha: 0.05),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (height > 35) 
-                                      Text(
-                                        apt.serviceName,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white70,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w500,
+                                  ),
+                                Positioned.fill(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.0, 
+                                      vertical: height <= 40 ? 0.5 : 4.0,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: height <= 40 ? MainAxisAlignment.center : MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: height <= 40
+                                                  ? FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        apt.customerName,
+                                                        style: GoogleFonts.montserrat(
+                                                          color: Colors.white,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.w700,
+                                                          letterSpacing: 0.3,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      apt.customerName,
+                                                      style: GoogleFonts.montserrat(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 0.3,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                            ),
+                                            if (height > 45)
+                                              Icon(
+                                                Icons.content_cut,
+                                                size: 10,
+                                                color: Colors.white.withValues(alpha: 0.6),
+                                              ),
+                                          ],
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    if (height > 50)
-                                      Expanded(
-                                        child: Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: Text(
-                                            "${apt.durationMinutes} min",
-                                            style: const TextStyle(
-                                              fontSize: 8,
-                                              color: Colors.white54,
+                                        if (height > 40) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            apt.serviceName.toUpperCase(),
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.white.withValues(alpha: 0.9),
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.5,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                        if (height > 70) ...[
+                                          const Spacer(),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              "${apt.durationMinutes} MIN",
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 8,
+                                                color: Colors.white.withValues(alpha: 0.8),
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 1,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                  ],
+                                        ],
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -305,18 +397,15 @@ class BarberDailyColumn extends StatelessWidget {
   Color _getStatusColor(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.confirmed:
-        return const Color(0xFF2E5E2F); // Premium Hunter Green
+        return const Color(0xFF1B4332); // Deep Emerald
       case AppointmentStatus.pending:
-        return const Color(0xFFB8860B); // Dark Goldenrod
+        return const Color(0xFF9E6B08); // Golden Ochre
       case AppointmentStatus.completed:
-        return const Color(0xFF424242); // Graphite
+        return const Color(0xFF2B2B2B); // Rich Graphite
       case AppointmentStatus.cancelled:
-        return const Color(0xFF8B0000); // Dark Red
-      default:
-        return const Color(0xFF1A237E); // Deep Indigo
+        return const Color(0xFF7A0909); // Deep Crimson
     }
   }
-
 
   ImageProvider? _getBarberImage(String name, String imageUrl) {
     // 1. Check for specific hardcoded names (Only for ones we KNOW exist locally)
@@ -351,4 +440,34 @@ class BarberDailyColumn extends StatelessWidget {
     // 3. No image
     return null;
   }
+}
+
+class DiagonalStripesPainter extends CustomPainter {
+  final Color color;
+  final double stripeWidth;
+  final double gap;
+
+  DiagonalStripesPainter({
+    required this.color,
+    this.stripeWidth = 2,
+    this.gap = 8,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = stripeWidth;
+
+    for (double i = -size.height; i < size.width; i += gap) {
+      canvas.drawLine(
+        Offset(i, 0),
+        Offset(i + size.height, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

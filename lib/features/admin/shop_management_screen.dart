@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/firestore_service.dart';
 import '../../models/shop_settings_model.dart';
 import 'package:animate_do/animate_do.dart';
@@ -19,7 +21,9 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
   bool _isAnnouncementActive = false;
   bool _isShopClosedManually = false;
   List<DateTime> _closures = [];
+  List<String> _galleryImages = [];
   bool _isLoaded = false;
+  bool _isUploadingGallery = false;
   DateTime _focusedDay = DateTime.now();
 
   @override
@@ -28,14 +32,75 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
     super.dispose();
   }
 
+  static const List<String> _defaultAssetImages = [
+    'assets/images/gallery/gallery_user_1.jpg',
+    'assets/images/gallery/gallery_user_2.jpg',
+    'assets/images/gallery/gallery_user_3.jpg',
+    'assets/images/gallery/gallery_user_4.jpg',
+    'assets/images/gallery/gallery_user_5.jpg',
+    'assets/images/gallery/gallery_user_6.jpg',
+    'assets/images/gallery/gallery_user_7.jpg',
+  ];
+
   void _initSettings(ShopSettingsModel settings) {
     if (!_isLoaded) {
       _announcementController.text = settings.announcement;
       _isAnnouncementActive = settings.isAnnouncementActive;
       _isShopClosedManually = settings.isShopClosedManually;
       _closures = List.from(settings.closures);
+      // If no custom images saved yet, show defaults so admin can delete them
+      _galleryImages = settings.galleryImages.isNotEmpty
+          ? List.from(settings.galleryImages)
+          : List.from(_defaultAssetImages);
       _isLoaded = true;
     }
+  }
+
+  Future<void> _addGalleryImage() async {
+    if (_galleryImages.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Massimo 10 foto nella galleria.')),
+      );
+      return;
+    }
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 75,
+    );
+    if (picked == null) return;
+    setState(() => _isUploadingGallery = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final base64Str = base64Encode(bytes);
+      final updated = List<String>.from(_galleryImages)..add(base64Str);
+      final settingsAsync = ref.read(shopSettingsProvider);
+      final currentSettings = settingsAsync.value ?? const ShopSettingsModel();
+      await ref.read(firestoreServiceProvider).updateShopSettings(
+        currentSettings.copyWith(galleryImages: updated),
+      );
+      setState(() => _galleryImages = updated);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore upload: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingGallery = false);
+    }
+  }
+
+  Future<void> _removeGalleryImage(int index) async {
+    final updated = List<String>.from(_galleryImages)..removeAt(index);
+    final settingsAsync = ref.read(shopSettingsProvider);
+    final currentSettings = settingsAsync.value ?? const ShopSettingsModel();
+    await ref.read(firestoreServiceProvider).updateShopSettings(
+      currentSettings.copyWith(galleryImages: updated),
+    );
+    setState(() => _galleryImages = updated);
   }
 
   Future<void> _saveSettings() async {
@@ -44,6 +109,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       isAnnouncementActive: _isAnnouncementActive,
       isShopClosedManually: _isShopClosedManually,
       closures: _closures,
+      galleryImages: _galleryImages,
     );
 
     try {
@@ -279,6 +345,114 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+                FadeInDown(
+                  delay: const Duration(milliseconds: 300),
+                  child: _buildPremiumSection(
+                    context,
+                    title: 'GALLERIA HOME',
+                    icon: Icons.photo_library_outlined,
+                    description: 'Le foto mostrate nel carosello della home screen. Max 10 immagini.',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Thumbnails row
+                        SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _galleryImages.length + 1,
+                            itemBuilder: (context, index) {
+                              // "+" button at the end
+                              if (index == _galleryImages.length) {
+                                return GestureDetector(
+                                  onTap: _isUploadingGallery ? null : _addGalleryImage,
+                                  child: Container(
+                                    width: 80,
+                                    height: 100,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.04),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                      ),
+                                    ),
+                                    child: _isUploadingGallery
+                                        ? const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38)))
+                                        : Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.add_photo_alternate_outlined, color: Colors.white.withValues(alpha: 0.4), size: 28),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${_galleryImages.length}/10',
+                                                style: GoogleFonts.montserrat(
+                                                  color: Colors.white.withValues(alpha: 0.3),
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                );
+                              }
+                              // Thumbnail
+                              final imgStr = _galleryImages[index];
+                              final ImageProvider imgProvider = imgStr.startsWith('assets/')
+                                  ? AssetImage(imgStr) as ImageProvider
+                                  : MemoryImage(base64Decode(imgStr));
+                              return Stack(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 100,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: DecorationImage(
+                                        image: imgProvider,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 12,
+                                    child: GestureDetector(
+                                      onTap: () => _removeGalleryImage(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xCC000000),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            _galleryImages.isEmpty
+                                ? 'Nessuna foto. Premi + per aggiungerne.'
+                                : 'Tieni premuto × per rimuovere. Premi + per aggiungere nuove foto.',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 48),
                 FadeInUp(
                   child: Container(
@@ -452,7 +626,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary,
+        activeThumbColor: isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary,
         activeTrackColor: (isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary).withOpacity(0.2),
         inactiveThumbColor: Colors.grey,
         inactiveTrackColor: Colors.grey.withOpacity(0.2),

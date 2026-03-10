@@ -5,12 +5,14 @@ class ShopSettingsModel {
   final bool isAnnouncementActive;
   final List<DateTime> closures;
   final bool isShopClosedManually;
+  final List<String> galleryImages;
 
   const ShopSettingsModel({
     this.announcement = '',
     this.isAnnouncementActive = false,
     this.closures = const [],
     this.isShopClosedManually = false,
+    this.galleryImages = const [],
   });
 
   factory ShopSettingsModel.fromMap(Map<String, dynamic> map) {
@@ -22,6 +24,10 @@ class ShopSettingsModel {
               .toList() ??
           [],
       isShopClosedManually: map['isShopClosedManually'] ?? false,
+      galleryImages: (map['galleryImages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
   }
 
@@ -31,6 +37,7 @@ class ShopSettingsModel {
       'isAnnouncementActive': isAnnouncementActive,
       'closures': closures.map((e) => Timestamp.fromDate(e)).toList(),
       'isShopClosedManually': isShopClosedManually,
+      'galleryImages': galleryImages,
     };
   }
 
@@ -39,12 +46,14 @@ class ShopSettingsModel {
     bool? isAnnouncementActive,
     List<DateTime>? closures,
     bool? isShopClosedManually,
+    List<String>? galleryImages,
   }) {
     return ShopSettingsModel(
       announcement: announcement ?? this.announcement,
       isAnnouncementActive: isAnnouncementActive ?? this.isAnnouncementActive,
       closures: closures ?? this.closures,
       isShopClosedManually: isShopClosedManually ?? this.isShopClosedManually,
+      galleryImages: galleryImages ?? this.galleryImages,
     );
   }
 }

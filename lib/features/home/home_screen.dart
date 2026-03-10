@@ -1,21 +1,17 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
-import '../../services/seed_service.dart';
-import '../../core/ui/hexagon_painter.dart';
 import 'widgets/video_header.dart';
-import 'dart:ui';
 import 'dart:async';
 import '../../services/firestore_service.dart';
-import '../../models/shop_settings_model.dart';
 import 'home_screen_widgets.dart';
 import '../../services/notification_service.dart';
 import '../../models/appointment_model.dart';
@@ -450,7 +446,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ContactRow(
                                   icon: Icons.location_on,
                                   title: 'Via Borgo Eniano, 50',
-                                  subtitle: '35044 Montagnana PD, Italy',
+                                  subtitle: '35044 Montagnana PD, Italia',
                                   onTap: () async {
                                     final uri = Uri.parse(
                                         'https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
@@ -551,14 +547,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
 }
 
-class _HomeCarousel extends StatefulWidget {
+class _HomeCarousel extends ConsumerStatefulWidget {
   const _HomeCarousel();
 
   @override
-  State<_HomeCarousel> createState() => _HomeCarouselState();
+  ConsumerState<_HomeCarousel> createState() => _HomeCarouselState();
 }
 
-class _HomeCarouselState extends State<_HomeCarousel> {
+class _HomeCarouselState extends ConsumerState<_HomeCarousel> {
   PageController? _pageController; // Nullable for safety
   int _currentPage = 0;
   Timer? _autoPlayTimer;
@@ -627,15 +623,18 @@ class _HomeCarouselState extends State<_HomeCarousel> {
   Widget build(BuildContext context) {
     _ensureController(); // Lazy Init
 
-    final List<String> galleryImages = [
-      'assets/images/gallery/gallery_user_1.jpg',
-      'assets/images/gallery/gallery_user_2.jpg',
-      'assets/images/gallery/gallery_user_3.jpg',
-      'assets/images/gallery/gallery_user_4.jpg',
-      'assets/images/gallery/gallery_user_5.jpg',
-      'assets/images/gallery/gallery_user_6.jpg',
-      'assets/images/gallery/gallery_user_7.jpg',
-    ];
+    final shopSettings = ref.watch(shopSettingsProvider).value;
+    final List<String> galleryImages = (shopSettings?.galleryImages.isNotEmpty == true)
+        ? shopSettings!.galleryImages
+        : [
+            'assets/images/gallery/gallery_user_1.jpg',
+            'assets/images/gallery/gallery_user_2.jpg',
+            'assets/images/gallery/gallery_user_3.jpg',
+            'assets/images/gallery/gallery_user_4.jpg',
+            'assets/images/gallery/gallery_user_5.jpg',
+            'assets/images/gallery/gallery_user_6.jpg',
+            'assets/images/gallery/gallery_user_7.jpg',
+          ];
 
     return Container(
       color: const Color(0xFF0A0A0A),
@@ -750,23 +749,27 @@ class _HomeCarouselState extends State<_HomeCarousel> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                             Image.asset(
-                                imagePath,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center, 
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: const Color(0xFF1A1A1A),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.image_not_supported_outlined,
-                                        color: Colors.white24,
-                                        size: 48,
-                                      ),
-                                    ),
+                            Builder(builder: (_) {
+                                if (imagePath.startsWith('assets/')) {
+                                  return Image.asset(
+                                    imagePath,
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    errorBuilder: (_, __, ___) => const _GalleryFallback(),
                                   );
-                                },
-                              ),
+                                }
+                                try {
+                                  return Image.memory(
+                                    base64Decode(imagePath),
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    gaplessPlayback: true,
+                                    errorBuilder: (_, __, ___) => const _GalleryFallback(),
+                                  );
+                                } catch (_) {
+                                  return const _GalleryFallback();
+                                }
+                              }),
                             Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -977,6 +980,20 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GalleryFallback extends StatelessWidget {
+  const _GalleryFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF1A1A1A),
+      child: const Center(
+        child: Icon(Icons.image_not_supported_outlined, color: Colors.white24, size: 48),
       ),
     );
   }
@@ -1250,13 +1267,168 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
     super.dispose();
   }
 
+  void _showServiceDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(28, 36, 28, 36),
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 30,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon + Title
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    ),
+                    child: Icon(widget.icon, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Text(
+                      widget.title.toUpperCase(),
+                      style: GoogleFonts.cinzel(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              // Full description
+              if (widget.description.isNotEmpty) ...[
+                Text(
+                  widget.description,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                    height: 1.6,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+              // Duration + Price chips
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.schedule, color: Colors.white70, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.duration,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.euro, color: Colors.white70, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.price,
+                            style: GoogleFonts.cinzel(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 36),
+              // Book button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/booking');
+                  },
+                  icon: const Icon(Icons.content_cut, size: 18),
+                  label: Text(
+                    'PRENOTA ORA',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Definizione colori accent
     final accentColor = widget.featured ? const Color(0xFFE0E0E0) : const Color(0xFFFFFFFF);
     
     return GestureDetector(
-      onTap: () => context.push('/booking'),
+      onTap: () => _showServiceDetails(context),
       child: Container(
         width: double.infinity,
         constraints: const BoxConstraints(maxWidth: 400),

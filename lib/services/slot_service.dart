@@ -57,17 +57,33 @@ class SlotService {
     final DateTime startOfDay = DateTime(date.year, date.month, date.day, barber.startHour);
     final DateTime endOfDay = DateTime(date.year, date.month, date.day, barber.endHour);
 
-    // Interval step (e.g., every 30 mins)
-    // We can make this dynamic or fixed. Let's say 30 mins for now.
+    // Pausa del doppio turno (se attiva)
+    DateTime? breakStart;
+    DateTime? breakEnd;
+    if (barber.hasDoubleShift) {
+      breakStart = DateTime(date.year, date.month, date.day, barber.breakStartHour);
+      breakEnd = DateTime(date.year, date.month, date.day, barber.breakEndHour);
+    }
+
+    // Interval step (every 30 mins)
     const int intervalMinutes = 30;
 
     DateTime currentSlot = startOfDay;
 
-    while (currentSlot.add(Duration(minutes: serviceDurationMinutes)).isBefore(endOfDay) || 
+    while (currentSlot.add(Duration(minutes: serviceDurationMinutes)).isBefore(endOfDay) ||
            currentSlot.add(Duration(minutes: serviceDurationMinutes)).isAtSameMomentAs(endOfDay)) {
-      
+
       final DateTime slotEnd = currentSlot.add(Duration(minutes: serviceDurationMinutes));
-      
+
+      // Skip slot if it overlaps with the break period
+      if (breakStart != null && breakEnd != null) {
+        final overlapsBreak = currentSlot.isBefore(breakEnd) && slotEnd.isAfter(breakStart);
+        if (overlapsBreak) {
+          currentSlot = currentSlot.add(const Duration(minutes: intervalMinutes));
+          continue;
+        }
+      }
+
       bool isOccupied = false;
 
       for (var appointment in existingAppointments) {
@@ -76,10 +92,9 @@ class SlotService {
           continue;
         }
 
-        // Check overlap
-        // Appointment starts before slot ends AND Appointment ends after slot starts
+        // Check overlap: appointment starts before slot ends AND ends after slot starts
         final appointmentEnd = appointment.date.add(Duration(minutes: appointment.durationMinutes));
-        
+
         if (appointment.date.isBefore(slotEnd) && appointmentEnd.isAfter(currentSlot)) {
           isOccupied = true;
           break;
@@ -89,7 +104,7 @@ class SlotService {
       if (!isOccupied) {
         // Also check if slot is in the past (if today)
         if (currentSlot.isAfter(DateTime.now())) {
-           slots.add(currentSlot);
+          slots.add(currentSlot);
         }
       }
 

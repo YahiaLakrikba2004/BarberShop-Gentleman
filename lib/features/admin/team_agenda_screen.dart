@@ -17,22 +17,26 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
   DateTime _selectedDate = DateTime.now();
 
   void _changeDate(int days) {
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final next = _selectedDate.add(Duration(days: days));
+    if (next.isBefore(today)) return;
     setState(() {
-      _selectedDate = _selectedDate.add(Duration(days: days));
+      _selectedDate = next;
     });
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      initialDate: _selectedDate.isBefore(today) ? today : _selectedDate,
+      firstDate: today,
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
-         return Theme(
+        return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: const Color(0xFFD4AF37), // Gold
+              primary: Colors.white,
               onPrimary: Colors.black,
             ),
           ),
@@ -51,6 +55,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
   Widget build(BuildContext context) {
     final barbersAsync = ref.watch(barberListProvider);
     final allAppointmentsAsync = ref.watch(allAppointmentsProvider);
+    final isSunday = _selectedDate.weekday == DateTime.sunday;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -68,19 +73,31 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(Icons.today, color: Theme.of(context).colorScheme.primary),
-            onPressed: () {
-               setState(() {
-                 _selectedDate = DateTime.now();
-               });
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(Icons.calendar_today_rounded, 
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _selectedDate = DateTime.now();
+                });
+              },
+            ),
           ),
         ],
-        leading: Navigator.canPop(context) ? IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ) : null,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
       ),
       body: Column(
         children: [
@@ -101,29 +118,45 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                   child: GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.calendar_month, size: 16, color: Colors.white70),
-                            const SizedBox(width: 8),
-                            Text(
-                              DateFormat('EEEE d MMMM', 'it').format(_selectedDate).toUpperCase(),
-                               style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.5,
-                                color: Colors.white,
-                              ),
-                            ),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0.08),
+                            Colors.white.withValues(alpha: 0.03),
                           ],
                         ),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.event_note_rounded, 
+                            size: 18, 
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            DateFormat('EEEE d MMMM', 'it').format(_selectedDate).toUpperCase(),
+                            style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2,
+                              fontSize: 13,
+                              color: isSunday ? Colors.white38 : Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -139,34 +172,73 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
             ),
           ),
 
+          // Sunday message
+          if (isSunday) ...[
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.storefront_outlined,
+                        size: 56,
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'DOMENICA',
+                        style: GoogleFonts.cinzel(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          letterSpacing: 4,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Il negozio è aperto,\nma la domenica non si prenota online.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.35),
+                          height: 1.6,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ] else ...[
+
           // Main Agenda View
           Expanded(
             child: barbersAsync.when(
               data: (barbersList) {
-                // Filter out the Shop Account (Ghost Barber) from the visual agenda
                 final barbers = barbersList.where((b) {
-                   // Filter strictly by bookability first
-                   // Failsafe: Also hide if name matches Shop explicit names (in case DB flag is wrong)
-                   final isShopByName = b.name.toUpperCase() == 'NEGOZIO' || b.name.toUpperCase().contains('GENTLEMAN SHOP');
-                   return b.isBookable && !isShopByName;
+                  final isShopByName = b.name.toUpperCase() == 'NEGOZIO' ||
+                      b.name.toUpperCase().contains('GENTLEMAN SHOP');
+                  return b.isBookable && !isShopByName;
                 }).toList();
 
                 if (barbers.isEmpty) {
                   return Center(
                     child: Text(
-                      "NESSUN BARBIERE DISPONIBILE",
+                      'NESSUN BARBIERE DISPONIBILE',
                       style: GoogleFonts.cinzel(color: Colors.white54),
                     ),
                   );
                 }
-                
+
                 return allAppointmentsAsync.when(
                   data: (appointments) {
-                    // Filter appointments for the selected date
                     final dayAppointments = appointments.where((apt) {
                       return apt.date.year == _selectedDate.year &&
-                             apt.date.month == _selectedDate.month &&
-                             apt.date.day == _selectedDate.day;
+                          apt.date.month == _selectedDate.month &&
+                          apt.date.day == _selectedDate.day;
                     }).toList();
 
                     return Column(
@@ -179,30 +251,31 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                                 // Time Column
                                 Container(
                                   width: 50,
-                                  // This margin MUST match the height of the BarberDailyColumn Header
-                                  // Header has padding 16 (x2 vertical) + CircleAvatar radius 30 (x2 size) + text + styling
-                                  // Approx: 32 + 60 + 12 + 14 + 14 ~ 130-140. 
-                                  // Let's refine this alignment.
-                                  margin: const EdgeInsets.only(top: 155), 
+                                  margin: const EdgeInsets.only(top: 155),
                                   child: Column(
-                                    children: List.generate(11 + 1, (index) { // 9 to 20 is 11 hours
-                                      final hour = 9 + index;
+                                    children: List.generate((11 + 1) * 2, (index) {
+                                      final totalMinutes = 9 * 60 + index * 30;
+                                      final hour = totalMinutes ~/ 60;
+                                      final minute = totalMinutes % 60;
+                                      final isHour = minute == 0;
                                       return Container(
-                                        height: 60.0, // Match hourHeight in BarberDailyColumn
+                                        height: 30.0,
                                         alignment: Alignment.center,
                                         child: Text(
-                                          '$hour:00',
+                                          '$hour:${minute.toString().padLeft(2, '0')}',
                                           style: GoogleFonts.montserrat(
-                                            color: Colors.white38,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
+                                            color: isHour ? Colors.white38 : Colors.white12,
+                                            fontSize: isHour ? 10 : 8,
+                                            fontWeight: isHour
+                                                ? FontWeight.w500
+                                                : FontWeight.w400,
                                           ),
                                         ),
                                       );
                                     }),
                                   ),
                                 ),
-                  
+
                                 // Barber Columns
                                 ...barbers.map((barber) {
                                   return Expanded(
@@ -210,7 +283,8 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                                       barber: barber,
                                       date: _selectedDate,
                                       appointments: dayAppointments,
-                                      onAppointmentTap: (apt) => _showAppointmentDetails(context, apt),
+                                      onAppointmentTap: (apt) =>
+                                          _showAppointmentDetails(context, apt),
                                     ),
                                   );
                                 }),
@@ -218,22 +292,20 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                             ),
                           ),
                         ),
-
                       ],
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => Center(child: Text("Errore agenda: $e")),
+                  error: (e, s) => Center(child: Text('Errore agenda: $e')),
                 );
               },
-
               loading: () => const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(color: Colors.white),
                     SizedBox(height: 16),
-                    Text("Caricamento barbieri...", style: TextStyle(color: Colors.white54)),
+                    Text('Caricamento barbieri...', style: TextStyle(color: Colors.white54)),
                   ],
                 ),
               ),
@@ -241,7 +313,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
-                    "Errore caricamento barbieri: $e",
+                    'Errore caricamento barbieri: $e',
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
@@ -249,6 +321,8 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
               ),
             ),
           ),
+
+          ], // end else (not sunday)
         ],
       ),
     );
@@ -258,7 +332,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (modalContext) => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
@@ -277,29 +351,63 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-               _buildDetailRow(Icons.person, 'Cliente', apt.customerName),
-               if (apt.customerPhoneNumber != null)
-                 _buildDetailRow(Icons.phone, 'Telefono', apt.customerPhoneNumber!),
-               _buildDetailRow(Icons.content_cut, 'Servizio', apt.serviceName),
-               _buildDetailRow(Icons.access_time, 'Orario', '${DateFormat('HH:mm').format(apt.date)} - ${DateFormat('HH:mm').format(apt.endTime)}'),
-               _buildDetailRow(Icons.euro, 'Prezzo', '€${apt.price.toStringAsFixed(0)}'),
-               const SizedBox(height: 24),
-               SizedBox(
-                 width: double.infinity,
-                 child: ElevatedButton(
-                   onPressed: () => Navigator.pop(context),
-                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Colors.white10,
-                     foregroundColor: Colors.white,
-                     elevation: 0,
-                     shape: RoundedRectangleBorder(
-                       borderRadius: BorderRadius.circular(12),
-                       side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                     ),
-                   ),
-                   child: const Text('CHIUDI'),
-                 ),
-               ),
+              _buildDetailRow(Icons.person, 'Cliente', apt.customerName),
+              if (apt.customerPhoneNumber != null)
+                _buildDetailRow(Icons.phone, 'Telefono', apt.customerPhoneNumber!),
+              _buildDetailRow(Icons.content_cut, 'Servizio', apt.serviceName),
+              _buildDetailRow(
+                Icons.access_time,
+                'Orario',
+                '${DateFormat('HH:mm').format(apt.date)} - ${DateFormat('HH:mm').format(apt.endTime)}',
+              ),
+              _buildDetailRow(Icons.euro, 'Prezzo', '€${apt.price.toStringAsFixed(0)}'),
+              const SizedBox(height: 24),
+
+              // Cancel / No-show button
+              if (apt.status != AppointmentStatus.cancelled)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(modalContext);
+                      await ref
+                          .read(firestoreServiceProvider)
+                          .updateAppointmentStatus(apt.id, AppointmentStatus.cancelled);
+                    },
+                    icon: const Icon(Icons.person_off_outlined, size: 18),
+                    label: const Text('CLIENTE NON PRESENTATO'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2A0A0A),
+                      foregroundColor: const Color(0xFFDC143C),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: const Color(0xFFDC143C).withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(modalContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white10,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                  ),
+                  child: const Text('CHIUDI'),
+                ),
+              ),
             ],
           ),
         ),

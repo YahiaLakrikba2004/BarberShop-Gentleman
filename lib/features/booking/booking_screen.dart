@@ -16,6 +16,7 @@ import '../../services/slot_service.dart';
 import '../../services/auth_service.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:ui'; // For BackdropFilter
+import 'package:url_launcher/url_launcher.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
   const BookingScreen({super.key});
@@ -30,18 +31,20 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   bool _isGuestBooking = false;
   String _guestName = '';
   String _guestPhone = '';
+  final TextEditingController _guestNameController = TextEditingController();
+  final TextEditingController _guestPhoneController = TextEditingController();
   String _searchQuery = '';
   BarberModel? _selectedBarber;
   ServiceModel? _selectedService;
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedSlot;
   bool _bookingSuccess = false;
-  String _bookingMessage = '';
   bool _bookingBlocked = false;
-  int _countdownSeconds = 3;
 
   @override
   void dispose() {
+    _guestNameController.dispose();
+    _guestPhoneController.dispose();
     super.dispose();
   }
 
@@ -127,7 +130,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             FadeInUp(
               duration: const Duration(milliseconds: 600),
               child: RotationTransition(
-                turns: AlwaysStoppedAnimation(0.0),
+                turns: const AlwaysStoppedAnimation(0.0),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0.0, end: 1.0),
                   duration: const Duration(seconds: 2),
@@ -190,7 +193,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
-                  'Hai raggiunto il limite di 2 prenotazioni per questa settimana.\n\nRiprova la prossima settimana.',
+                  'Hai già un appuntamento attivo questa settimana.\n\nPer modificarlo o ricevere assistenza, contatta direttamente il negozio.',
                   style: GoogleFonts.montserrat(
                     fontSize: 14,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -200,13 +203,38 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 ),
               ),
             ),
-            const SizedBox(height: 48),
-            
-            // Return button
+            const SizedBox(height: 40),
+
+            // Contact shop button
             FadeInUp(
               delay: const Duration(milliseconds: 400),
               duration: const Duration(milliseconds: 600),
               child: FilledButton.icon(
+                onPressed: () async {
+                  // ← Aggiorna il numero WhatsApp del negozio qui sotto
+                  const shopWhatsApp = '393514823048';
+                  final uri = Uri.parse('https://wa.me/$shopWhatsApp');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: Text(
+                  'CONTATTA IL NEGOZIO',
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Return button
+            FadeInUp(
+              delay: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 600),
+              child: OutlinedButton.icon(
                 onPressed: () {
                   setState(() => _bookingBlocked = false);
                 },
@@ -218,6 +246,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                     letterSpacing: 1.5,
                   ),
                 ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+                ),
               ),
             ),
           ],
@@ -227,159 +259,237 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   }
 
   Widget _buildSuccessScreen() {
+    final customerName = _isGuestBooking
+        ? _guestName
+        : (_selectedCustomer?.name ??
+            ref.read(currentUserProfileProvider).value?.name ??
+            'Cliente');
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Check mark with elegant bounce animation
-            FadeInUp(
-              duration: const Duration(milliseconds: 600),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.elasticOut,
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: child,
-                  );
-                },
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 4,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-                        blurRadius: 30,
-                        spreadRadius: 10,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 24),
+  
+                // Animated check mark
+              FadeInUp(
+                duration: const Duration(milliseconds: 600),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.elasticOut,
+                  builder: (context, value, child) =>
+                      Transform.scale(scale: value, child: child),
+                  child: Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.check_circle,
-                    size: 90,
-                    color: Theme.of(context).colorScheme.primary,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.35),
+                          blurRadius: 28,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.check_circle,
+                      size: 72,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 48),
-            
-            // Success message
-            FadeInUp(
-              delay: const Duration(milliseconds: 300),
-              duration: const Duration(milliseconds: 600),
-              child: Text(
-                'PRENOTAZIONE CONFERMATA',
-                style: GoogleFonts.cinzel(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  letterSpacing: 2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 32),
-            
-            // Details card
-            FadeInUp(
-              delay: const Duration(milliseconds: 400),
-              duration: const Duration(milliseconds: 600),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark 
-                    ? const Color(0xFF111111) 
-                    : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      blurRadius: 15,
-                      spreadRadius: 3,
+              const SizedBox(height: 28),
+
+              // Title
+              FadeInUp(
+                delay: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 600),
+                child: Column(
+                  children: [
+                    Text(
+                      'PRENOTAZIONE',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                        letterSpacing: 4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      'CONFERMATA',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: 4,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              FadeInUp(
+                delay: const Duration(milliseconds: 380),
+                duration: const Duration(milliseconds: 600),
                 child: Text(
-                  _bookingMessage,
+                  'Ci vediamo presto!',
                   style: GoogleFonts.montserrat(
-                    fontSize: 15,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 2.2,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: Colors.white54,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
-            const SizedBox(height: 48),
-            
-            // Animated countdown with elegant styling
-            FadeInUp(
-              delay: const Duration(milliseconds: 500),
-              duration: const Duration(milliseconds: 600),
-              child: Column(
-                children: [
-                  Text(
-                    'Reindirizzamento in',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                      letterSpacing: 0.5,
+              const SizedBox(height: 28),
+
+              // Details card
+              FadeInUp(
+                delay: const Duration(milliseconds: 450),
+                duration: const Duration(milliseconds: 600),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111111),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.22),
+                      width: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 1.0, end: 1.0),
-                    duration: const Duration(milliseconds: 500),
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: value,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                              width: 2,
-                            ),
-                          ),
-                          child: Text(
-                            '$_countdownSeconds s',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                  child: Column(
+                    children: [
+                      _buildSuccessRow(
+                          Icons.person_outline, 'Cliente', customerName),
+                      _buildSuccessDivider(),
+                      _buildSuccessRow(Icons.content_cut, 'Barbiere',
+                          _selectedBarber!.name),
+                      _buildSuccessDivider(),
+                      _buildSuccessRow(Icons.spa_outlined, 'Servizio',
+                          _selectedService!.name),
+                      _buildSuccessDivider(),
+                      _buildSuccessRow(
+                        Icons.calendar_today_outlined,
+                        'Data',
+                        DateFormat('EEEE d MMMM yyyy', 'it')
+                            .format(_selectedSlot!),
+                      ),
+                      _buildSuccessDivider(),
+                      _buildSuccessRow(
+                        Icons.access_time_outlined,
+                        'Orario',
+                        '${DateFormat('HH:mm').format(_selectedSlot!)}  ·  ${_selectedService!.durationMinutes} min',
+                      ),
+                      _buildSuccessDivider(),
+                      _buildSuccessRow(
+                        Icons.euro_outlined,
+                        'Prezzo',
+                        '€${_selectedService!.price.toStringAsFixed(2)}',
+                        valueColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 28),
+
+              // Home button
+              FadeInUp(
+                delay: const Duration(milliseconds: 550),
+                duration: const Duration(milliseconds: 600),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => context.go('/'),
+                    icon: const Icon(Icons.home_outlined),
+                    label: Text(
+                      'TORNA ALLA HOME',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
+      ),
     );
+  }
+
+  Widget _buildSuccessRow(IconData icon, String label, String value,
+      {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.white38),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 9,
+                    color: Colors.white30,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor ?? Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessDivider() {
+    return Divider(height: 1, color: Colors.white.withOpacity(0.07));
   }
 
   Widget _buildProgressIndicator(bool isPrivileged) {
@@ -604,6 +714,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   _buildPremiumTextField(
                     label: 'Nome e Cognome *',
                     icon: Icons.person,
+                    controller: _guestNameController,
                     onChanged: (value) => setState(() => _guestName = value),
                   ),
                   const SizedBox(height: 16),
@@ -611,6 +722,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                     label: 'Telefono *',
                     icon: Icons.phone,
                     inputType: TextInputType.phone,
+                    controller: _guestPhoneController,
                     onChanged: (value) => setState(() => _guestPhone = value),
                   ),
                 ],
@@ -618,11 +730,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             ),
             const SizedBox(height: 24),
             TextButton.icon(
-              onPressed: () => setState(() {
-                _isGuestBooking = false;
-                _guestName = '';
-                _guestPhone = '';
-              }),
+              onPressed: () {
+                _guestNameController.clear();
+                _guestPhoneController.clear();
+                setState(() {
+                  _isGuestBooking = false;
+                  _guestName = '';
+                  _guestPhone = '';
+                });
+              },
               icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
               label: Text('Torna alla lista clienti', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
             ),
@@ -633,102 +749,253 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
 
     final usersAsync = ref.watch(allUsersProvider);
     
+    final guestClientsAsync = ref.watch(guestClientsProvider);
+
     return usersAsync.when(
       data: (users) {
         final filteredUsers = users.where((user) {
           if (user.role != UserRole.client) return false;
           final query = _searchQuery.toLowerCase();
-          return user.name.toLowerCase().contains(query) || 
+          return user.name.toLowerCase().contains(query) ||
                  user.email.toLowerCase().contains(query);
         }).toList();
+
+        final guestClients = guestClientsAsync.value ?? [];
+        final filteredGuests = _searchQuery.isEmpty
+            ? guestClients
+            : guestClients.where((g) {
+                final q = _searchQuery.toLowerCase();
+                return (g['name'] ?? '').toLowerCase().contains(q) ||
+                    (g['phone'] ?? '').toLowerCase().contains(q);
+              }).toList();
 
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildPremiumTextField(
-                    label: 'Cerca cliente...',
-                    icon: Icons.search,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      _isGuestBooking = true;
-                      _selectedCustomer = null;
-                    }),
-                    icon: const Icon(Icons.person_add, size: 20),
-                    label: Text('PRENOTA PER CLIENTE OCCASIONALE', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                      side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _buildPremiumTextField(
+                label: 'Cerca cliente...',
+                icon: Icons.search,
+                onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),
             Expanded(
-              child: ListView.builder(
+              child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filteredUsers.length,
-                itemBuilder: (context, index) {
-                  final user = filteredUsers[index];
-                  final isSelected = _selectedCustomer?.id == user.id;
-                  
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedCustomer = user),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
-                          width: 1,
+                children: [
+                  // Registered clients
+                  ...filteredUsers.map((user) {
+                    final isSelected = _selectedCustomer?.id == user.id;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedCustomer = user),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            UserAvatar(user: user, isSelected: isSelected),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.name,
+                                    style: GoogleFonts.cinzel(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user.email,
+                                    style: GoogleFonts.montserrat(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 20),
+                          ],
                         ),
                       ),
+                    );
+                  }),
+
+                  // Guest clients section
+                  ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, bottom: 12),
                       child: Row(
                         children: [
-                          UserAvatar(user: user, isSelected: isSelected),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user.name,
-                                  style: GoogleFonts.cinzel(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user.email,
-                                  style: GoogleFonts.montserrat(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            'CLIENTI OCCASIONALI',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2.0,
                             ),
                           ),
-                          if (isSelected)
-                            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 20),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              _guestNameController.clear();
+                              _guestPhoneController.clear();
+                              setState(() {
+                                _isGuestBooking = true;
+                                _guestName = '';
+                                _guestPhone = '';
+                                _selectedCustomer = null;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.person_add, size: 13, color: Colors.white.withValues(alpha: 0.5)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'NUOVO',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withValues(alpha: 0.5),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  );
-                },
+                    if (filteredGuests.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'Nessun cliente occasionale salvato.',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ...filteredGuests.map((guest) {
+                      return GestureDetector(
+                        onTap: () {
+                          final name = guest['name'] ?? '';
+                          final phone = guest['phone'] ?? '';
+                          _guestNameController.text = name;
+                          _guestPhoneController.text = phone;
+                          setState(() {
+                            _isGuestBooking = true;
+                            _guestName = name;
+                            _guestPhone = phone;
+                            _selectedCustomer = null;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111111),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.07),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    (guest['name'] ?? '?').isNotEmpty ? guest['name']![0].toUpperCase() : '?',
+                                    style: GoogleFonts.cinzel(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      guest['name'] ?? '',
+                                      style: GoogleFonts.cinzel(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Colors.white.withValues(alpha: 0.85),
+                                      ),
+                                    ),
+                                    if ((guest['phone'] ?? '').isNotEmpty) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        guest['phone']!,
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white.withValues(alpha: 0.4),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'GUEST',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withValues(alpha: 0.35),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                  ],
+                ],
               ),
             ),
           ],
@@ -741,12 +1008,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
 
   // Helper for Premium TextFields
   Widget _buildPremiumTextField({
-    required String label, 
-    required IconData icon, 
+    required String label,
+    required IconData icon,
     required Function(String) onChanged,
     TextInputType inputType = TextInputType.text,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
       keyboardType: inputType,
       decoration: InputDecoration(
@@ -862,7 +1131,31 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                            }
                          }
                       } else {
-                        imageWidget = Container(color: const Color(0xFF222222));
+                        // Elegant fallback: gradient background with initials
+                        imageWidget = Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF1A1A1A),
+                                Color(0xFF2C2C2C),
+                                Color(0xFF1A1A1A),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
+                              style: GoogleFonts.cinzel(
+                                fontSize: 64,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white.withValues(alpha: 0.08),
+                                letterSpacing: 4,
+                              ),
+                            ),
+                          ),
+                        );
                       }
                       
                       return ColorFiltered(
@@ -1029,7 +1322,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                                   Icon(Icons.access_time, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7), size: 10),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${barber.startHour}:00 - ${barber.endHour}:00',
+                                    barber.hasDoubleShift
+                                        ? '${barber.startHour}:00–${barber.breakStartHour}:00 | ${barber.breakEndHour}:00–${barber.endHour}:00'
+                                        : '${barber.startHour}:00 – ${barber.endHour}:00',
                                     style: GoogleFonts.montserrat(
                                       color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7),
                                       fontSize: 10,
@@ -1584,13 +1879,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       print('DEBUG: Regular booking - customerId: $customerId, name: $customerName');
     }
 
-    // --- CHECK WEEKLY LIMIT (Only for non-privileged users or if booking for self) ---
-    final isPrivileged = currentUser.role == UserRole.admin || currentUser.role == UserRole.barber;
+    // --- CHECK WEEKLY LIMIT (applies to all registered users) ---
     bool canCreateAppointment = true; // Flag to prevent booking if limit reached
-    
-    // se è cliente occasionale (guest) oppure è un admin che prenota per un cliente, 
-    // l'admin potrebbe voler bypassare il blocco. Lo applichiamo solo se è il cliente stesso a prenotare.
-    if (!isPrivileged && !_isGuestBooking) {
+
+    // Conta sempre il limite per clienti registrati, indipendentemente da chi sta facendo la prenotazione
+    // Il limite si applica sia che il cliente prenoti da solo, sia che lo faccia un admin/barbiere per lui
+    if (!_isGuestBooking) {
       print('DEBUG: Checking weekly limit for user $customerId');
       try {
         // Fetch all appointments for this user and filter locally to avoid index requirement
@@ -1614,7 +1908,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
           print('DEBUG: Widget unmounted during weekly limit check, returning');
           return;
         }
-        if (weeklyCount >= 2) {
+        if (weeklyCount >= 1) {
           print('DEBUG: BLOCKING BOOKING - User has reached weekly limit');
           canCreateAppointment = false;
           if (!mounted) return;
@@ -1657,6 +1951,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
       print('DEBUG: Appointment created successfully');
 
+      // Save guest client for future lookups
+      if (_isGuestBooking && _guestPhone.isNotEmpty) {
+        await ref.read(firestoreServiceProvider).saveGuestClient(_guestName, _guestPhone);
+      }
+
       // Trigger immediate local notification
       ref.read(notificationServiceProvider).showImmediateNotification(
         title: 'Prenotazione Confermata',
@@ -1671,24 +1970,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       
       // Show success screen with appointment details
       print('DEBUG: Setting booking success state');
-      _countdownSeconds = 3;
       setState(() {
         _bookingSuccess = true;
-        _bookingMessage = '''Appuntamento confermato per $customerName
-${_selectedBarber!.name} - ${_selectedService!.name}
-${DateFormat('d MMMM yyyy', 'it').format(_selectedSlot!)} alle ${DateFormat('HH:mm').format(_selectedSlot!)}
-€${_selectedService!.price.toStringAsFixed(2)}''';
       });
-      
-      // Countdown timer
-      for (int i = 3; i > 0; i--) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (!mounted) return;
-        setState(() => _countdownSeconds = i - 1);
-      }
-      
-      if (!mounted) return;
-      context.go('/');
     } catch (e) {
       print('DEBUG: Error creating appointment: $e');
       if (!mounted) return;
@@ -1718,6 +2002,41 @@ class _SlotsGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appointmentsAsync = ref.watch(barberAppointmentsProvider((barber.id, date)));
     final settingsAsync = ref.watch(shopSettingsProvider);
+
+    // Sunday: open but no online bookings
+    if (date.weekday == DateTime.sunday) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront_outlined, size: 48, color: Colors.white.withValues(alpha: 0.15)),
+              const SizedBox(height: 16),
+              Text(
+                'DOMENICA',
+                style: GoogleFonts.cinzel(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white.withValues(alpha: 0.4),
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Siamo aperti, ma la domenica non accettiamo prenotazioni online.\nChiama o vieni direttamente in negozio.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.3),
+                  height: 1.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return settingsAsync.when(
       data: (settings) => appointmentsAsync.when(

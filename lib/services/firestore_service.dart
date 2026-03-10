@@ -312,6 +312,38 @@ class FirestoreService {
         .doc('shop')
         .set(settings.toMap(), SetOptions(merge: true));
   }
+  // Guest Clients
+  Future<void> saveGuestClient(String name, String phone) async {
+    final existing = await _firestore
+        .collection('guestClients')
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (existing.docs.isEmpty) {
+      await _firestore.collection('guestClients').add({
+        'name': name,
+        'phone': phone,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      await existing.docs.first.reference.update({'name': name});
+    }
+  }
+
+  Stream<List<Map<String, String>>> streamGuestClients() {
+    return _firestore
+        .collection('guestClients')
+        .orderBy('name')
+        .snapshots()
+        .map((s) => s.docs
+            .map((d) => {
+                  'id': d.id,
+                  'name': d.data()['name'] as String? ?? '',
+                  'phone': d.data()['phone'] as String? ?? '',
+                })
+            .toList());
+  }
+
   Future<void> migrateUser(String oldUserId, String newUserId) async {
     // 1. Get Old User Data
     final oldUserDoc = await _firestore.collection('users').doc(oldUserId).get();
@@ -402,4 +434,8 @@ final allUsersProvider = StreamProvider<List<UserModel>>((ref) {
 
 final shopSettingsProvider = StreamProvider<ShopSettingsModel>((ref) {
   return ref.watch(firestoreServiceProvider).getShopSettings();
+});
+
+final guestClientsProvider = StreamProvider<List<Map<String, String>>>((ref) {
+  return ref.watch(firestoreServiceProvider).streamGuestClients();
 });

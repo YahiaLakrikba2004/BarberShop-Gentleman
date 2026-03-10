@@ -123,12 +123,14 @@ class _BarberManagementCard extends ConsumerWidget {
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+                              Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                               const SizedBox(width: 6),
                               Text(
-                                '${barber.startHour}:00 — ${barber.endHour}:00',
+                                barber.hasDoubleShift
+                                    ? '${barber.startHour}:00–${barber.breakStartHour}:00  |  ${barber.breakEndHour}:00–${barber.endHour}:00'
+                                    : '${barber.startHour}:00 — ${barber.endHour}:00',
                                 style: GoogleFonts.montserrat(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), 
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1008,6 +1010,8 @@ class _StatusButton extends StatelessWidget {
 Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberModel barber) async {
   final nameController = TextEditingController(text: barber.name);
   final startHourController = TextEditingController(text: barber.startHour.toString());
+  final breakStartController = TextEditingController(text: barber.breakStartHour.toString());
+  final breakEndController = TextEditingController(text: barber.breakEndHour.toString());
   final endHourController = TextEditingController(text: barber.endHour.toString());
   String? newImageBase64;
   final ImagePicker picker = ImagePicker();
@@ -1018,7 +1022,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
       builder: (context, setState) => AlertDialog(
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.white,
         title: Text('Modifica Barbiere', style: GoogleFonts.cinzel(
-          color: Theme.of(context).colorScheme.onSurface, 
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.bold
         )),
         content: SingleChildScrollView(
@@ -1077,7 +1081,22 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                   focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              // --- Turno Mattina ---
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'TURNO MATTINA',
+                  style: GoogleFonts.montserrat(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
@@ -1086,23 +1105,71 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                       style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Inizio Turno',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2))),
+                        labelText: 'Inizio',
+                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
                         focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: breakStartController,
+                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Fine',
+                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // --- Turno Pomeriggio ---
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'TURNO POMERIGGIO',
+                  style: GoogleFonts.montserrat(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: breakEndController,
+                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Inizio',
+                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: endHourController,
                       style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Fine Turno',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2))),
+                        labelText: 'Fine',
+                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
                         focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                       ),
                     ),
@@ -1121,7 +1188,6 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
             onPressed: () async {
               try {
                 if (newImageBase64 != null) {
-                  // Check size (approximate)
                   final sizeInBytes = (newImageBase64!.length * 3) / 4;
                   if (sizeInBytes > 1000000) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1134,13 +1200,18 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                   }
                 }
 
+                final parsedBreakStart = int.tryParse(breakStartController.text) ?? barber.breakStartHour;
+                final parsedBreakEnd = int.tryParse(breakEndController.text) ?? barber.breakEndHour;
                 final updatedBarber = barber.copyWith(
                   name: nameController.text,
                   imageUrl: newImageBase64 ?? barber.imageUrl,
                   startHour: int.tryParse(startHourController.text) ?? barber.startHour,
                   endHour: int.tryParse(endHourController.text) ?? barber.endHour,
+                  hasDoubleShift: parsedBreakStart < parsedBreakEnd,
+                  breakStartHour: parsedBreakStart,
+                  breakEndHour: parsedBreakEnd,
                 );
-                
+
                 await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -1163,7 +1234,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
               }
             },
             child: Text('SALVA', style: GoogleFonts.cinzel(
-              color: Theme.of(context).colorScheme.primary, 
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold
             )),
           ),
@@ -1214,7 +1285,7 @@ Future<void> _notifyAndCancelAllAppointments(
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tutti gli appuntamenti sono stati notificati e cancellati.')),
+        const SnackBar(content: Text('Tutti gli appuntamenti sono stati notificati e cancellati.')),
       );
     }
 }
