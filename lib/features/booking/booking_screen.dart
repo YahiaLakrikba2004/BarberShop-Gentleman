@@ -680,47 +680,89 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+                color: const Color(0xFF0E0E0E),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header con accent bar
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        width: 3,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        child: Icon(Icons.person_add, color: Theme.of(context).colorScheme.onSurface, size: 24),
                       ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'CLIENTE OCCASIONALE',
-                        style: GoogleFonts.cinzel(
-                          fontSize: 18, 
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CLIENTE OCCASIONALE',
+                            style: GoogleFonts.cinzel(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Non registrato nel sistema',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              color: Colors.white38,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          'GUEST',
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                  Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                  const SizedBox(height: 20),
                   _buildPremiumTextField(
                     label: 'Nome e Cognome *',
-                    icon: Icons.person,
+                    icon: Icons.person_outline,
                     controller: _guestNameController,
                     onChanged: (value) => setState(() => _guestName = value),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   _buildPremiumTextField(
-                    label: 'Telefono *',
-                    icon: Icons.phone,
+                    label: 'Telefono (opzionale)',
+                    icon: Icons.phone_outlined,
                     inputType: TextInputType.phone,
                     controller: _guestPhoneController,
                     onChanged: (value) => setState(() => _guestPhone = value),
@@ -728,7 +770,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             TextButton.icon(
               onPressed: () {
                 _guestNameController.clear();
@@ -739,8 +781,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   _guestPhone = '';
                 });
               },
-              icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
-              label: Text('Torna alla lista clienti', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+              icon: const Icon(Icons.arrow_back, color: Colors.white24, size: 16),
+              label: Text('Torna alla lista clienti',
+                style: GoogleFonts.montserrat(color: Colors.white24, fontSize: 12)),
             ),
           ],
         ),
@@ -903,92 +946,135 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                         ),
                       ),
                     ...filteredGuests.map((guest) {
-                      return GestureDetector(
-                        onTap: () {
-                          final name = guest['name'] ?? '';
-                          final phone = guest['phone'] ?? '';
-                          _guestNameController.text = name;
-                          _guestPhoneController.text = phone;
-                          setState(() {
-                            _isGuestBooking = true;
-                            _guestName = name;
-                            _guestPhone = phone;
-                            _selectedCustomer = null;
-                          });
-                        },
-                        child: Container(
+                      return Dismissible(
+                        key: Key(guest['id'] ?? guest['name'] ?? ''),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF111111),
+                            color: const Color(0xFFEF4444),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.07),
-                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  shape: BoxShape.circle,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
+                        ),
+                        confirmDismiss: (_) async {
+                          return await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF1A1A1A),
+                              title: Text('Rimuovi cliente', style: GoogleFonts.cinzel(color: Colors.white)),
+                              content: Text(
+                                'Vuoi rimuovere "${guest['name']}" dalla lista dei clienti occasionali?',
+                                style: GoogleFonts.montserrat(color: Colors.white70),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Annulla', style: TextStyle(color: Colors.white38)),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    (guest['name'] ?? '?').isNotEmpty ? guest['name']![0].toUpperCase() : '?',
-                                    style: GoogleFonts.cinzel(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Rimuovi', style: TextStyle(color: Color(0xFFEF4444))),
+                                ),
+                              ],
+                            ),
+                          ) ?? false;
+                        },
+                        onDismissed: (_) {
+                          final id = guest['id'];
+                          if (id != null && id.isNotEmpty) {
+                            ref.read(firestoreServiceProvider).deleteGuestClient(id);
+                          }
+                        },
+                        child: GestureDetector(
+                          onTap: () {
+                            final name = guest['name'] ?? '';
+                            final phone = guest['phone'] ?? '';
+                            _guestNameController.text = name;
+                            _guestPhoneController.text = phone;
+                            setState(() {
+                              _isGuestBooking = true;
+                              _guestName = name;
+                              _guestPhone = phone;
+                              _selectedCustomer = null;
+                            });
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF111111),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      (guest['name'] ?? '?').isNotEmpty ? guest['name']![0].toUpperCase() : '?',
+                                      style: GoogleFonts.cinzel(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white.withValues(alpha: 0.6),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      guest['name'] ?? '',
-                                      style: GoogleFonts.cinzel(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: Colors.white.withValues(alpha: 0.85),
-                                      ),
-                                    ),
-                                    if ((guest['phone'] ?? '').isNotEmpty) ...[
-                                      const SizedBox(height: 3),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                       Text(
-                                        guest['phone']!,
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white.withValues(alpha: 0.4),
-                                          fontSize: 12,
+                                        guest['name'] ?? '',
+                                        style: GoogleFonts.cinzel(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: Colors.white.withValues(alpha: 0.85),
                                         ),
                                       ),
+                                      if ((guest['phone'] ?? '').isNotEmpty) ...[
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          guest['phone']!,
+                                          style: GoogleFonts.montserrat(
+                                            color: Colors.white.withValues(alpha: 0.4),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'GUEST',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white.withValues(alpha: 0.35),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
                                   ),
                                 ),
-                              ),
-                            ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'GUEST',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withValues(alpha: 0.35),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(Icons.swipe_left_outlined, size: 14, color: Colors.white.withValues(alpha: 0.2)),
+                              ],
+                            ),
                           ),
                         ),
                       );

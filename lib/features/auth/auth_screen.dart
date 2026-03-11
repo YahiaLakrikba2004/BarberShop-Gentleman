@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:ui' as ui;
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 
-
-enum AuthStep { phone, otp }
+enum _AuthStep { phone, otp, register, email }
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -21,25 +20,31 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
-  // Phone Auth Controllers
+  // Phone Auth
   final _phoneController = TextEditingController();
-  final _nameController = TextEditingController(); 
-  final _surnameController = TextEditingController(); // [NEW] Surname
-  final _profileEmailController = TextEditingController(); // [NEW] Optional Email
+  final _otpControllers = List.generate(6, (_) => TextEditingController());
+  final _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
-  // Email Auth Controllers (Legacy/Fallback)
+  // Registration
+  final _nameController = TextEditingController();
+  final _surnameController = TextEditingController();
+  final _profileEmailController = TextEditingController();
+
+  // Email Auth (fallback admin)
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   late AnimationController _rotationController;
-  
-  // State
-  final AuthStep _authStep = AuthStep.phone;
-  bool _isEmailMode = false;
-  bool _isLogin = true; 
+
+  _AuthStep _step = _AuthStep.phone;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isNewUser = false; // [NEW] Track if user needs to register
+  bool _isEmailLoginMode = false; // toggle for admin email fallback
+
+  // OTP state
+  String? _verificationId;
+  int? _resendToken;
+  User? _firebaseUser; // signed-in user after OTP, before profile save
 
   @override
   void initState() {
@@ -54,6 +59,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   void dispose() {
     _rotationController.dispose();
     _phoneController.dispose();
+    for (final c in _otpControllers) { c.dispose(); }
+    for (final f in _otpFocusNodes) { f.dispose(); }
     _nameController.dispose();
     _surnameController.dispose();
     _profileEmailController.dispose();
@@ -62,187 +69,185 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     super.dispose();
   }
 
-  // --- Phone Auth Logic ---
+  // ─── Step 1: Send OTP ───────────────────────────────────────────────────────
 
-
-
-  Future<void> _verifyPhoneNumber() async {
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
+  Future<void> _sendOtp({bool isResend = false}) async {
+    final raw = _phoneController.text.trim();
+    if (raw.isEmpty) {
       _showError("Inserisci il numero di telefono");
       return;
     }
+    final phone = raw.startsWith('+') ? raw : '+39$raw';
 
-    if (_isNewUser) {
-       // --- REGISTER FLOW ---
-       if (_nameController.text.trim().isEmpty || _surnameController.text.trim().isEmpty) {
-         _showError("Nome e Cognome sono obbligatori");
-         return;
-       }
+    setState(() => _isLoading = true);
 
-       setState(() => _isLoading = true);
-       try {
-          final authService = ref.read(authServiceProvider);
-          // Deterministic Creds
-          String formattedPhone = phone.startsWith('+') ? phone : '+39$phone';
-          String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), '');
-          String fakeEmail = '$cleanPhone@gentleman.app';
-          String fakePassword = 'UserPass$cleanPhone!';
-
-          // Se l'utente fornisce una email reale, usa quella come email Auth
-          // (così l'account è raggiungibile anche via email reale)
-          final realEmail = _profileEmailController.text.trim();
-          final authEmail = realEmail.isNotEmpty ? realEmail : fakeEmail;
-
-          // Combine Name + Surname
-          String fullName = "${_nameController.text.trim()} ${_surnameController.text.trim()}";
-
-          // Register usando l'email reale se fornita, altrimenti il fake
-          await authService.signUpWithEmailAndPassword(
-            email: authEmail,
-            password: fakePassword,
-            name: fullName,
-            phoneNumber: phone,
-          );
-
-          // Check Migration
-          final currentUser = authService.currentUser;
-          if (currentUser != null) {
-            await _checkAndMigrate(currentUser, phone);
-          }
-          
-          if (mounted) context.go('/');
-
-       } catch (e) {
-         _showError("Errore registrazione: $e");
-         setState(() => _isLoading = false);
-       }
-
-    } else {
-      // --- CHECK / LOGIN FLOW ---
-      // For now, simplify flow: Just Anonymous Login + Phone assignment
-      // (As requested: "basta mettere il numero")
-      
-      // Check format
-      String formattedPhone = phone;
-      if (!phone.startsWith('+')) {
-        formattedPhone = '+39$phone';
-      }
-
-      setState(() => _isLoading = true);
-
-      try {
-        final authService = ref.read(authServiceProvider);
-        // GENERATE DETERMINISTIC EMAIL/PASSWORD from Phone
-        // This bypasses the need for Anonymous Auth (which is disabled) and OTP (which is skipped).
-        String cleanPhone = formattedPhone.replaceAll(RegExp(r'\D'), ''); // Remove + and spaces
-        String fakeEmail = '$cleanPhone@gentleman.app';
-        String fakePassword = 'UserPass$cleanPhone!'; // Simple deterministic password
-
-        try {
-          // 1. Try Login
-          await authService.signInWithEmailAndPassword(fakeEmail, fakePassword);
-          
-          // Login Success
-          final currentUser = authService.currentUser;
-          if (currentUser != null) {
-             await _checkAndMigrate(currentUser, phone);
-          }
-           if (mounted) context.go('/');
-
-        } catch (e) {
-          // 2. CHECK IF USER REALLY EXISTS
-          // INVALID_LOGIN_CREDENTIALS can mean "User Not Found" OR "Wrong Password".
-          // We need to know which one it is.
-          
-          bool userExistsInAuth = false;
-          try {
-             final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(fakeEmail);
-             userExistsInAuth = methods.isNotEmpty;
-          } catch (checkErr) {
-             // If this fails (e.g. strict protection), we might assume new user???
-             // Or maybe we treat it as generic error.
-          }
-
-          if (!userExistsInAuth) {
-             // User not found with fake email — check if registered with real email
-             try {
-               final firestore = ref.read(firestoreServiceProvider);
-               // Try multiple phone formats (user may have stored raw phone at registration)
-               final existing = await firestore.getUserByPhone(formattedPhone)
-                   ?? await firestore.getUserByPhone(phone)
-                   ?? await firestore.getUserByPhone(cleanPhone);
-               if (existing != null &&
-                   existing.email.isNotEmpty &&
-                   !existing.email.endsWith('@gentleman.app')) {
-                 // Trovato: prova login con email reale + stessa password deterministica
-                 await authService.signInWithEmailAndPassword(existing.email, fakePassword);
-                 final currentUser = authService.currentUser;
-                 if (currentUser != null) await _checkAndMigrate(currentUser, phone);
-                 if (mounted) context.go('/');
-                 return;
-               }
-             } catch (_) {}
-
-             // Nessun account trovato → Registrazione
-             if (mounted) {
-               setState(() {
-                 _isLoading = false;
-                 _isNewUser = true;
-               });
-             }
-             return;
-          } else {
-             // User EXISTS but Login Failed -> Password Mismatch / corrupted account
-             // We cannot register again (it will fail with email-in-use).
-             // We must inform the user.
-             _showError("Errore account: Password interna non valida. Contattare supporto o riprovare.");
-             setState(() => _isLoading = false);
-             return;
-          }
-        }
-
-      } catch (e) {
-        _showError("Errore accesso: $e");
-        setState(() => _isLoading = false);
-      }
+    try {
+      final authService = ref.read(authServiceProvider);
+      await authService.verifyPhoneNumber(
+        phoneNumber: phone,
+        forceResendingToken: isResend ? _resendToken : null,
+        verificationCompleted: (credential) async {
+          // Auto-verification (Android only): sign in immediately
+          await _signInWithCredential(credential);
+        },
+        verificationFailed: (e) {
+          _showError(_mapFirebaseError(e));
+          setState(() => _isLoading = false);
+        },
+        codeSent: (verificationId, resendToken) {
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken = resendToken;
+            _step = _AuthStep.otp;
+            _isLoading = false;
+          });
+          // Focus first OTP field
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (mounted) _otpFocusNodes[0].requestFocus();
+          });
+        },
+        codeAutoRetrievalTimeout: (verificationId) {
+          _verificationId = verificationId;
+        },
+      );
+    } catch (e) {
+      _showError("Errore: $e");
+      setState(() => _isLoading = false);
     }
   }
 
+  // ─── Step 2: Verify OTP ─────────────────────────────────────────────────────
 
+  Future<void> _verifyOtp() async {
+    final code = _otpControllers.map((c) => c.text).join();
+    if (code.length < 6) {
+      _showError("Inserisci il codice a 6 cifre");
+      return;
+    }
+    if (_verificationId == null) {
+      _showError("Sessione scaduta. Riprova.");
+      return;
+    }
 
+    setState(() => _isLoading = true);
 
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: code,
+      );
+      await _signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      _showError(_mapFirebaseError(e));
+      setState(() => _isLoading = false);
+    } catch (e) {
+      _showError("Errore verifica: $e");
+      setState(() => _isLoading = false);
+    }
+  }
 
-  // --- Email Auth Logic (Legacy) ---
+  Future<void> _signInWithCredential(AuthCredential credential) async {
+    final authService = ref.read(authServiceProvider);
+    await authService.signInWithCredential(credential);
 
+    final user = authService.currentUser;
+    if (user == null) {
+      _showError("Autenticazione fallita");
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    // Check if profile exists in Firestore
+    final firestore = ref.read(firestoreServiceProvider);
+    final profile = await firestore.getUser(user.uid);
+
+    if (profile != null) {
+      // Existing user → go home
+      if (mounted) context.go('/');
+    } else {
+      // New user → show registration form
+      _firebaseUser = user;
+      setState(() {
+        _step = _AuthStep.register;
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ─── Step 3: Complete Registration ──────────────────────────────────────────
+
+  Future<void> _completeRegistration() async {
+    final name = _nameController.text.trim();
+    final surname = _surnameController.text.trim();
+    if (name.isEmpty || surname.isEmpty) {
+      _showError("Nome e Cognome sono obbligatori");
+      return;
+    }
+
+    final user = _firebaseUser ?? ref.read(authServiceProvider).currentUser;
+    if (user == null) {
+      _showError("Sessione scaduta. Riprova dall'inizio.");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final firestore = ref.read(firestoreServiceProvider);
+      final phone = _phoneController.text.trim();
+      final formatted = phone.startsWith('+') ? phone : '+39$phone';
+      final email = _profileEmailController.text.trim();
+
+      final newUser = UserModel(
+        id: user.uid,
+        email: email,
+        name: '$name $surname',
+        role: UserRole.client,
+        phoneNumber: formatted,
+      );
+      await firestore.createUser(newUser);
+
+      if (mounted) context.go('/');
+    } catch (e) {
+      _showError("Errore registrazione: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ─── Email Auth (Admin fallback) ────────────────────────────────────────────
 
   Future<void> _submitEmailAuth() async {
     setState(() => _isLoading = true);
     try {
       final authService = ref.read(authServiceProvider);
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-
-      if (_isLogin) {
-        await authService.signInWithEmailAndPassword(email, password);
-      } else {
-        // Register
-        await authService.signUpWithEmailAndPassword(
-          email: email,
-          password: password,
-          name: _nameController.text.trim(), // Reusing name controller
-          phoneNumber: _phoneController.text.trim(), // Optional/Required?
-        );
-      }
+      await authService.signInWithEmailAndPassword(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
       if (mounted) context.go('/');
     } catch (e) {
-      _showError(e.toString());
+      _showError(_mapFirebaseError(e is FirebaseAuthException ? e : null, fallback: e.toString()));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  String _mapFirebaseError(FirebaseAuthException? e, {String? fallback}) {
+    switch (e?.code) {
+      case 'invalid-phone-number': return 'Numero di telefono non valido';
+      case 'too-many-requests': return 'Troppi tentativi. Riprova tra qualche minuto';
+      case 'invalid-verification-code': return 'Codice non corretto. Riprova';
+      case 'session-expired': return 'Sessione scaduta. Reinserisci il numero';
+      case 'user-not-found': return 'Nessun account trovato';
+      case 'wrong-password': return 'Password errata';
+      default: return fallback ?? (e?.message ?? 'Errore sconosciuto');
+    }
+  }
+
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -252,23 +257,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
+  void _resetToPhone() {
+    setState(() {
+      _step = _AuthStep.phone;
+      _isLoading = false;
+      _verificationId = null;
+      _firebaseUser = null;
+      for (final c in _otpControllers) { c.clear(); }
+    });
+  }
+
+  // ─── Build ───────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    const goldColor = Colors.white; // Changed from Gold to White as per request
-    const darkBlack = Color(0xFF0A0A0A);
     const inputFill = Color(0xFF1E1E1E);
 
     return Scaffold(
-      backgroundColor: darkBlack,
+      backgroundColor: const Color(0xFF0A0A0A),
       body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
-            colors: [
-              Color(0xFF161616), // Dark center
-              Color(0xFF000000), // Pure black edges
-            ],
+            colors: [Color(0xFF161616), Color(0xFF000000)],
             stops: [0.0, 1.0],
           ),
         ),
@@ -279,7 +291,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo (Same as before)
+                  // Logo
                   FadeInDown(
                     child: Container(
                       height: 120,
@@ -287,69 +299,43 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
-                          width: 1,
-                        ),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.08),
-                            blurRadius: 40,
-                            spreadRadius: 4,
-                          ),
+                          BoxShadow(color: Colors.white.withValues(alpha: 0.08), blurRadius: 40, spreadRadius: 4),
                         ],
                       ),
                       child: ClipOval(
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Image.asset('assets/images/icon_premium_v2.png', fit: BoxFit.contain), // Assuming this asset exists
+                          child: Image.asset('assets/images/icon_premium_v2.png', fit: BoxFit.contain),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
-
-                  Text(
-                    'GENTLEMAN',
-                    style: GoogleFonts.cinzel(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 4,
-                    ),
-                  ),
+                  Text('GENTLEMAN', style: GoogleFonts.cinzel(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4)),
                   const SizedBox(height: 8),
-                  Text(
-                    'BARBER SHOP',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 12,
-                      color: Colors.white54,
-                      letterSpacing: 6,
-                    ),
-                  ),
+                  Text('BARBER SHOP', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54, letterSpacing: 6)),
                   const SizedBox(height: 50),
 
-                  // MAIN AUTH CONTENT
+                  // Main content
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
-                    child: _isEmailMode ? _buildEmailAuth(goldColor, inputFill) : _buildPhoneAuth(goldColor, inputFill),
+                    curve: Curves.easeOutQuart,
+                    child: _buildCurrentStep(inputFill),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
 
-                  // TOGGLE BUTTON (Phone <-> Email)
-                  if (!_isEmailMode && _authStep == AuthStep.phone)
+                  // Toggle email fallback (only on phone step)
+                  if (_step == _AuthStep.phone)
                     TextButton(
-                      onPressed: () => setState(() => _isEmailMode = true),
-                      child: const Text("Usa Email e Password", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      onPressed: () => setState(() => _isEmailLoginMode = !_isEmailLoginMode),
+                      child: Text(
+                        _isEmailLoginMode ? "Usa Numero di Telefono" : "Usa Email e Password",
+                        style: const TextStyle(color: Colors.white38, fontSize: 12),
+                      ),
                     ),
-                  
-                  if (_isEmailMode)
-                    TextButton(
-                      onPressed: () => setState(() => _isEmailMode = false),
-                      child: const Text("Usa Numero di Telefono", style: TextStyle(color: goldColor, fontSize: 12)),
-                    ),
-
                 ],
               ),
             ),
@@ -359,214 +345,275 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
-  Widget _buildPhoneAuth(Color goldColor, Color inputFill) {
+  Widget _buildCurrentStep(Color inputFill) {
+    if (_isEmailLoginMode && _step == _AuthStep.phone) {
+      return _buildEmailAuth(inputFill);
+    }
+    switch (_step) {
+      case _AuthStep.phone:   return _buildPhoneStep(inputFill);
+      case _AuthStep.otp:     return _buildOtpStep(inputFill);
+      case _AuthStep.register: return _buildRegisterStep(inputFill);
+      case _AuthStep.email:   return _buildEmailAuth(inputFill);
+    }
+  }
+
+  // ─── Phone Step ──────────────────────────────────────────────────────────────
+
+  Widget _buildPhoneStep(Color inputFill) {
     return Column(
       children: [
-        if (_isNewUser)
-          Text(
-            "COMPLETA REGISTRAZIONE",
-            style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2, fontWeight: FontWeight.bold),
-          )
-        else
-          Text(
-            "ACCEDI CON TELEFONO",
-            style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, letterSpacing: 1),
-          ),
-        
-        const SizedBox(height: 20),
-        
-        // PHONE INPUT (Always visible, locked in registration phase)
-        _buildTextField(
-          controller: _phoneController,
-          label: 'Numero di Telefono',
-          icon: Icons.phone_android,
-          goldColor: goldColor,
-          fillColor: inputFill,
-          keyboardType: TextInputType.phone,
-          hint: "333 1234567",
-          enabled: !_isNewUser,
+        Text("INSERISCI IL TUO NUMERO",
+          style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13, letterSpacing: 1.5)),
+        const SizedBox(height: 6),
+        Text("Ti invieremo un codice SMS per verificare la tua identità",
+          style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 11),
+          textAlign: TextAlign.center),
+        const SizedBox(height: 24),
+        _buildPhoneField(inputFill),
+        const SizedBox(height: 24),
+        _primaryButton(
+          label: "INVIA CODICE SMS",
+          onPressed: _sendOtp,
         ),
-
-        // ANIMATED REGISTRATION FIELDS
-        AnimatedSize(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutQuart,
-          child: _isNewUser 
-            ? Column(
-                children: [
-                   const SizedBox(height: 16),
-                   Row(
-                     children: [
-                       Expanded(
-                         child: _buildTextField(
-                           controller: _nameController,
-                           label: 'Nome',
-                           icon: Icons.person,
-                           goldColor: goldColor,
-                           fillColor: inputFill,
-                         ),
-                       ),
-                       const SizedBox(width: 16),
-                       Expanded(
-                         child: _buildTextField(
-                           controller: _surnameController,
-                           label: 'Cognome',
-                           icon: Icons.person_outline,
-                           goldColor: goldColor,
-                           fillColor: inputFill,
-                         ),
-                       ),
-                     ],
-                   ),
-                   const SizedBox(height: 16),
-                   _buildTextField(
-                      controller: _profileEmailController,
-                      label: 'Email (Opzionale)',
-                      icon: Icons.email_outlined,
-                      goldColor: goldColor,
-                      fillColor: inputFill,
-                      keyboardType: TextInputType.emailAddress,
-                   ),
-                ],
-              ) 
-            : const SizedBox.shrink(),
-        ),
-
-         const SizedBox(height: 24),
-         
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _verifyPhoneNumber,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: goldColor,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: _isLoading
-              ? const CircularProgressIndicator(color: Colors.black)
-              : Text(
-                  _isNewUser ? "REGISTRATI" : "AVANTI",
-                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
-                ),
-          ),
-        ),
-        
-        // Back button if in Registration mode
-        if (_isNewUser)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: TextButton(
-              onPressed: () {
-                 setState(() {
-                   _isNewUser = false;
-                 });
-              },
-              child: const Text("Annulla", style: TextStyle(color: Colors.white54)),
-            ),
-          )
       ],
     );
   }
 
-  Widget _buildEmailAuth(Color goldColor, Color inputFill) {
+  Widget _buildPhoneField(Color inputFill) {
+    return Container(
+      decoration: BoxDecoration(
+        color: inputFill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          // Prefix "+39"
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+            ),
+            child: Text(
+              '🇮🇹  +39',
+              style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+          // Number input (only local digits)
+          Expanded(
+            child: TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              style: const TextStyle(color: Colors.white),
+              cursorColor: Colors.white,
+              decoration: const InputDecoration(
+                hintText: '333 1234567',
+                hintStyle: TextStyle(color: Colors.white24),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── OTP Step ────────────────────────────────────────────────────────────────
+
+  Widget _buildOtpStep(Color inputFill) {
+    final phone = _phoneController.text.trim();
+    final display = phone.startsWith('+') ? phone : '+39$phone';
+
     return Column(
       children: [
-         // LOGIN / REGISTER TABS
+        const Icon(Icons.sms_outlined, color: Colors.white54, size: 40),
+        const SizedBox(height: 16),
+        Text("CODICE DI VERIFICA",
+          style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2)),
+        const SizedBox(height: 8),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12),
+            children: [
+              const TextSpan(text: "Abbiamo inviato un SMS a\n"),
+              TextSpan(text: display, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // 6-digit OTP boxes
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(6, (i) => _otpBox(i)),
+        ),
+        const SizedBox(height: 28),
+
+        _primaryButton(
+          label: "VERIFICA",
+          onPressed: _verifyOtp,
+        ),
+        const SizedBox(height: 16),
+
+        // Resend + Change number
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _authTab("ACCEDI", _isLogin, () => setState(() => _isLogin = true), goldColor),
-            const SizedBox(width: 20),
-            _authTab("REGISTRATI", !_isLogin, () => setState(() => _isLogin = false), goldColor),
+            TextButton(
+              onPressed: _isLoading ? null : () => _sendOtp(isResend: true),
+              child: const Text("Reinvia codice", style: TextStyle(color: Colors.white38, fontSize: 12)),
+            ),
+            const Text("·", style: TextStyle(color: Colors.white24)),
+            TextButton(
+              onPressed: _isLoading ? null : _resetToPhone,
+              child: const Text("Cambia numero", style: TextStyle(color: Colors.white38, fontSize: 12)),
+            ),
           ],
         ),
-        const SizedBox(height: 30),
-
-        if (!_isLogin) ...[
-          _buildTextField(
-             controller: _nameController,
-             label: 'Nome Completo',
-             icon: Icons.person,
-             goldColor: goldColor,
-             fillColor: inputFill
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-             controller: _phoneController, // Reusing phone controller
-             label: 'Telefono',
-             icon: Icons.phone,
-             goldColor: goldColor,
-             fillColor: inputFill
-          ),
-           const SizedBox(height: 16),
-        ],
-
-        _buildTextField(
-            controller: _emailController,
-            label: 'Email',
-            icon: Icons.email,
-            goldColor: goldColor,
-            fillColor: inputFill
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-            controller: _passwordController,
-            label: 'Password',
-            icon: Icons.lock,
-            goldColor: goldColor,
-            fillColor: inputFill,
-            isPassword: _obscurePassword,
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            )
-        ),
-        
-        const SizedBox(height: 24),
-         SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitEmailAuth,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white24, // Subtle for secondary
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isLoading 
-                ? const CircularProgressIndicator(color: Colors.white)
-                : Text(_isLogin ? "ACCEDI CON EMAIL" : "REGISTRATI", style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
       ],
     );
   }
 
-  Widget _authTab(String title, bool isActive, VoidCallback onTap, Color color) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Text(title, style: TextStyle(
-            color: isActive ? color : Colors.white24,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            letterSpacing: 1
-          )),
-          const SizedBox(height: 4),
-          if (isActive) Container(height: 2, width: 40, color: color)
-        ],
+  Widget _otpBox(int index) {
+    return Container(
+      width: 42,
+      height: 52,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: TextField(
+        controller: _otpControllers[index],
+        focusNode: _otpFocusNodes[index],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
+        style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        decoration: const InputDecoration(
+          counterText: '',
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (val) {
+          if (!mounted) return;
+          if (val.isNotEmpty && index < 5) {
+            _otpFocusNodes[index + 1].requestFocus();
+          } else if (val.isEmpty && index > 0) {
+            _otpFocusNodes[index - 1].requestFocus();
+          }
+          // Auto-submit when all 6 digits entered
+          if (_otpControllers.every((c) => c.text.isNotEmpty)) {
+            _verifyOtp();
+          }
+        },
       ),
     );
   }
 
-   Widget _buildTextField({
+  // ─── Register Step ───────────────────────────────────────────────────────────
+
+  Widget _buildRegisterStep(Color inputFill) {
+    return Column(
+      children: [
+        const Icon(Icons.check_circle_outline, color: Color(0xFF22C55E), size: 40),
+        const SizedBox(height: 16),
+        Text("NUMERO VERIFICATO",
+          style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2)),
+        const SizedBox(height: 6),
+        Text("Completa il tuo profilo per continuare",
+          style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12)),
+        const SizedBox(height: 28),
+
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(controller: _nameController, label: 'Nome', icon: Icons.person, inputFill: inputFill),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(controller: _surnameController, label: 'Cognome', icon: Icons.person_outline, inputFill: inputFill),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _profileEmailController,
+          label: 'Email (Opzionale)',
+          icon: Icons.email_outlined,
+          inputFill: inputFill,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 24),
+        _primaryButton(label: "CREA PROFILO", onPressed: _completeRegistration),
+      ],
+    );
+  }
+
+  // ─── Email Auth (Admin fallback) ─────────────────────────────────────────────
+
+  Widget _buildEmailAuth(Color inputFill) {
+    return Column(
+      children: [
+        Text("ACCESSO ADMIN",
+          style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 13, letterSpacing: 1.5)),
+        const SizedBox(height: 24),
+        _buildTextField(
+          controller: _emailController,
+          label: 'Email',
+          icon: Icons.email,
+          inputFill: inputFill,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _passwordController,
+          label: 'Password',
+          icon: Icons.lock,
+          inputFill: inputFill,
+          isPassword: _obscurePassword,
+          suffixIcon: IconButton(
+            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.white38),
+            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _primaryButton(label: "ACCEDI", onPressed: _submitEmailAuth),
+      ],
+    );
+  }
+
+  // ─── Shared Widgets ──────────────────────────────────────────────────────────
+
+  Widget _primaryButton({required String label, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: _isLoading
+          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
+          : Text(label, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 13)),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    required Color goldColor,
-    required Color fillColor,
+    required Color inputFill,
     bool isPassword = false,
     bool enabled = true,
     TextInputType? keyboardType,
@@ -579,53 +626,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       keyboardType: keyboardType,
       enabled: enabled,
       style: TextStyle(color: enabled ? Colors.white : Colors.white38),
-      cursorColor: goldColor,
+      cursorColor: Colors.white,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white12),
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        prefixIcon: Icon(icon, color: goldColor.withOpacity(0.8)),
+        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+        prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.8)),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: fillColor,
+        fillColor: inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: goldColor)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white54)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
     );
-  }
-  Future<void> _checkAndMigrate(User currentUser, String inputPhone) async {
-    try {
-      final firestore = ref.read(firestoreServiceProvider);
-
-      // Formatted +39
-      String formatted = inputPhone.startsWith('+') ? inputPhone : '+39$inputPhone';
-
-      // 1. Search by formatted (+39...)
-      UserModel? oldUser = await firestore.getUserByPhone(formatted, excludeUserId: currentUser.uid);
-
-      // 2. Search by raw input
-      if (oldUser == null && inputPhone != formatted) {
-        oldUser = await firestore.getUserByPhone(inputPhone, excludeUserId: currentUser.uid);
-      }
-
-      // 3. Search by stripped digits
-      if (oldUser == null) {
-        final stripped = inputPhone.replaceAll(RegExp(r'\D'), '');
-        if (stripped.isNotEmpty) {
-           oldUser = await firestore.getUserByPhone(stripped, excludeUserId: currentUser.uid);
-        }
-      }
-
-      // If found AND it's a different ID than current (dangling profile)
-      if (oldUser != null && oldUser.id != currentUser.uid) {
-        // Found a dangling old profile! Migrate it to this current account.
-        await firestore.migrateUser(oldUser.id, currentUser.uid);
-      }
-    } catch (e) {
-      print("Migration Check Failed: $e");
-    }
   }
 }

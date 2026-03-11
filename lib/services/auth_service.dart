@@ -132,6 +132,7 @@ class AuthService {
     required void Function(FirebaseAuthException) verificationFailed,
     required void Function(String, int?) codeSent,
     required void Function(String) codeAutoRetrievalTimeout,
+    int? forceResendingToken,
   }) async {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
@@ -139,6 +140,7 @@ class AuthService {
       verificationFailed: verificationFailed,
       codeSent: codeSent,
       codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      forceResendingToken: forceResendingToken,
     );
   }
 

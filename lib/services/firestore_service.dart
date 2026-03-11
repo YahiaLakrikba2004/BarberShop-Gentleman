@@ -330,6 +330,10 @@ class FirestoreService {
     }
   }
 
+  Future<void> deleteGuestClient(String id) async {
+    await _firestore.collection('guestClients').doc(id).delete();
+  }
+
   Stream<List<Map<String, String>>> streamGuestClients() {
     return _firestore
         .collection('guestClients')
