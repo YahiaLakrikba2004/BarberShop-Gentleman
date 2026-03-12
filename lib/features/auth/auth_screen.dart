@@ -6,10 +6,9 @@ import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
-import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 
-enum _AuthStep { phone, otp, register, email }
+enum _AuthStep { phone, pin, register, email }
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -19,32 +18,28 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen>
-    with SingleTickerProviderStateMixin {
-  // Phone Auth
+    with TickerProviderStateMixin {
   final _phoneController = TextEditingController();
-  final _otpControllers = List.generate(6, (_) => TextEditingController());
-  final _otpFocusNodes = List.generate(6, (_) => FocusNode());
-
-  // Registration
+  final _pinControllers = List.generate(6, (_) => TextEditingController());
+  final _pinFocusNodes = List.generate(6, (_) => FocusNode());
   final _nameController = TextEditingController();
   final _surnameController = TextEditingController();
-  final _profileEmailController = TextEditingController();
-
-  // Email Auth (fallback admin)
   final _emailController = TextEditingController();
+
+  // Email Auth (admin fallback)
+  final _adminEmailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   late AnimationController _rotationController;
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
 
   _AuthStep _step = _AuthStep.phone;
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isEmailLoginMode = false; // toggle for admin email fallback
+  bool _isEmailLoginMode = false;
 
-  // OTP state
-  String? _verificationId;
-  int? _resendToken;
-  User? _firebaseUser; // signed-in user after OTP, before profile save
+  String? _existingEmail; // email trovata in Firestore per utente esistente
 
   @override
   void initState() {
@@ -53,159 +48,166 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -14.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -14.0, end: 14.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 14.0, end: -10.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -10.0, end: 10.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 10.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
     _rotationController.dispose();
+    _shakeController.dispose();
     _phoneController.dispose();
-    for (final c in _otpControllers) { c.dispose(); }
-    for (final f in _otpFocusNodes) { f.dispose(); }
+    for (final c in _pinControllers) { c.dispose(); }
+    for (final f in _pinFocusNodes) { f.dispose(); }
     _nameController.dispose();
     _surnameController.dispose();
-    _profileEmailController.dispose();
     _emailController.dispose();
+    _adminEmailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // ─── Step 1: Send OTP ───────────────────────────────────────────────────────
+  // ─── Step 1: Controlla numero ────────────────────────────────────────────────
 
-  Future<void> _sendOtp({bool isResend = false}) async {
+  Future<void> _checkPhone() async {
     final raw = _phoneController.text.trim();
     if (raw.isEmpty) {
       _showError("Inserisci il numero di telefono");
       return;
     }
-    final phone = raw.startsWith('+') ? raw : '+39$raw';
-
     setState(() => _isLoading = true);
 
     try {
-      final authService = ref.read(authServiceProvider);
-      await authService.verifyPhoneNumber(
-        phoneNumber: phone,
-        forceResendingToken: isResend ? _resendToken : null,
-        verificationCompleted: (credential) async {
-          // Auto-verification (Android only): sign in immediately
-          await _signInWithCredential(credential);
-        },
-        verificationFailed: (e) {
-          _showError(_mapFirebaseError(e));
-          setState(() => _isLoading = false);
-        },
-        codeSent: (verificationId, resendToken) {
-          setState(() {
-            _verificationId = verificationId;
-            _resendToken = resendToken;
-            _step = _AuthStep.otp;
-            _isLoading = false;
-          });
-          // Focus first OTP field
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (mounted) _otpFocusNodes[0].requestFocus();
-          });
-        },
-        codeAutoRetrievalTimeout: (verificationId) {
-          _verificationId = verificationId;
-        },
-      );
+      final phone = raw.startsWith('+') ? raw : '+39$raw';
+      final firestore = ref.read(firestoreServiceProvider);
+      final user = await firestore.getUserByPhone(phone);
+
+      setState(() {
+        if (user != null) {
+          _existingEmail = user.email;
+          _step = _AuthStep.pin;
+        } else {
+          _step = _AuthStep.register;
+        }
+        _isLoading = false;
+      });
+
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) _pinFocusNodes[0].requestFocus();
+      });
     } catch (e) {
       _showError("Errore: $e");
       setState(() => _isLoading = false);
     }
   }
 
-  // ─── Step 2: Verify OTP ─────────────────────────────────────────────────────
+  // ─── Step 2a: Login con PIN ──────────────────────────────────────────────────
 
-  Future<void> _verifyOtp() async {
-    final code = _otpControllers.map((c) => c.text).join();
-    if (code.length < 6) {
-      _showError("Inserisci il codice a 6 cifre");
+  Future<void> _loginWithPin() async {
+    if (_isLoading) return;
+    final pin = _pinControllers.map((c) => c.text).join();
+    if (pin.length < 6) {
+      _showError("Inserisci il PIN a 6 cifre");
       return;
     }
-    if (_verificationId == null) {
-      _showError("Sessione scaduta. Riprova.");
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(authServiceProvider).signInWithEmailAndPassword(_existingEmail!, pin);
+      if (mounted) context.go('/');
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _shakePin();
+      _showError(_mapFirebaseError(e));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _shakePin();
+      _showError("Errore: $e");
+    }
+  }
+
+  void _shakePin() {
+    for (final c in _pinControllers) { c.clear(); }
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (mounted) _pinFocusNodes[0].requestFocus();
+    });
+    _shakeController.forward(from: 0);
+  }
+
+  // ─── PIN dimenticato ─────────────────────────────────────────────────────────
+
+  Future<void> _forgotPin() async {
+    if (_existingEmail == null) return;
+
+    // Utenti vecchi con email fake: non possono fare reset autonomamente
+    if (_existingEmail!.endsWith('@gentleman.app')) {
+      _showError("Contatta il negozio per reimpostare il PIN");
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: code,
-      );
-      await _signInWithCredential(credential);
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: _existingEmail!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Email inviata a $_existingEmail"),
+            backgroundColor: const Color(0xFF22C55E),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       _showError(_mapFirebaseError(e));
-      setState(() => _isLoading = false);
-    } catch (e) {
-      _showError("Errore verifica: $e");
-      setState(() => _isLoading = false);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _signInWithCredential(AuthCredential credential) async {
-    final authService = ref.read(authServiceProvider);
-    await authService.signInWithCredential(credential);
+  // ─── Step 2b: Registrazione ──────────────────────────────────────────────────
 
-    final user = authService.currentUser;
-    if (user == null) {
-      _showError("Autenticazione fallita");
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    // Check if profile exists in Firestore
-    final firestore = ref.read(firestoreServiceProvider);
-    final profile = await firestore.getUser(user.uid);
-
-    if (profile != null) {
-      // Existing user → go home
-      if (mounted) context.go('/');
-    } else {
-      // New user → show registration form
-      _firebaseUser = user;
-      setState(() {
-        _step = _AuthStep.register;
-        _isLoading = false;
-      });
-    }
-  }
-
-  // ─── Step 3: Complete Registration ──────────────────────────────────────────
-
-  Future<void> _completeRegistration() async {
+  Future<void> _register() async {
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
+    final email = _emailController.text.trim();
+    final pin = _pinControllers.map((c) => c.text).join();
+
     if (name.isEmpty || surname.isEmpty) {
       _showError("Nome e Cognome sono obbligatori");
       return;
     }
-
-    final user = _firebaseUser ?? ref.read(authServiceProvider).currentUser;
-    if (user == null) {
-      _showError("Sessione scaduta. Riprova dall'inizio.");
+    if (email.isEmpty || !email.contains('@')) {
+      _showError("Inserisci un'email valida");
       return;
     }
-
+    if (pin.length < 6) {
+      _showError("Scegli un PIN a 6 cifre");
+      return;
+    }
     setState(() => _isLoading = true);
 
     try {
-      final firestore = ref.read(firestoreServiceProvider);
       final phone = _phoneController.text.trim();
       final formatted = phone.startsWith('+') ? phone : '+39$phone';
-      final email = _profileEmailController.text.trim();
 
-      final newUser = UserModel(
-        id: user.uid,
+      await ref.read(authServiceProvider).signUpWithEmailAndPassword(
         email: email,
+        password: pin,
         name: '$name $surname',
-        role: UserRole.client,
         phoneNumber: formatted,
       );
-      await firestore.createUser(newUser);
 
       if (mounted) context.go('/');
     } catch (e) {
@@ -214,35 +216,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
   }
 
-  // ─── Email Auth (Admin fallback) ────────────────────────────────────────────
+  // ─── Email Auth (Admin fallback) ─────────────────────────────────────────────
 
   Future<void> _submitEmailAuth() async {
     setState(() => _isLoading = true);
     try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithEmailAndPassword(
-        _emailController.text.trim(),
+      await ref.read(authServiceProvider).signInWithEmailAndPassword(
+        _adminEmailController.text.trim(),
         _passwordController.text.trim(),
       );
       if (mounted) context.go('/');
     } catch (e) {
-      _showError(_mapFirebaseError(e is FirebaseAuthException ? e : null, fallback: e.toString()));
+      _showError(e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  String _mapFirebaseError(FirebaseAuthException? e, {String? fallback}) {
-    switch (e?.code) {
-      case 'invalid-phone-number': return 'Numero di telefono non valido';
-      case 'too-many-requests': return 'Troppi tentativi. Riprova tra qualche minuto';
-      case 'invalid-verification-code': return 'Codice non corretto. Riprova';
-      case 'session-expired': return 'Sessione scaduta. Reinserisci il numero';
+  String _mapFirebaseError(FirebaseAuthException e) {
+    switch (e.code) {
       case 'user-not-found': return 'Nessun account trovato';
-      case 'wrong-password': return 'Password errata';
-      default: return fallback ?? (e?.message ?? 'Errore sconosciuto');
+      case 'wrong-password':
+      case 'invalid-credential': return 'PIN non corretto';
+      case 'email-already-in-use': return 'Email già registrata';
+      case 'invalid-email': return 'Email non valida';
+      case 'too-many-requests': return 'Troppi tentativi. Riprova tra qualche minuto';
+      default: return e.message ?? 'Errore sconosciuto';
     }
   }
 
@@ -261,9 +262,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     setState(() {
       _step = _AuthStep.phone;
       _isLoading = false;
-      _verificationId = null;
-      _firebaseUser = null;
-      for (final c in _otpControllers) { c.clear(); }
+      _existingEmail = null;
+      for (final c in _pinControllers) { c.clear(); }
     });
   }
 
@@ -291,7 +291,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
                   FadeInDown(
                     child: Container(
                       height: 120,
@@ -318,7 +317,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   Text('BARBER SHOP', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54, letterSpacing: 6)),
                   const SizedBox(height: 50),
 
-                  // Main content
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutQuart,
@@ -327,7 +325,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
                   const SizedBox(height: 32),
 
-                  // Toggle email fallback (only on phone step)
                   if (_step == _AuthStep.phone)
                     TextButton(
                       onPressed: () => setState(() => _isEmailLoginMode = !_isEmailLoginMode),
@@ -350,10 +347,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       return _buildEmailAuth(inputFill);
     }
     switch (_step) {
-      case _AuthStep.phone:   return _buildPhoneStep(inputFill);
-      case _AuthStep.otp:     return _buildOtpStep(inputFill);
+      case _AuthStep.phone:    return _buildPhoneStep(inputFill);
+      case _AuthStep.pin:      return _buildPinStep(inputFill);
       case _AuthStep.register: return _buildRegisterStep(inputFill);
-      case _AuthStep.email:   return _buildEmailAuth(inputFill);
+      case _AuthStep.email:    return _buildEmailAuth(inputFill);
     }
   }
 
@@ -365,16 +362,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         Text("INSERISCI IL TUO NUMERO",
           style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13, letterSpacing: 1.5)),
         const SizedBox(height: 6),
-        Text("Ti invieremo un codice SMS per verificare la tua identità",
+        Text("Accedi con numero di telefono e PIN",
           style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 11),
           textAlign: TextAlign.center),
         const SizedBox(height: 24),
         _buildPhoneField(inputFill),
         const SizedBox(height: 24),
-        _primaryButton(
-          label: "INVIA CODICE SMS",
-          onPressed: _sendOtp,
-        ),
+        _primaryButton(label: "AVANTI", onPressed: _checkPhone),
       ],
     );
   }
@@ -388,18 +382,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       ),
       child: Row(
         children: [
-          // Prefix "+39"
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             decoration: BoxDecoration(
               border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
             ),
-            child: Text(
-              '🇮🇹  +39',
-              style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
-            ),
+            child: Text('🇮🇹  +39',
+              style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
-          // Number input (only local digits)
           Expanded(
             child: TextField(
               controller: _phoneController,
@@ -421,64 +411,56 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
-  // ─── OTP Step ────────────────────────────────────────────────────────────────
+  // ─── PIN Step ────────────────────────────────────────────────────────────────
 
-  Widget _buildOtpStep(Color inputFill) {
+  Widget _buildPinStep(Color inputFill) {
     final phone = _phoneController.text.trim();
     final display = phone.startsWith('+') ? phone : '+39$phone';
+    final isFakeEmail = _existingEmail?.endsWith('@gentleman.app') ?? false;
 
     return Column(
       children: [
-        const Icon(Icons.sms_outlined, color: Colors.white54, size: 40),
+        const Icon(Icons.lock_outline, color: Colors.white54, size: 36),
         const SizedBox(height: 16),
-        Text("CODICE DI VERIFICA",
-          style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2)),
+        Text("INSERISCI IL TUO PIN",
+          style: GoogleFonts.cinzel(color: Colors.white, fontSize: 15, letterSpacing: 2)),
         const SizedBox(height: 8),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12),
-            children: [
-              const TextSpan(text: "Abbiamo inviato un SMS a\n"),
-              TextSpan(text: display, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 32),
-
-        // 6-digit OTP boxes
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(6, (i) => _otpBox(i)),
-        ),
+        Text(display,
+          style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12)),
         const SizedBox(height: 28),
 
-        _primaryButton(
-          label: "VERIFICA",
-          onPressed: _verifyOtp,
+        AnimatedBuilder(
+          animation: _shakeAnimation,
+          builder: (context, child) => Transform.translate(
+            offset: Offset(_shakeAnimation.value, 0),
+            child: child,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(6, (i) => _pinBox(i)),
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
 
-        // Resend + Change number
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(
-              onPressed: _isLoading ? null : () => _sendOtp(isResend: true),
-              child: const Text("Reinvia codice", style: TextStyle(color: Colors.white38, fontSize: 12)),
-            ),
-            const Text("·", style: TextStyle(color: Colors.white24)),
-            TextButton(
-              onPressed: _isLoading ? null : _resetToPhone,
-              child: const Text("Cambia numero", style: TextStyle(color: Colors.white38, fontSize: 12)),
-            ),
-          ],
+        _primaryButton(label: "ACCEDI", onPressed: _loginWithPin),
+        const SizedBox(height: 4),
+
+        TextButton(
+          onPressed: _isLoading ? null : _forgotPin,
+          child: Text(
+            isFakeEmail ? "PIN dimenticato? Contatta il negozio" : "PIN dimenticato?",
+            style: const TextStyle(color: Colors.white38, fontSize: 12),
+          ),
+        ),
+        TextButton(
+          onPressed: _isLoading ? null : _resetToPhone,
+          child: const Text("Cambia numero", style: TextStyle(color: Colors.white38, fontSize: 12)),
         ),
       ],
     );
   }
 
-  Widget _otpBox(int index) {
+  Widget _pinBox(int index) {
     return Container(
       width: 42,
       height: 52,
@@ -489,11 +471,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: TextField(
-        controller: _otpControllers[index],
-        focusNode: _otpFocusNodes[index],
+        controller: _pinControllers[index],
+        focusNode: _pinFocusNodes[index],
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: 1,
+        obscureText: true,
         style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         decoration: const InputDecoration(
           counterText: '',
@@ -504,13 +487,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         onChanged: (val) {
           if (!mounted) return;
           if (val.isNotEmpty && index < 5) {
-            _otpFocusNodes[index + 1].requestFocus();
+            _pinFocusNodes[index + 1].requestFocus();
           } else if (val.isEmpty && index > 0) {
-            _otpFocusNodes[index - 1].requestFocus();
+            _pinFocusNodes[index - 1].requestFocus();
           }
-          // Auto-submit when all 6 digits entered
-          if (_otpControllers.every((c) => c.text.isNotEmpty)) {
-            _verifyOtp();
+          // Auto-submit solo nella schermata di login
+          if (_step == _AuthStep.pin && _pinControllers.every((c) => c.text.isNotEmpty)) {
+            _loginWithPin();
           }
         },
       ),
@@ -521,42 +504,60 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   Widget _buildRegisterStep(Color inputFill) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.check_circle_outline, color: Color(0xFF22C55E), size: 40),
-        const SizedBox(height: 16),
-        Text("NUMERO VERIFICATO",
-          style: GoogleFonts.cinzel(color: Colors.white, fontSize: 16, letterSpacing: 2)),
-        const SizedBox(height: 6),
-        Text("Completa il tuo profilo per continuare",
-          style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12)),
-        const SizedBox(height: 28),
-
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(controller: _nameController, label: 'Nome', icon: Icons.person, inputFill: inputFill),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextField(controller: _surnameController, label: 'Cognome', icon: Icons.person_outline, inputFill: inputFill),
-            ),
-          ],
+        Center(
+          child: Column(
+            children: [
+              Text("NUOVO ACCOUNT",
+                style: GoogleFonts.cinzel(color: Colors.white, fontSize: 15, letterSpacing: 2)),
+              const SizedBox(height: 6),
+              Text("Completa il profilo e scegli un PIN",
+                style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12)),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+
+        Row(children: [
+          Expanded(child: _buildTextField(controller: _nameController, label: 'Nome', icon: Icons.person, inputFill: inputFill)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildTextField(controller: _surnameController, label: 'Cognome', icon: Icons.person_outline, inputFill: inputFill)),
+        ]),
+        const SizedBox(height: 14),
         _buildTextField(
-          controller: _profileEmailController,
-          label: 'Email (Opzionale)',
+          controller: _emailController,
+          label: 'Email',
           icon: Icons.email_outlined,
           inputFill: inputFill,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 24),
-        _primaryButton(label: "CREA PROFILO", onPressed: _completeRegistration),
+
+        Center(
+          child: Text("SCEGLI UN PIN DI ACCESSO",
+            style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 11, letterSpacing: 1.5)),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(6, (i) => _pinBox(i)),
+        ),
+        const SizedBox(height: 24),
+
+        _primaryButton(label: "REGISTRATI", onPressed: _register),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton(
+            onPressed: _isLoading ? null : _resetToPhone,
+            child: const Text("Annulla", style: TextStyle(color: Colors.white38, fontSize: 12)),
+          ),
+        ),
       ],
     );
   }
 
-  // ─── Email Auth (Admin fallback) ─────────────────────────────────────────────
+  // ─── Email Auth (Admin) ───────────────────────────────────────────────────────
 
   Widget _buildEmailAuth(Color inputFill) {
     return Column(
@@ -564,13 +565,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         Text("ACCESSO ADMIN",
           style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 13, letterSpacing: 1.5)),
         const SizedBox(height: 24),
-        _buildTextField(
-          controller: _emailController,
-          label: 'Email',
-          icon: Icons.email,
-          inputFill: inputFill,
-          keyboardType: TextInputType.emailAddress,
-        ),
+        _buildTextField(controller: _adminEmailController, label: 'Email', icon: Icons.email, inputFill: inputFill, keyboardType: TextInputType.emailAddress),
         const SizedBox(height: 16),
         _buildTextField(
           controller: _passwordController,
@@ -589,9 +584,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     );
   }
 
-  // ─── Shared Widgets ──────────────────────────────────────────────────────────
+  // ─── Shared Widgets ───────────────────────────────────────────────────────────
 
-  Widget _primaryButton({required String label, required VoidCallback onPressed}) {
+  Widget _primaryButton({required String label, required VoidCallback? onPressed}) {
     return SizedBox(
       width: double.infinity,
       height: 56,

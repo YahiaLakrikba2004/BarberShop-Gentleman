@@ -124,117 +124,7 @@ class AdminDashboard extends ConsumerWidget {
                 // Today's Summary
                 FadeInUp(
                   duration: const Duration(milliseconds: 800),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'OGGI',
-                        style: GoogleFonts.cinzel(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Revenue today — big card
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.1)),
-                            ),
-                            child: Row(
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'INCASSO OGGI',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white.withOpacity(0.4),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '€${stats['todayRevenue']}',
-                                      style: GoogleFonts.cinzel(
-                                        color: Colors.white,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'SETTIMANA',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white.withOpacity(0.3),
-                                        fontSize: 9,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '€${stats['weekRevenue']}',
-                                      style: GoogleFonts.cinzel(
-                                        color: Colors.white.withOpacity(0.6),
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // 3 small stat tiles
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.calendar_today_rounded,
-                              title: 'OGGI',
-                              value: stats['todayTotal'].toString(),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.check_circle_outline_rounded,
-                              title: 'CONFERMATI',
-                              value: stats['todayConfirmed'].toString(),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.hourglass_top_rounded,
-                              title: 'IN ATTESA',
-                              value: stats['pending'].toString(),
-                              highlight: (stats['pending'] as int) > 0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: _TodayCard(stats: stats),
                 ),
 
                 const SizedBox(height: 40),
@@ -465,67 +355,149 @@ class AdminDashboard extends ConsumerWidget {
 }
 
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final bool highlight;
-
-  const _StatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    this.highlight = false,
-  });
+class _TodayCard extends StatelessWidget {
+  final Map<String, dynamic> stats;
+  const _TodayCard({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = highlight
-        ? Theme.of(context).colorScheme.primary
-        : Colors.white;
+    final accent = Theme.of(context).colorScheme.primary;
+    final pending = stats['pending'] as int;
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          width: double.infinity,
           decoration: BoxDecoration(
-            color: highlight
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: highlight
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
-                  : Colors.white.withValues(alpha: 0.1),
-              width: 1,
-            ),
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: accentColor.withValues(alpha: 0.7), size: 18),
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: GoogleFonts.cinzel(
-                  color: accentColor,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              // ── Header ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'OGGI',
+                      style: GoogleFonts.cinzel(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Week revenue chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'SETT. ',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white38,
+                              fontSize: 9,
+                              letterSpacing: 1,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '€${stats['weekRevenue']}',
+                            style: GoogleFonts.cinzel(
+                              color: Colors.white54,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: GoogleFonts.montserrat(
-                  color: accentColor.withValues(alpha: 0.45),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+
+              // ── Big Revenue ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '€${stats['todayRevenue']}',
+                      style: GoogleFonts.cinzel(
+                        color: Colors.white,
+                        fontSize: 52,
+                        fontWeight: FontWeight.bold,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        'INCASSATI',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white24,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              ),
+
+              // ── Divider ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+                child: Divider(color: Colors.white.withValues(alpha: 0.07), height: 1),
+              ),
+
+              // ── 3 Stats Row ───────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+                child: Row(
+                  children: [
+                    _statChip(
+                      context,
+                      icon: Icons.calendar_today_rounded,
+                      label: 'APPUNTAMENTI',
+                      value: stats['todayTotal'].toString(),
+                      accent: Colors.white,
+                    ),
+                    _dividerV(),
+                    _statChip(
+                      context,
+                      icon: Icons.check_circle_outline_rounded,
+                      label: 'CONFERMATI',
+                      value: stats['todayConfirmed'].toString(),
+                      accent: Colors.white,
+                    ),
+                    _dividerV(),
+                    _statChip(
+                      context,
+                      icon: Icons.hourglass_top_rounded,
+                      label: 'IN ATTESA',
+                      value: stats['pending'].toString(),
+                      accent: pending > 0 ? accent : Colors.white,
+                      highlight: pending > 0,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -533,6 +505,49 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _statChip(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color accent,
+    bool highlight = false,
+  }) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: accent.withValues(alpha: highlight ? 0.9 : 0.35)),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.cinzel(
+              color: accent,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: GoogleFonts.montserrat(
+              color: accent.withValues(alpha: highlight ? 0.6 : 0.3),
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dividerV() => Container(
+    width: 1,
+    height: 48,
+    color: Colors.white.withValues(alpha: 0.07),
+  );
 }
 
 class _QuickActionCard extends StatelessWidget {

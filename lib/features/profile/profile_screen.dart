@@ -14,6 +14,8 @@ import '../appointments/grouped_appointments_list.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -373,6 +375,18 @@ class ProfileScreen extends ConsumerWidget {
                         _showEditProfileDialog(context, ref, user);
                       },
                     ),
+                    if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty) ...[
+                      Divider(height: 1, color: Colors.white.withValues(alpha: 0.06), indent: 60),
+                      _buildSettingsTileNew(
+                        icon: Icons.pin_outlined,
+                        title: 'Cambia PIN',
+                        subtitle: 'Modifica il PIN di accesso',
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showChangePinModal(outerCtx, ref);
+                        },
+                      ),
+                    ],
                   ]),
 
                   const SizedBox(height: 20),
@@ -817,7 +831,199 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
+  void _showChangePinModal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (ctx) => _ChangePinSheet(outerContext: context),
+    );
+  }
+}
+
+class _ChangePinSheet extends StatefulWidget {
+  final BuildContext outerContext;
+  const _ChangePinSheet({required this.outerContext});
+
+  @override
+  State<_ChangePinSheet> createState() => _ChangePinSheetState();
+}
+
+class _ChangePinSheetState extends State<_ChangePinSheet> {
+  // Step 0 = current PIN, step 1 = new PIN
+  int _step = 0;
+  bool _isLoading = false;
+  String? _errorText;
+
+  final _currentControllers = List.generate(6, (_) => TextEditingController());
+  final _currentFocus = List.generate(6, (_) => FocusNode());
+  final _newControllers = List.generate(6, (_) => TextEditingController());
+  final _newFocus = List.generate(6, (_) => FocusNode());
+
+  @override
+  void dispose() {
+    for (final c in [..._currentControllers, ..._newControllers]) c.dispose();
+    for (final f in [..._currentFocus, ..._newFocus]) f.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitCurrentPin() async {
+    final currentPin = _currentControllers.map((c) => c.text).join();
+    if (currentPin.length < 6) return;
+    setState(() { _isLoading = true; _errorText = null; });
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      setState(() { _isLoading = false; _errorText = 'Utente non trovato'; });
+      return;
+    }
+
+    try {
+      final credential = EmailAuthProvider.credential(email: user.email!, password: currentPin);
+      await user.reauthenticateWithCredential(credential);
+      // Re-auth OK → go to step 1
+      setState(() { _step = 1; _isLoading = false; });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _newFocus[0].requestFocus();
+      });
+    } on FirebaseAuthException catch (e) {
+      for (final c in _currentControllers) c.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _currentFocus[0].requestFocus();
+      });
+      setState(() {
+        _isLoading = false;
+        _errorText = e.code == 'wrong-password' || e.code == 'invalid-credential'
+            ? 'PIN attuale non corretto'
+            : 'Errore: ${e.message}';
+      });
+    }
+  }
+
+  Future<void> _submitNewPin() async {
+    final newPin = _newControllers.map((c) => c.text).join();
+    if (newPin.length < 6) return;
+    setState(() { _isLoading = true; _errorText = null; });
+
+    try {
+      await FirebaseAuth.instance.currentUser!.updatePassword(newPin);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(widget.outerContext).showSnackBar(
+          const SnackBar(
+            content: Text('PIN aggiornato con successo'),
+            backgroundColor: Color(0xFF22C55E),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      for (final c in _newControllers) c.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _newFocus[0].requestFocus();
+      });
+      setState(() { _isLoading = false; _errorText = 'Errore aggiornamento PIN'; });
+    }
+  }
+
+  Widget _pinRow(List<TextEditingController> ctrls, List<FocusNode> fNodes, void Function() onComplete) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(6, (i) => Container(
+        width: 42,
+        height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _errorText != null
+                ? const Color(0xFFDC143C).withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.12),
+          ),
+        ),
+        child: TextField(
+          controller: ctrls[i],
+          focusNode: fNodes[i],
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          maxLength: 1,
+          obscureText: true,
+          style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          decoration: const InputDecoration(counterText: '', border: InputBorder.none, contentPadding: EdgeInsets.zero),
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (val) {
+            setState(() => _errorText = null);
+            if (val.isNotEmpty && i < 5) fNodes[i + 1].requestFocus();
+            if (val.isEmpty && i > 0) fNodes[i - 1].requestFocus();
+            if (ctrls.every((c) => c.text.isNotEmpty)) onComplete();
+          },
+        ),
+      )),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = _step == 0;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF111111),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            const Icon(Icons.pin_outlined, color: Colors.white54, size: 36),
+            const SizedBox(height: 12),
+            Text('CAMBIA PIN',
+              style: GoogleFonts.cinzel(color: Colors.white, fontSize: 15, letterSpacing: 2)),
+            const SizedBox(height: 6),
+            Text(
+              isCurrent ? 'Inserisci il PIN attuale' : 'Scegli il nuovo PIN a 6 cifre',
+              style: GoogleFonts.montserrat(color: Colors.white38, fontSize: 12),
+            ),
+            const SizedBox(height: 28),
+            isCurrent
+                ? _pinRow(_currentControllers, _currentFocus, _submitCurrentPin)
+                : _pinRow(_newControllers, _newFocus, _submitNewPin),
+            if (_errorText != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorText!,
+                style: GoogleFonts.montserrat(color: const Color(0xFFDC143C), fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : (isCurrent ? _submitCurrentPin : _submitNewPin),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
+                    : Text('SALVA PIN', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 13)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
     final outerCtx = context;
     showDialog(
       context: context,
@@ -912,7 +1118,6 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
 class _AppointmentsList extends ConsumerWidget {
   final String userId;
