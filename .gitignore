@@ -47,6 +47,7 @@ app.*.map.json
 
 # Environment Variables
 .env
+.dart_defines.json
 
 # Firebase Keys
 android/app/google-services.json

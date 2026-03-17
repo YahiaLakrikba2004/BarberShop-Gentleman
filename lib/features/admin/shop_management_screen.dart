@@ -178,12 +178,12 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                           decoration: InputDecoration(
                             hintText: 'Scrivi qui il tuo messaggio...',
                             hintStyle: GoogleFonts.montserrat(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                               fontSize: 13,
                             ),
                             filled: true,
                             fillColor: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white.withOpacity(0.05) 
+                                ? Colors.white.withValues(alpha: 0.05) 
                                 : Colors.grey[100],
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -235,10 +235,10 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                         Container(
                           decoration: BoxDecoration(
                             color: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white.withOpacity(0.03) 
+                                ? Colors.white.withValues(alpha: 0.03) 
                                 : Colors.grey[50],
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+                            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
                           ),
                           child: TableCalendar(
                             locale: 'it_IT',
@@ -260,13 +260,13 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                               rightChevronIcon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
                             ),
                             calendarStyle: CalendarStyle(
-                              defaultTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
-                              weekendTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
-                              outsideTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
+                              defaultTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+                              weekendTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+                              outsideTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
                               todayDecoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+                                border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
                               ),
                               selectedDecoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
@@ -282,8 +282,8 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                               ),
                             ),
                             daysOfWeekStyle: DaysOfWeekStyle(
-                              weekdayStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 12),
-                              weekendStyle: GoogleFonts.montserrat(color: Colors.redAccent.withOpacity(0.5), fontSize: 12),
+                              weekdayStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), fontSize: 12),
+                              weekendStyle: GoogleFonts.montserrat(color: Colors.redAccent.withValues(alpha: 0.5), fontSize: 12),
                             ),
                             selectedDayPredicate: (day) => _closures.any((d) => isSameDay(d, day)),
                             onDaySelected: (selectedDay, focusedDay) {
@@ -325,16 +325,16 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                                 child: InputChip(
                                   label: Text(DateFormat('dd MMM', 'it').format(date)),
                                   onDeleted: () => setState(() => _closures.removeWhere((d) => isSameDay(d, date))),
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                   labelStyle: GoogleFonts.montserrat(
                                     color: Theme.of(context).colorScheme.primary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  deleteIconColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  deleteIconColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                                    side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
                                   ),
                                 ),
                               )).toList(),
@@ -463,12 +463,12 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.8)
+                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
                         ],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -507,7 +507,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
               const SizedBox(height: 16),
               Text(
                 'Errore durante il caricamento',
-                style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
             ],
           ),
@@ -530,10 +530,10 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161616) : Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -547,7 +547,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
@@ -570,7 +570,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                     Text(
                       description,
                       style: GoogleFonts.montserrat(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 11,
                         height: 1.4,
                       ),
@@ -599,13 +599,13 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.black.withOpacity(0.2) 
+            ? Colors.black.withValues(alpha: 0.2) 
             : Colors.grey[50],
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDestructive && value
-              ? Colors.redAccent.withOpacity(0.3)
-              : Theme.of(context).dividerColor.withOpacity(0.2),
+              ? Colors.redAccent.withValues(alpha: 0.3)
+              : Theme.of(context).dividerColor.withValues(alpha: 0.2),
         ),
       ),
       child: SwitchListTile(
@@ -620,16 +620,16 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
         subtitle: Text(
           subtitle,
           style: GoogleFonts.montserrat(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
             fontSize: 11,
           ),
         ),
         value: value,
         onChanged: onChanged,
         activeThumbColor: isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary,
-        activeTrackColor: (isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary).withOpacity(0.2),
+        activeTrackColor: (isDestructive ? Colors.redAccent : Theme.of(context).colorScheme.primary).withValues(alpha: 0.2),
         inactiveThumbColor: Colors.grey,
-        inactiveTrackColor: Colors.grey.withOpacity(0.2),
+        inactiveTrackColor: Colors.grey.withValues(alpha: 0.2),
         contentPadding: EdgeInsets.zero,
       ),
     );

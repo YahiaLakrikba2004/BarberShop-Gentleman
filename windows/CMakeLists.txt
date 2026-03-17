@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(barber_shop_app LANGUAGES CXX)
 
+# Workaround: Firebase C++ SDK uses old cmake_minimum_required syntax
+# incompatible with CMake 4.0+
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5" CACHE STRING "" FORCE)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "barber_shop_app")
@@ -65,9 +69,8 @@ include(flutter/generated_plugins.cmake)
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
-endif()
+# Always use the build output directory, not the system default (Program Files)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "..." FORCE)
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")

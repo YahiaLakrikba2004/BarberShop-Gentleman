@@ -61,6 +61,7 @@ class AdminDashboard extends ConsumerWidget {
     });
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
       appBar: AppBar(
@@ -86,8 +87,12 @@ class AdminDashboard extends ConsumerWidget {
           final stats = _calculateStats(appointments);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : double.infinity),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 60 : 20, vertical: 20),
+                  child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Welcome Section
@@ -99,7 +104,7 @@ class AdminDashboard extends ConsumerWidget {
                       Text(
                         'Benvenuto, ${user?.name ?? 'Admin'}'.toUpperCase(),
                         style: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.4),
+                          color: Colors.white.withValues(alpha: 0.4),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.2,
@@ -110,7 +115,7 @@ class AdminDashboard extends ConsumerWidget {
                         'PANORAMICA',
                         style: GoogleFonts.cinzel(
                           color: Colors.white,
-                          fontSize: 36,
+                          fontSize: isDesktop ? 48 : 36,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2,
                         ),
@@ -251,18 +256,18 @@ class AdminDashboard extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF161616) : Colors.white,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                           ),
                           child: Column(
                             children: [
                               Icon(Icons.event_busy,
                                   size: 48,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
                               const SizedBox(height: 16),
                               Text(
                                 'Nessun appuntamento trovato',
                                 style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                               ),
                             ],
                           ),
@@ -281,6 +286,9 @@ class AdminDashboard extends ConsumerWidget {
                   ),
                 ),
               ],
+                  ),
+                ),
+              ),
             ),
           );
         },
@@ -573,10 +581,10 @@ class _QuickActionCard extends StatelessWidget {
             width: 120,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -586,9 +594,9 @@ class _QuickActionCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: Icon(icon, color: Colors.white, size: 22),
                 ),

@@ -31,10 +31,10 @@ class ContactRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.1),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               ),
             ),
             child: Icon(
@@ -61,7 +61,7 @@ class ContactRow extends StatelessWidget {
                   subtitle,
                   style: GoogleFonts.montserrat(
                     fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     height: 1.4,
                   ),
                 ),
@@ -71,7 +71,7 @@ class ContactRow extends StatelessWidget {
           if (onTap != null)
             Icon(
               Icons.arrow_forward_ios,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
               size: 16,
             ),
         ],
@@ -98,7 +98,7 @@ class HoursRow extends StatelessWidget {
         Text(
           day,
           style: GoogleFonts.montserrat(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -139,10 +139,10 @@ class SocialButton extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
           shape: BoxShape.circle,
           border: Border.all(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         ),
         child: Center(
@@ -183,21 +183,21 @@ class AnnouncementBanner extends ConsumerWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       Theme.of(context).brightness == Brightness.dark 
-                          ? Colors.white.withOpacity(0.08) 
+                          ? Colors.white.withValues(alpha: 0.08) 
                           : Colors.white,
                       Theme.of(context).brightness == Brightness.dark 
-                          ? Colors.white.withOpacity(0.02) 
+                          ? Colors.white.withValues(alpha: 0.02) 
                           : const Color(0xFFF5F5F5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                     width: 0.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       blurRadius: 15,
                       spreadRadius: 1,
                     ),

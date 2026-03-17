@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb
-import 'web_video_player.dart'; // Conditional import bridge
+import 'package:flutter/foundation.dart';
+import 'web_video_player.dart';
 
 class VideoHeader extends StatefulWidget {
   final Widget child;
@@ -19,14 +19,21 @@ class _VideoHeaderState extends State<VideoHeader> {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
   bool _hasError = false;
-  final String _errorMessage = '';
+
+  // Video plays only on web (HtmlElementView) and mobile (video_player).
+  // On Windows/Linux desktop the plugin has codec issues — use image fallback.
+  bool get _videoSupported =>
+      kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS;
 
   @override
   void initState() {
     super.initState();
     if (kIsWeb) {
       registerWebVideoView();
-    } else {
+    } else if (_videoSupported) {
       _initializeVideo();
     }
   }
@@ -59,7 +66,7 @@ class _VideoHeaderState extends State<VideoHeader> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (!kIsWeb && _videoSupported) _controller.dispose();
     super.dispose();
   }
 
@@ -97,15 +104,23 @@ class _VideoHeaderState extends State<VideoHeader> {
           
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
             ),
           ),
 
           // 3. Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 150, 24, 60),
-            child: widget.child,
-          ),
+          Builder(builder: (context) {
+            final isDesktop = MediaQuery.of(context).size.width > 800;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                isDesktop ? 80 : 24,
+                isDesktop ? 120 : 150,
+                isDesktop ? 80 : 24,
+                isDesktop ? 80 : 60,
+              ),
+              child: widget.child,
+            );
+          }),
         ],
       ),
     );
@@ -113,11 +128,10 @@ class _VideoHeaderState extends State<VideoHeader> {
 
   Widget _buildBackground() {
     if (kIsWeb) {
-      // Use native HTML video on web to bypass plugin issues
       return const HtmlElementView(viewType: 'video-bg-view');
     }
 
-    if (_isInitialized && !_hasError) {
+    if (_videoSupported && _isInitialized && !_hasError) {
       return FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
@@ -128,11 +142,11 @@ class _VideoHeaderState extends State<VideoHeader> {
       );
     }
 
-    // Fallback Image (No debug text, clean fallback)
+    // Fallback image (used on Windows/Linux desktop and when video fails)
     return Image.asset(
-      'assets/images/gallery/haircut3.png', 
+      'assets/images/gallery/haircut3.png',
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const SizedBox(), 
+      errorBuilder: (_, __, ___) => Container(color: const Color(0xFF0A0A0A)),
     );
   }
 }

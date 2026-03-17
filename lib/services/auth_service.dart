@@ -102,7 +102,7 @@ class AuthService {
   Future<void> updateEmail(String newEmail) async {
     final user = _auth.currentUser;
     if (user != null && user.email != newEmail) {
-      await user.updateEmail(newEmail);
+      await user.verifyBeforeUpdateEmail(newEmail);
       // Also update Firestore to keep it in sync
       await _firestoreService.updateUserFields(user.uid, {'email': newEmail});
     }

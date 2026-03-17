@@ -1,22 +1,22 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart'; // Added Google Fonts
+import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../models/user_model.dart';
 import '../../models/barber_model.dart';
 import '../../models/service_model.dart';
 import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/slot_service.dart';
 import '../../services/auth_service.dart';
-import 'package:animate_do/animate_do.dart';
-import 'dart:ui'; // For BackdropFilter
-import 'package:url_launcher/url_launcher.dart';
+import 'booking_widgets.dart';
+import 'steps/customer_selection_step.dart';
+import 'steps/barber_selection_step.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
   const BookingScreen({super.key});
@@ -53,6 +53,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
     final isPrivileged = user?.role == UserRole.admin || user?.role == UserRole.barber;
+    final isDesktop = MediaQuery.of(context).size.width > 800;
     
     // Show blocked screen if booking was blocked
     if (_bookingBlocked) {
@@ -73,6 +74,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
+            fontSize: isDesktop ? 20 : null,
           ),
         ),
         centerTitle: true,
@@ -80,41 +82,46 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         elevation: 0,
         iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
-      body: Column(
-        children: [
-          // Progress Indicator
-          _buildProgressIndicator(isPrivileged),
-          Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
-          
-          // Content with Animation
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.05, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    )),
-                    child: child,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 1400 : double.infinity),
+          child: Column(
+            children: [
+              // Progress Indicator
+              _buildProgressIndicator(isPrivileged),
+              Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+
+              // Content with Animation
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.05, 0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(_currentStep),
+                    child: _buildStepContent(isPrivileged),
                   ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<int>(_currentStep),
-                child: _buildStepContent(isPrivileged),
+                ),
               ),
-            ),
+
+              // Navigation Buttons
+              _buildNavigationButtons(isPrivileged),
+            ],
           ),
-          
-          // Navigation Buttons
-          _buildNavigationButtons(isPrivileged),
-        ],
+        ),
       ),
     );
   }
@@ -145,14 +152,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       border: Border.all(
                         color: Colors.red,
                         width: 3,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.4),
+                          color: Colors.red.withValues(alpha: 0.4),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -196,7 +203,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   'Hai già un appuntamento attivo questa settimana.\n\nPer modificarlo o ricevere assistenza, contatta direttamente il negozio.',
                   style: GoogleFonts.montserrat(
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     height: 1.8,
                   ),
                   textAlign: TextAlign.center,
@@ -247,8 +254,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+                  foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
                 ),
               ),
             ),
@@ -271,7 +278,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Column(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 24),
@@ -293,7 +302,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.12),
+                          .withValues(alpha: 0.12),
                       border: Border.all(
                         color: Theme.of(context).colorScheme.primary,
                         width: 3,
@@ -303,7 +312,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                           color: Theme.of(context)
                               .colorScheme
                               .primary
-                              .withOpacity(0.35),
+                              .withValues(alpha: 0.35),
                           blurRadius: 28,
                           spreadRadius: 8,
                         ),
@@ -377,7 +386,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.22),
+                          .withValues(alpha: 0.22),
                       width: 1.5,
                     ),
                   ),
@@ -442,6 +451,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               const SizedBox(height: 16),
             ],
           ),
+            ),
         ),
       ),
       ),
@@ -489,7 +499,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   }
 
   Widget _buildSuccessDivider() {
-    return Divider(height: 1, color: Colors.white.withOpacity(0.07));
+    return Divider(height: 1, color: Colors.white.withValues(alpha: 0.07));
   }
 
   Widget _buildProgressIndicator(bool isPrivileged) {
@@ -503,7 +513,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       color: Theme.of(context).scaffoldBackgroundColor,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -541,7 +551,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
@@ -559,17 +569,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 color: isDone 
                     ? Theme.of(context).colorScheme.primary 
                     : isCurrent 
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                         : Colors.transparent,
                 border: Border.all(
                   color: isActive 
                       ? Theme.of(context).colorScheme.primary 
-                      : Theme.of(context).dividerColor.withOpacity(0.3),
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.3),
                   width: 1.2,
                 ),
                 boxShadow: isCurrent ? [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                   )
                 ] : null,
@@ -586,7 +596,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                         style: GoogleFonts.montserrat(
                           color: isActive 
                               ? (isCurrent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface)
-                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                           fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                           fontSize: isCurrent ? 14 : 11,
                         ),
@@ -603,8 +613,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             color: isCurrent 
                 ? Theme.of(context).colorScheme.primary 
                 : isActive 
-                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.8)
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8)
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
             fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
             letterSpacing: 1.2,
           ),
@@ -630,11 +640,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       decoration: BoxDecoration(
         color: isActive 
             ? Theme.of(context).colorScheme.primary 
-            : Theme.of(context).dividerColor.withOpacity(0.15),
+            : Theme.of(context).dividerColor.withValues(alpha: 0.15),
         gradient: isActive ? LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ],
         ) : null,
       ),
@@ -643,19 +653,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
 }
 
   Widget _buildStepContent(bool isPrivileged) {
-    int adjustedStep = _currentStep;
+    // Privileged: 0:Customer, 1:Barber, 2:Service, 3:Time, 4:Confirm
+    // Client:     0:Barber,   1:Service, 2:Time,   3:Confirm
     if (!isPrivileged) {
-      // If not privileged, step 0 maps to BarberSelection (which is index 1 in privileged flow logic if we were sharing indices, 
-      // but here we just shift the logic)
-      // Let's map steps based on flow:
-      // Privileged: 0:Customer, 1:Barber, 2:Service, 3:Time, 4:Confirm
-      // Client:     0:Barber,   1:Service, 2:Time,   3:Confirm
-      
-      // So if not privileged, we shift the "content" index by 1 to match the "Barber" starting point of privileged flow?
-      // No, it's easier to just switch on current step and return appropriate widget.
-      
       switch (_currentStep) {
-        case 0: return _buildBarberSelection();
+        case 0: return _buildBarberStep();
         case 1: return _buildServiceSelection();
         case 2: return _buildTimeSelection();
         case 3: return _buildConfirmation(isPrivileged);
@@ -663,8 +665,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       }
     } else {
       switch (_currentStep) {
-        case 0: return _buildCustomerSelection();
-        case 1: return _buildBarberSelection();
+        case 0: return _buildCustomerStep();
+        case 1: return _buildBarberStep();
         case 2: return _buildServiceSelection();
         case 3: return _buildTimeSelection();
         case 4: return _buildConfirmation(isPrivileged);
@@ -673,814 +675,61 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     }
   }
 
-  Widget _buildCustomerSelection() {
-    if (_isGuestBooking) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0E0E0E),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header con accent bar
-                  Row(
-                    children: [
-                      Container(
-                        width: 3,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'CLIENTE OCCASIONALE',
-                            style: GoogleFonts.cinzel(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Non registrato nel sistema',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 11,
-                              color: Colors.white38,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          'GUEST',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
-                  const SizedBox(height: 20),
-                  _buildPremiumTextField(
-                    label: 'Nome e Cognome *',
-                    icon: Icons.person_outline,
-                    controller: _guestNameController,
-                    onChanged: (value) => setState(() => _guestName = value),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildPremiumTextField(
-                    label: 'Telefono (opzionale)',
-                    icon: Icons.phone_outlined,
-                    inputType: TextInputType.phone,
-                    controller: _guestPhoneController,
-                    onChanged: (value) => setState(() => _guestPhone = value),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () {
-                _guestNameController.clear();
-                _guestPhoneController.clear();
-                setState(() {
-                  _isGuestBooking = false;
-                  _guestName = '';
-                  _guestPhone = '';
-                });
-              },
-              icon: const Icon(Icons.arrow_back, color: Colors.white24, size: 16),
-              label: Text('Torna alla lista clienti',
-                style: GoogleFonts.montserrat(color: Colors.white24, fontSize: 12)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final usersAsync = ref.watch(allUsersProvider);
-    
-    final guestClientsAsync = ref.watch(guestClientsProvider);
-
-    return usersAsync.when(
-      data: (users) {
-        final filteredUsers = users.where((user) {
-          if (user.role != UserRole.client) return false;
-          final query = _searchQuery.toLowerCase();
-          return user.name.toLowerCase().contains(query) ||
-                 user.email.toLowerCase().contains(query);
-        }).toList();
-
-        final guestClients = guestClientsAsync.value ?? [];
-        final filteredGuests = _searchQuery.isEmpty
-            ? guestClients
-            : guestClients.where((g) {
-                final q = _searchQuery.toLowerCase();
-                return (g['name'] ?? '').toLowerCase().contains(q) ||
-                    (g['phone'] ?? '').toLowerCase().contains(q);
-              }).toList();
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildPremiumTextField(
-                label: 'Cerca cliente...',
-                icon: Icons.search,
-                onChanged: (value) => setState(() => _searchQuery = value),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  // Registered clients
-                  ...filteredUsers.map((user) {
-                    final isSelected = _selectedCustomer?.id == user.id;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedCustomer = user),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            UserAvatar(user: user, isSelected: isSelected),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    user.name,
-                                    style: GoogleFonts.cinzel(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    user.email,
-                                    style: GoogleFonts.montserrat(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 20),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-
-                  // Guest clients section
-                  ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 12),
-                      child: Row(
-                        children: [
-                          Text(
-                            'CLIENTI OCCASIONALI',
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              _guestNameController.clear();
-                              _guestPhoneController.clear();
-                              setState(() {
-                                _isGuestBooking = true;
-                                _guestName = '';
-                                _guestPhone = '';
-                                _selectedCustomer = null;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.person_add, size: 13, color: Colors.white.withValues(alpha: 0.5)),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'NUOVO',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.5),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (filteredGuests.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          'Nessun cliente occasionale salvato.',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    ...filteredGuests.map((guest) {
-                      return Dismissible(
-                        key: Key(guest['id'] ?? guest['name'] ?? ''),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
-                        ),
-                        confirmDismiss: (_) async {
-                          return await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              backgroundColor: const Color(0xFF1A1A1A),
-                              title: Text('Rimuovi cliente', style: GoogleFonts.cinzel(color: Colors.white)),
-                              content: Text(
-                                'Vuoi rimuovere "${guest['name']}" dalla lista dei clienti occasionali?',
-                                style: GoogleFonts.montserrat(color: Colors.white70),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Annulla', style: TextStyle(color: Colors.white38)),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Rimuovi', style: TextStyle(color: Color(0xFFEF4444))),
-                                ),
-                              ],
-                            ),
-                          ) ?? false;
-                        },
-                        onDismissed: (_) {
-                          final id = guest['id'];
-                          if (id != null && id.isNotEmpty) {
-                            ref.read(firestoreServiceProvider).deleteGuestClient(id);
-                          }
-                        },
-                        child: GestureDetector(
-                          onTap: () {
-                            final name = guest['name'] ?? '';
-                            final phone = guest['phone'] ?? '';
-                            _guestNameController.text = name;
-                            _guestPhoneController.text = phone;
-                            setState(() {
-                              _isGuestBooking = true;
-                              _guestName = name;
-                              _guestPhone = phone;
-                              _selectedCustomer = null;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF111111),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.05),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      (guest['name'] ?? '?').isNotEmpty ? guest['name']![0].toUpperCase() : '?',
-                                      style: GoogleFonts.cinzel(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white.withValues(alpha: 0.6),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        guest['name'] ?? '',
-                                        style: GoogleFonts.cinzel(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: Colors.white.withValues(alpha: 0.85),
-                                        ),
-                                      ),
-                                      if ((guest['phone'] ?? '').isNotEmpty) ...[
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          guest['phone']!,
-                                          style: GoogleFonts.montserrat(
-                                            color: Colors.white.withValues(alpha: 0.4),
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'GUEST',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.35),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(Icons.swipe_left_outlined, size: 14, color: Colors.white.withValues(alpha: 0.2)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 16),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        );
+  Widget _buildCustomerStep() {
+    return CustomerSelectionStep(
+      isGuestBooking: _isGuestBooking,
+      selectedCustomer: _selectedCustomer,
+      guestName: _guestName,
+      guestPhone: _guestPhone,
+      guestNameController: _guestNameController,
+      guestPhoneController: _guestPhoneController,
+      searchQuery: _searchQuery,
+      onCustomerSelected: (user) => setState(() => _selectedCustomer = user),
+      onNewGuestTapped: () {
+        _guestNameController.clear();
+        _guestPhoneController.clear();
+        setState(() {
+          _isGuestBooking = true;
+          _guestName = '';
+          _guestPhone = '';
+          _selectedCustomer = null;
+        });
       },
-      loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
-      error: (e, _) => Center(child: Text('Errore: $e', style: const TextStyle(color: Colors.red))),
-    );
-  }
-
-  // Helper for Premium TextFields
-  Widget _buildPremiumTextField({
-    required String label,
-    required IconData icon,
-    required Function(String) onChanged,
-    TextInputType inputType = TextInputType.text,
-    TextEditingController? controller,
-  }) {
-    return TextField(
-      controller: controller,
-      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-      keyboardType: inputType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-        prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
-        filled: true,
-        fillColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.grey[100],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
-      ),
-      onChanged: onChanged,
-    );
-  }
-
-  Widget _buildBarberSelection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final barbers = ref.watch(barberListProvider).maybeWhen(
-      data: (list) => list,
-      orElse: () => [],
-    );
-    
-    final allBarbers = barbers.where((b) {
-      // Hide if not bookable OR if it's the specific Shop account name (Failsafe)
-      final isShop = b.name.toUpperCase() == 'NEGOZIO' || b.name.toUpperCase().contains('GENTLEMAN SHOP');
-      return b.isBookable && !isShop;
-    }).toList();
-
-    if (allBarbers.isEmpty) {
-      return Center(
-        child: Text(
-          'Nessun barbiere disponibile.',
-          style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-        ),
-      );
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.7, // Taller for full body/portrait look
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: allBarbers.length,
-      itemBuilder: (context, index) {
-        final barber = allBarbers[index];
-        final isSelected = _selectedBarber?.id == barber.id;
-        final isAvailable = barber.availabilityStatus == BarberAvailability.available;
-        
-        return GestureDetector(
-          onTap: isAvailable ? () {
-            setState(() {
-              _selectedBarber = barber;
-              DateTime date = DateTime.now();
-              int attempts = 0;
-              while (barber.daysOff.contains(date.weekday) && attempts < 30) {
-                date = date.add(const Duration(days: 1));
-                attempts++;
-              }
-              _selectedDate = date;
-              _selectedSlot = null;
-            });
-          } : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isSelected 
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.5) 
-                    : Theme.of(context).dividerColor.withOpacity(0.1),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isSelected ? 0.4 : 0.2),
-                  blurRadius: isSelected ? 20 : 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // 1. Image
-                  Builder(
-                    builder: (context) {
-                      String imageUrl = barber.imageUrl;
-                      if (imageUrl.isEmpty) {
-                        if (barber.name.toLowerCase().contains('omar')) {
-                          imageUrl = 'assets/images/barber_marco.png';
-                        } else if (barber.name.toLowerCase().contains('brombei')) {
-                          imageUrl = 'assets/images/barber_giuseppe.png';
-                        }
-                      }
-
-                      Widget imageWidget;
-                      if (imageUrl.isNotEmpty) {
-                         if (imageUrl.startsWith('assets/')) {
-                           imageWidget = Image.asset(imageUrl, fit: BoxFit.cover, gaplessPlayback: true);
-                         } else if (imageUrl.startsWith('http')) {
-                           imageWidget = Image.network(imageUrl, fit: BoxFit.cover, gaplessPlayback: true);
-                         } else {
-                           try {
-                             imageWidget = Image.memory(base64Decode(imageUrl), fit: BoxFit.cover, gaplessPlayback: true);
-                           } catch (e) {
-                             imageWidget = Container(color: const Color(0xFF222222));
-                           }
-                         }
-                      } else {
-                        // Elegant fallback: gradient background with initials
-                        imageWidget = Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFF1A1A1A),
-                                Color(0xFF2C2C2C),
-                                Color(0xFF1A1A1A),
-                              ],
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
-                              style: GoogleFonts.cinzel(
-                                fontSize: 64,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white.withValues(alpha: 0.08),
-                                letterSpacing: 4,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      
-                      return ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          isSelected ? Colors.transparent : (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.2)), 
-                          BlendMode.darken
-                        ),
-                        child: imageWidget,
-                      );
-                    }
-                  ),
-
-                  // 2. Pro Grade Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.2), // Mid-transition
-                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.8), // Text legibility
-                          (Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white).withOpacity(0.95), // Bottom anchor
-                        ],
-                        stops: const [0.4, 0.6, 0.85, 1.0],
-                      ),
-                    ),
-                  ),
-
-                  // 3. Glass Overlay for Content Area
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: ClipRRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          height: 85,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.white.withOpacity(0.0),
-                                Colors.white.withOpacity(0.05),
-                              ],
-                            ),
-                            border: Border(
-                              top: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // 4. Selection Border Overlay (Internal)
-                  if (isSelected)
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-
-                  // 5. Unavailable Overlay
-                  if (!isAvailable)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withOpacity(0.6),
-                        child: Center(
-                           child: Column(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               Icon(
-                                 _getStatusIcon(barber.availabilityStatus), 
-                                 color: _getStatusColor(barber.availabilityStatus).withOpacity(0.8), 
-                                 size: 32
-                               ),
-                               const SizedBox(height: 8),
-                               Text(
-                                 _getStatusLabel(barber.availabilityStatus),
-                                 style: GoogleFonts.montserrat(
-                                    color: Colors.white.withOpacity(0.9), 
-                                    fontSize: 12, 
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                 ),
-                               ),
-                             ],
-                           ),
-                        ),
-                      ),
-                    ),
-
-                  // 6. Content Content
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Barber Name
-                        Text(
-                          barber.name.toUpperCase(),
-                          style: GoogleFonts.cinzel(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                            shadows: [
-                              Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 10),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        
-                        // Specialties (New!)
-                        if (barber.specialties.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            barber.specialties.join(' • ').toUpperCase(),
-                            style: GoogleFonts.montserrat(
-                              color: Theme.of(context).colorScheme.primary, // Silver/White accent
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ] else ...[
-                           const SizedBox(height: 4),
-                           Text(
-                            'SPECIALISTA TAGLIO & BARBA', // Default fallback
-                            style: GoogleFonts.montserrat(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 8),
-                        
-                        // Hours & Info Row
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.access_time, color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7), size: 10),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    barber.hasDoubleShift
-                                        ? '${barber.startHour}:00–${barber.breakStartHour}:00 | ${barber.breakEndHour}:00–${barber.endHour}:00'
-                                        : '${barber.startHour}:00 – ${barber.endHour}:00',
-                                    style: GoogleFonts.montserrat(
-                                      color: (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black).withOpacity(0.7),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 5. Status Badge (Top Right)
-                  if (!isAvailable)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(barber.availabilityStatus).withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _getStatusLabel(barber.availabilityStatus),
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                  // 6. Selection Indicator (Animated)
-                  if (isSelected)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 8,
-                            )
-                          ]
-                        ),
-                        child: Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
+      onExistingGuestTapped: (name, phone) {
+        _guestNameController.text = name;
+        _guestPhoneController.text = phone;
+        setState(() {
+          _isGuestBooking = true;
+          _guestName = name;
+          _guestPhone = phone;
+          _selectedCustomer = null;
+        });
       },
+      onGuestModeDisabled: () {
+        _guestNameController.clear();
+        _guestPhoneController.clear();
+        setState(() {
+          _isGuestBooking = false;
+          _guestName = '';
+          _guestPhone = '';
+        });
+      },
+      onGuestNameChanged: (v) => setState(() => _guestName = v),
+      onGuestPhoneChanged: (v) => setState(() => _guestPhone = v),
+      onSearchChanged: (v) => setState(() => _searchQuery = v),
     );
   }
 
+  Widget _buildBarberStep() {
+    return BarberSelectionStep(
+      selectedBarber: _selectedBarber,
+      onBarberSelected: (barber, date) => setState(() {
+        _selectedBarber = barber;
+        _selectedDate = date;
+        _selectedSlot = null;
+      }),
+    );
+  }
 
   Widget _buildServiceSelection() {
     final servicesAsync = ref.watch(serviceListProvider);
@@ -1499,7 +748,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             return FadeInUp(
               delay: Duration(milliseconds: index * 100),
               duration: const Duration(milliseconds: 500),
-              child: _PremiumServiceCard(
+              child: PremiumServiceCard(
                 service: service,
                 isSelected: isSelected,
                 onTap: () => setState(() => _selectedService = service),
@@ -1514,49 +763,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   }
 
 
-  Color _getStatusColor(BarberAvailability status) {
-    switch (status) {
-      case BarberAvailability.sick:
-        return const Color(0xFFDC143C); // Crimson
-      case BarberAvailability.vacation:
-        return Colors.blue.shade600;
-      case BarberAvailability.absence:
-        return Colors.grey.shade700;
-      default:
-        return const Color(0xFFDC143C);
-    }
-  }
-
-  String _getStatusLabel(BarberAvailability status) {
-    switch (status) {
-      case BarberAvailability.sick:
-        return 'MALATTIA';
-      case BarberAvailability.vacation:
-        return 'IN FERIE';
-      case BarberAvailability.absence:
-        return 'ASSENTE';
-      default:
-        return 'NON DISPONIBILE';
-    }
-  }
-
-  IconData _getStatusIcon(BarberAvailability status) {
-     switch (status) {
-      case BarberAvailability.sick:
-        return Icons.local_hospital;
-      case BarberAvailability.vacation:
-        return Icons.beach_access;
-      case BarberAvailability.absence:
-        return Icons.person_off;
-      default:
-        return Icons.block;
-    }
-  }
 
   Widget _buildTimeSelection() {
     if (_selectedBarber == null || _selectedService == null) {
       return Center(
-        child: Text('Seleziona prima un barbiere e un servizio.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+        child: Text('Seleziona prima un barbiere e un servizio.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
       );
     }
 
@@ -1574,7 +785,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+              border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
             ),
             padding: const EdgeInsets.all(8),
             child: Theme(
@@ -1616,7 +827,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             ],
           ),
           const SizedBox(height: 16),
-          _SlotsGrid(
+          SlotsGrid(
             barber: _selectedBarber!,
             service: _selectedService!,
             date: _selectedDate,
@@ -1629,10 +840,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   }
 
   Widget _buildConfirmation(bool isPrivileged) {
-    print('DEBUG _buildConfirmation: barber=${_selectedBarber?.name}, service=${_selectedService?.name}, slot=$_selectedSlot');
     if (_selectedBarber == null || _selectedService == null || _selectedSlot == null) {
-      print('DEBUG _buildConfirmation: MISSING DATA - barber null: ${_selectedBarber==null}, service null: ${_selectedService==null}, slot null: ${_selectedSlot==null}');
-      return Center(child: Text('Informazioni mancanti.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))));
+      return Center(child: Text('Informazioni mancanti.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))));
     }
     
     return SingleChildScrollView(
@@ -1647,7 +856,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
           const SizedBox(height: 8),
           Text(
             'Controlla i dettagli prima di confermare.',
-            style: GoogleFonts.montserrat(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+            style: GoogleFonts.montserrat(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 32),
           
@@ -1655,7 +864,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+              border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
             ),
             child: Column(
               children: [
@@ -1664,9 +873,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+                    border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1))),
                   ),
                   child: Column(
                     children: [
@@ -1684,7 +893,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                       Text(
                         'BARBER STUDIO',
                         style: GoogleFonts.montserrat(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontSize: 10,
                           letterSpacing: 4.0,
                         ),
@@ -1741,16 +950,16 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+              border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
-                Icon(Icons.access_time_filled, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 20),
+                Icon(Icons.access_time_filled, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Ti preghiamo di arrivare 5 minuti prima dell\'orario prenotato.',
-                    style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 12),
+                    style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
                   ),
                 ),
               ],
@@ -1769,7 +978,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         children: [
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
           ),
           Text(
             value,
@@ -1783,10 +992,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   Widget _buildNavigationButtons(bool isPrivileged) {
   final maxSteps = isPrivileged ? 4 : 3;
   final canProceed = _canProceed(isPrivileged);
-  
-  print('DEBUG _buildNavigationButtons: currentStep=$_currentStep, maxSteps=$maxSteps, canProceed=$canProceed');
-  print('DEBUG _buildNavigationButtons: barber=${_selectedBarber?.name}, service=${_selectedService?.name}, slot=$_selectedSlot');
-  
+
   return Container(
     padding: EdgeInsets.only(
       bottom: MediaQuery.of(context).padding.bottom > 0 ? 0 : 16,
@@ -1795,7 +1001,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       color: Theme.of(context).scaffoldBackgroundColor,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 10,
           offset: const Offset(0, -5),
         ),
@@ -1812,7 +1018,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 onPressed: () => setState(() => _currentStep--),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.15)),
+                  side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.15)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   backgroundColor: Colors.transparent,
                 ),
@@ -1822,7 +1028,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   )
                 ),
               ),
@@ -1836,7 +1042,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: canProceed ? [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   )
@@ -1847,8 +1053,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  disabledBackgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
-                  disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                  disabledBackgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                  disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
@@ -1892,8 +1098,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   }
 
   void _onNext(int maxSteps) {
-    print('DEBUG: _onNext called - currentStep: $_currentStep, maxSteps: $maxSteps');
-    
     if (_currentStep == 0 && _isGuestBooking) {
       if (_guestName.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1915,33 +1119,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       }
     }
 
-    print('DEBUG: About to check if _currentStep < maxSteps: $_currentStep < $maxSteps');
     if (_currentStep < maxSteps) {
-      print('DEBUG: Advancing to next step');
       setState(() => _currentStep++);
     } else {
-      print('DEBUG: Calling _confirmBooking');
       _confirmBooking();
     }
   }
 
   Future<void> _confirmBooking() async {
-    print('DEBUG: _confirmBooking started');
-    
     // the method is asynchronous and the widget may disappear while the
     // futures are resolving.  check `mounted` after every `await` and
     // never call `ScaffoldMessenger.of(context)` on a deactivated state.
 
-    if (!mounted) {
-      print('DEBUG: Widget not mounted, returning early');
-      return;
-    }
+    if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context); // resolve once while mounted
 
     final currentUser = ref.read(currentUserProfileProvider).value;
-    print('DEBUG: currentUser: ${currentUser?.name}');
     if (currentUser == null) {
-      print('DEBUG: currentUser is null, showing login message');
       messenger.showSnackBar(
         const SnackBar(content: Text('Devi effettuare il login per prenotare.')),
       );
@@ -1956,13 +1150,11 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       customerId = 'guest_${const Uuid().v4()}';
       customerName = _guestName;
       customerPhone = _guestPhone.isNotEmpty ? _guestPhone : null;
-      print('DEBUG: Guest booking - name: $customerName, phone: $customerPhone');
     } else {
       final targetUser = _selectedCustomer ?? currentUser;
       customerId = targetUser.id;
       customerName = targetUser.name;
       customerPhone = targetUser.phoneNumber;
-      print('DEBUG: Regular booking - customerId: $customerId, name: $customerName');
     }
 
     // --- CHECK WEEKLY LIMIT (applies to all registered users) ---
@@ -1971,16 +1163,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     // Conta sempre il limite per clienti registrati, indipendentemente da chi sta facendo la prenotazione
     // Il limite si applica sia che il cliente prenoti da solo, sia che lo faccia un admin/barbiere per lui
     if (!_isGuestBooking) {
-      print('DEBUG: Checking weekly limit for user $customerId');
       try {
         // Fetch all appointments for this user and filter locally to avoid index requirement
         final allUserAppointments = await ref.read(firestoreServiceProvider).getAllAppointmentsForCustomer(customerId).first;
-        
+
         // Calculate week boundaries
         final int daysToSubtract = _selectedSlot!.weekday - 1;
         final DateTime startOfWeek = DateTime(_selectedSlot!.year, _selectedSlot!.month, _selectedSlot!.day).subtract(Duration(days: daysToSubtract));
         final DateTime endOfWeek = startOfWeek.add(const Duration(days: 7));
-        
+
         // Count non-cancelled appointments in this week
         int weeklyCount = 0;
         for (var apt in allUserAppointments) {
@@ -1988,34 +1179,19 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             weeklyCount++;
           }
         }
-        
-        print('DEBUG: User has $weeklyCount appointments this week');
-        if (!mounted) {
-          print('DEBUG: Widget unmounted during weekly limit check, returning');
+
+        if (!mounted) return;
+        if (weeklyCount >= 1) {
+          canCreateAppointment = false;
+          setState(() => _bookingBlocked = true);
           return;
         }
-        if (weeklyCount >= 1) {
-          print('DEBUG: BLOCKING BOOKING - User has reached weekly limit');
-          canCreateAppointment = false;
-          if (!mounted) return;
-          setState(() => _bookingBlocked = true);
-          return; // Stop booking
-        }
-      } catch (e) {
-        // If there's an error checking the limit, log it but don't block the booking
-        print('DEBUG: Warning - could not check weekly limit: $e');
-        print('DEBUG: Proceeding with booking anyway (limit check skipped)');
+      } catch (_) {
+        // Se non è possibile controllare il limite, procede comunque
       }
     }
 
-    // Extra safety check before creating appointment
-    if (!canCreateAppointment) {
-      print('DEBUG: ABORT - canCreateAppointment is false');
-      return;
-    }
-
-    print('DEBUG: Validation passed, creating appointment');
-    print('DEBUG: Slot details - barberId: ${_selectedBarber!.id}, serviceId: ${_selectedService!.id}, date: $_selectedSlot');
+    if (!canCreateAppointment) return;
     
     final appointment = AppointmentModel(
       id: const Uuid().v4(),
@@ -2033,9 +1209,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     );
 
     try {
-      print('DEBUG: Creating appointment in Firestore');
       await ref.read(firestoreServiceProvider).createAppointment(appointment);
-      print('DEBUG: Appointment created successfully');
 
       // Save guest client for future lookups
       if (_isGuestBooking && _guestPhone.isNotEmpty) {
@@ -2049,442 +1223,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         payload: '/calendar',
       );
 
-      if (!mounted) {
-        print('DEBUG: Widget unmounted after createAppointment, returning');
-        return;
-      }
-      
-      // Show success screen with appointment details
-      print('DEBUG: Setting booking success state');
-      setState(() {
-        _bookingSuccess = true;
-      });
+      if (!mounted) return;
+
+      setState(() => _bookingSuccess = true);
     } catch (e) {
-      print('DEBUG: Error creating appointment: $e');
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text('Errore durante la prenotazione: $e')),
       );
     }
-  }
-}
-
-class _SlotsGrid extends ConsumerWidget {
-  final BarberModel barber;
-  final ServiceModel service;
-  final DateTime date;
-  final DateTime? selectedSlot;
-  final Function(DateTime) onSlotSelected;
-
-  const _SlotsGrid({
-    required this.barber,
-    required this.service,
-    required this.date,
-    required this.selectedSlot,
-    required this.onSlotSelected,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final appointmentsAsync = ref.watch(barberAppointmentsProvider((barber.id, date)));
-    final settingsAsync = ref.watch(shopSettingsProvider);
-
-    // Sunday: open but no online bookings
-    if (date.weekday == DateTime.sunday) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.storefront_outlined, size: 48, color: Colors.white.withValues(alpha: 0.15)),
-              const SizedBox(height: 16),
-              Text(
-                'DOMENICA',
-                style: GoogleFonts.cinzel(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white.withValues(alpha: 0.4),
-                  letterSpacing: 3,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Siamo aperti, ma la domenica non accettiamo prenotazioni online.\nChiama o vieni direttamente in negozio.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  height: 1.6,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return settingsAsync.when(
-      data: (settings) => appointmentsAsync.when(
-        data: (appointments) {
-          final slots = ref.read(slotServiceProvider).getAvailableSlots(
-                barber: barber,
-                date: date,
-                serviceDurationMinutes: service.durationMinutes,
-                existingAppointments: appointments,
-                shopSettings: settings,
-              );
-
-          if (slots.isEmpty) {
-            // Determine reason for unavailability
-            String title = 'NESSUNO SLOT';
-            String message = 'Prova a selezionare un\'altra data';
-            IconData icon = Icons.event_busy;
-            
-            if (settings.isShopClosedManually) {
-              title = 'CHIUSO';
-              message = 'Il salone è temporaneamente chiuso.';
-              icon = Icons.door_front_door_outlined;
-            } else if (settings.closures.any((c) => c.year == date.year && c.month == date.month && c.day == date.day)) {
-              title = 'GIORNO FESTIVO';
-              message = 'Il salone è chiuso per festività in questa data.';
-              icon = Icons.celebration;
-            } else if (barber.availabilityStatus == BarberAvailability.sick) {
-            title = 'MALATTIA';
-            message = '${barber.name} non è disponibile.';
-            icon = Icons.local_hospital;
-          } else if (barber.availabilityStatus == BarberAvailability.vacation || 
-                     barber.unavailableDates.any((d) => d.year == date.year && d.month == date.month && d.day == date.day)) {
-            title = 'IN FERIE';
-            message = '${barber.name} è in ferie in questa data.';
-            icon = Icons.beach_access;
-          } else if (barber.daysOff.contains(date.weekday)) {
-            title = 'GIORNO DI RIPOSO';
-            message = '${barber.name} non lavora di ${DateFormat('EEEE', 'it').format(date)}.';
-            icon = Icons.weekend;
-          } else if (barber.availabilityStatus == BarberAvailability.dayOff) {
-             title = 'NON DISPONIBILE';
-             message = '${barber.name} non è disponibile in questa data.';
-             icon = Icons.event_busy;
-          }
-
-          return Center(
-            child: FadeInUp(
-              duration: const Duration(milliseconds: 400),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-                    const SizedBox(height: 16),
-                    Text(
-                      title,
-                      style: GoogleFonts.cinzel(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      message,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: slots.map((slot) {
-            final isSelected = selectedSlot == slot;
-            return InkWell(
-              onTap: () => onSlotSelected(slot),
-              borderRadius: BorderRadius.circular(8),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).colorScheme.primary : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  DateFormat('HH:mm').format(slot),
-                  style: GoogleFonts.montserrat(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-        error: (e, _) => Center(
-          child: Text(
-            'Errore appuntamenti: $e',
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
-        loading: () => Center(
-          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-        ),
-      ),
-      loading: () => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
-      error: (e, _) => Center(
-        child: Text(
-          'Errore impostazioni: $e',
-          style: const TextStyle(color: Colors.red),
-        ),
-      ),
-    );
-  }
-}
-
-// Providers needed for this screen
-final barberListProvider = StreamProvider<List<BarberModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).getBarbers();
-});
-
-final serviceListProvider = StreamProvider<List<ServiceModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).getServices();
-});
-
-final barberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, (String, DateTime)>((ref, arg) {
-  return ref.watch(firestoreServiceProvider).getAppointmentsForBarber(arg.$1, arg.$2);
-});
-
-class UserAvatar extends StatefulWidget {
-  final UserModel user;
-  final bool isSelected;
-
-  const UserAvatar({
-    super.key,
-    required this.user,
-    required this.isSelected,
-  });
-
-  @override
-  State<UserAvatar> createState() => _UserAvatarState();
-}
-
-class _UserAvatarState extends State<UserAvatar> {
-  Uint8List? _decodedBytes;
-
-  @override
-  void initState() {
-    super.initState();
-    _decodeImage();
-  }
-
-  @override
-  void didUpdateWidget(UserAvatar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.user.imageUrl != widget.user.imageUrl) {
-      _decodeImage();
-    }
-  }
-
-  void _decodeImage() {
-    final imageUrl = widget.user.imageUrl ?? '';
-    if (imageUrl.length > 100 && !imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
-      try {
-        _decodedBytes = base64Decode(imageUrl);
-      } catch (e) {
-        _decodedBytes = null;
-      }
-    } else {
-      _decodedBytes = null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = widget.user.imageUrl ?? '';
-
-    if (imageUrl.isNotEmpty) {
-      if (imageUrl.startsWith('assets/')) {
-        return ClipOval(child: Image.asset(imageUrl, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_,__,___)=>_buildInitials()));
-      } else if (_decodedBytes != null) {
-        return ClipOval(child: Image.memory(_decodedBytes!, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_,__,___)=>_buildInitials()));
-      } else if (imageUrl.startsWith('http')) {
-        return ClipOval(child: Image.network(imageUrl, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_,__,___)=>_buildInitials()));
-      }
-    }
-    
-    return _buildInitials();
-  }
-
-  Widget _buildInitials() {
-    return Container(
-      width: 50, height: 50, alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle, 
-        color: widget.isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.1)
-      ),
-      child: Text(
-        widget.user.name.isNotEmpty ? widget.user.name[0].toUpperCase() : '?', 
-        style: GoogleFonts.cinzel(
-          color: widget.isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface, 
-          fontWeight: FontWeight.bold, 
-          fontSize: 20
-        )
-      ),
-    );
-  }
-}
-
-class _PremiumServiceCard extends StatefulWidget {
-  final ServiceModel service;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PremiumServiceCard({
-    required this.service,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  State<_PremiumServiceCard> createState() => _PremiumServiceCardState();
-}
-
-class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() { _controller.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) { _controller.reverse(); widget.onTap(); },
-      onTapCancel: () => _controller.reverse(),
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) => Transform.scale(scale: _scaleAnimation.value, child: child),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: 100,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-            border: Border.all(
-              color: widget.isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.1),
-              width: 1.5,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              children: [
-                // Selection highlight
-                if (widget.isSelected)
-                  Positioned.fill(
-                    child: Container(color: Theme.of(context).colorScheme.primary.withOpacity(0.05)),
-                  ),
-
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                        ),
-                        child: Center(
-                          child: Icon(Icons.content_cut, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), size: 28),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              widget.service.name.toUpperCase(),
-                              style: GoogleFonts.cinzel(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${widget.service.durationMinutes} min',
-                              style: GoogleFonts.montserrat(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '€${widget.service.price.toInt()}',
-                        style: GoogleFonts.cinzel(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                if (widget.isSelected)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.check, size: 12, color: Theme.of(context).colorScheme.onPrimary),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

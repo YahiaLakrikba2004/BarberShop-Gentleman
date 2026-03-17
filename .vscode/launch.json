@@ -1,9 +1,25 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "Flutter (dev)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define-from-file=.dart_defines.json"
+            ]
+        },
+        {
+            "name": "Flutter Web (dev)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "deviceId": "chrome",
+            "args": [
+                "--dart-define-from-file=.dart_defines.json"
+            ]
+        },
         {
             "type": "chrome",
             "request": "launch",

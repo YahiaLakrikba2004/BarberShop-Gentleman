@@ -56,6 +56,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
     final barbersAsync = ref.watch(barberListProvider);
     final allAppointmentsAsync = ref.watch(allAppointmentsProvider);
     final isSunday = _selectedDate.weekday == DateTime.sunday;
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -103,7 +104,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
         children: [
           // Date Select Row
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -241,59 +242,77 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                           apt.date.day == _selectedDate.day;
                     }).toList();
 
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Time Column
-                                Container(
-                                  width: 50,
-                                  margin: const EdgeInsets.only(top: 155),
-                                  child: Column(
-                                    children: List.generate((11 + 1) * 2, (index) {
-                                      final totalMinutes = 9 * 60 + index * 30;
-                                      final hour = totalMinutes ~/ 60;
-                                      final minute = totalMinutes % 60;
-                                      final isHour = minute == 0;
-                                      return Container(
-                                        height: 30.0,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '$hour:${minute.toString().padLeft(2, '0')}',
-                                          style: GoogleFonts.montserrat(
-                                            color: isHour ? Colors.white38 : Colors.white12,
-                                            fontSize: isHour ? 10 : 8,
-                                            fontWeight: isHour
-                                                ? FontWeight.w500
-                                                : FontWeight.w400,
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ),
+                    const startHour = 9;
+                    const endHour = 20;
+                    const totalHours = endHour - startHour;
 
-                                // Barber Columns
-                                ...barbers.map((barber) {
-                                  return Expanded(
-                                    child: BarberDailyColumn(
-                                      barber: barber,
-                                      date: _selectedDate,
-                                      appointments: dayAppointments,
-                                      onAppointmentTap: (apt) =>
-                                          _showAppointmentDetails(context, apt),
+                    return LayoutBuilder(builder: (context, constraints) {
+                      // On desktop: fill available height; on mobile: keep 60px min
+                      final availH = constraints.maxHeight;
+                      final rawHourHeight = (availH - BarberDailyColumn.headerHeight - 16) / totalHours;
+                      final hourHeight = rawHourHeight.clamp(55.0, 120.0);
+                      final slotHeight = hourHeight / 2;
+                      final timeColWidth = isDesktop ? 60.0 : 50.0;
+
+                      Widget agendaContent = Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Time Column
+                          SizedBox(
+                            width: timeColWidth,
+                            child: Column(
+                              children: [
+                                const SizedBox(height: BarberDailyColumn.headerHeight),
+                                ...List.generate(totalHours * 2, (index) {
+                                  final totalMinutes = startHour * 60 + index * 30;
+                                  final hour = totalMinutes ~/ 60;
+                                  final minute = totalMinutes % 60;
+                                  final isHour = minute == 0;
+                                  return SizedBox(
+                                    height: slotHeight,
+                                    child: Align(
+                                      alignment: Alignment.topCenter,
+                                      child: Text(
+                                        isHour ? '$hour:00' : '',
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white38,
+                                          fontSize: isDesktop ? 11 : 9,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ),
                                   );
                                 }),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    );
+
+                          // Barber Columns
+                          ...barbers.map((barber) {
+                            return Expanded(
+                              child: BarberDailyColumn(
+                                barber: barber,
+                                date: _selectedDate,
+                                appointments: dayAppointments,
+                                onAppointmentTap: (apt) =>
+                                    _showAppointmentDetails(context, apt),
+                                hourHeight: hourHeight,
+                                startHour: startHour,
+                                endHour: endHour,
+                              ),
+                            );
+                          }),
+                        ],
+                      );
+
+                      // On desktop: no scroll if fits; on mobile: always scrollable
+                      final totalTimelineH = BarberDailyColumn.headerHeight + totalHours * hourHeight;
+                      if (!isDesktop || totalTimelineH > availH) {
+                        agendaContent = SingleChildScrollView(child: agendaContent);
+                      }
+
+                      return agendaContent;
+                    });
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Center(child: Text('Errore agenda: $e')),
@@ -329,90 +348,104 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
   }
 
   void _showAppointmentDetails(BuildContext context, AppointmentModel apt) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'DETTAGLI APPUNTAMENTO',
-                style: GoogleFonts.cinzel(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.person, 'Cliente', apt.customerName),
-              if (apt.customerPhoneNumber != null)
-                _buildDetailRow(Icons.phone, 'Telefono', apt.customerPhoneNumber!),
-              _buildDetailRow(Icons.content_cut, 'Servizio', apt.serviceName),
-              _buildDetailRow(
-                Icons.access_time,
-                'Orario',
-                '${DateFormat('HH:mm').format(apt.date)} - ${DateFormat('HH:mm').format(apt.endTime)}',
-              ),
-              _buildDetailRow(Icons.euro, 'Prezzo', '€${apt.price.toStringAsFixed(0)}'),
-              const SizedBox(height: 24),
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
-              // Cancel / No-show button
-              if (apt.status != AppointmentStatus.cancelled)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(modalContext);
-                      await ref
-                          .read(firestoreServiceProvider)
-                          .updateAppointmentStatus(apt.id, AppointmentStatus.cancelled);
-                    },
-                    icon: const Icon(Icons.person_off_outlined, size: 18),
-                    label: const Text('CLIENTE NON PRESENTATO'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2A0A0A),
-                      foregroundColor: const Color(0xFFDC143C),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: const Color(0xFFDC143C).withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+    Widget content(BuildContext modalContext) => Container(
+      padding: const EdgeInsets.all(28),
+      decoration: isDesktop
+          ? BoxDecoration(
+              color: const Color(0xFF111111),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            )
+          : BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'DETTAGLI APPUNTAMENTO',
+              style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildDetailRow(Icons.person, 'Cliente', apt.customerName),
+            if (apt.customerPhoneNumber != null)
+              _buildDetailRow(Icons.phone, 'Telefono', apt.customerPhoneNumber!),
+            _buildDetailRow(Icons.content_cut, 'Servizio', apt.serviceName),
+            _buildDetailRow(
+              Icons.access_time,
+              'Orario',
+              '${DateFormat('HH:mm').format(apt.date)} - ${DateFormat('HH:mm').format(apt.endTime)}',
+            ),
+            _buildDetailRow(Icons.euro, 'Prezzo', '€${apt.price.toStringAsFixed(0)}'),
+            const SizedBox(height: 24),
 
-              const SizedBox(height: 10),
+            if (apt.status != AppointmentStatus.cancelled)
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(modalContext),
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(modalContext);
+                    await ref
+                        .read(firestoreServiceProvider)
+                        .updateAppointmentStatus(apt.id, AppointmentStatus.cancelled);
+                  },
+                  icon: const Icon(Icons.person_off_outlined, size: 18),
+                  label: const Text('CLIENTE NON PRESENTATO'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white10,
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF2A0A0A),
+                    foregroundColor: const Color(0xFFDC143C),
                     elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      side: BorderSide(color: const Color(0xFFDC143C).withValues(alpha: 0.4)),
                     ),
                   ),
-                  child: const Text('CHIUDI'),
                 ),
               ),
-            ],
-          ),
+
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(modalContext),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white10,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                ),
+                child: const Text('CHIUDI'),
+              ),
+            ),
+          ],
         ),
       ),
     );
+
+    if (isDesktop) {
+      showDialog(
+        context: context,
+        builder: (modalContext) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: SizedBox(width: 420, child: content(modalContext)),
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: content,
+      );
+    }
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {

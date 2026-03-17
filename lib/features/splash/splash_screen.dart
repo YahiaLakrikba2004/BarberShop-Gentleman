@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -121,9 +120,9 @@ class _SplashScreenState extends State<SplashScreen>
           child: Stack(
             children: [
               // --- RADIAL GRADIENT BACKGROUND ---
-              Positioned.fill(
+              const Positioned.fill(
                 child: DecoratedBox(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: RadialGradient(
                       center: Alignment.center,
                       radius: 0.85,
@@ -181,7 +180,7 @@ class _SplashScreenState extends State<SplashScreen>
                               builder: (context, _) => CustomPaint(
                                 painter: _ArcPainter(
                                   progress: _ringController.value,
-                                  color: Colors.white.withOpacity(0.18),
+                                  color: Colors.white.withValues(alpha: 0.18),
                                 ),
                               ),
                             ),
@@ -195,12 +194,12 @@ class _SplashScreenState extends State<SplashScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.10),
+                                  color: Colors.white.withValues(alpha: 0.10),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white.withOpacity(0.07),
+                                    color: Colors.white.withValues(alpha: 0.07),
                                     blurRadius: _glowRadius.value,
                                     spreadRadius: 4,
                                   ),
@@ -240,7 +239,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'BARBERSTYLE',
                       style: GoogleFonts.montserrat(
-                        color: Colors.white.withOpacity(0.35),
+                        color: Colors.white.withValues(alpha: 0.35),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w300,
                         letterSpacing: 7,
@@ -254,7 +253,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'EST. MMXXVI',
                       style: GoogleFonts.cinzel(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         fontSize: 9,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 4,
@@ -303,7 +302,7 @@ class _ParticlePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y), 
         pSize, 
-        paint..color = Colors.white.withOpacity(pOpacity),
+        paint..color = Colors.white.withValues(alpha: pOpacity),
       );
     }
   }
@@ -312,9 +311,6 @@ class _ParticlePainter extends CustomPainter {
   bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
 }
  
-class _Particle {
-  // Logic placeholder if needed for more complex particles
-}
 
 class _ArcPainter extends CustomPainter {
   final double progress; // 0.0 → 1.0 full rotation
@@ -339,9 +335,9 @@ class _ArcPainter extends CustomPainter {
         startAngle: startAngle,
         endAngle: startAngle + arcSweep,
         colors: [
-          Colors.white.withOpacity(0.0),
-          Colors.white.withOpacity(0.22),
-          Colors.white.withOpacity(0.0),
+          Colors.white.withValues(alpha: 0.0),
+          Colors.white.withValues(alpha: 0.22),
+          Colors.white.withValues(alpha: 0.0),
         ],
         stops: const [0.0, 0.5, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius));

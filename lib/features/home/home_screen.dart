@@ -26,7 +26,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _logoController;
-  late Animation<double> _drawAnimation;
 
 
   @override
@@ -36,9 +35,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _drawAnimation =
-        CurvedAnimation(parent: _logoController, curve: Curves.easeInOut);
-
     // Start animation after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _logoController.forward();
@@ -142,10 +138,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             height: 250,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.02), // Very subtle
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.02), // Very subtle
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.03),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.03),
                                   blurRadius: 40,
                                   spreadRadius: 5,
                                 ),
@@ -169,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.8),
+                                    color: Colors.black.withValues(alpha: 0.8),
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
                                   ),
@@ -207,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               style: GoogleFonts.montserrat(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 letterSpacing: 8,
                               ),
                             ),
@@ -218,7 +214,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             Container(
                               width: 40,
                               height: 1,
-                              color: Theme.of(context).dividerColor.withOpacity(0.6),
+                              color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
                             ),
 
                             const SizedBox(height: 60), // Increased to lower button
@@ -247,298 +243,283 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const _HomeCarousel(),
 
             // Services Section
-            Container(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.grey[50], // Matches the section below
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-              child: Column(
-                children: [
-                  FadeInUp(
-                    delay: const Duration(milliseconds: 200),
+            Builder(builder: (context) {
+              final isDesktop = MediaQuery.of(context).size.width > 800;
+              return Container(
+                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.grey[50],
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: isDesktop ? 60 : 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
                     child: Column(
                       children: [
-                        Text(
-                          'I NOSTRI SERVIZI',
-                          style: GoogleFonts.cinzel(
-                            // Consistent font
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            letterSpacing: 4,
+                        FadeInUp(
+                          delay: const Duration(milliseconds: 200),
+                          child: Column(
+                            children: [
+                              Text(
+                                'I NOSTRI SERVIZI',
+                                style: GoogleFonts.cinzel(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  letterSpacing: 4,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: 80,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Theme.of(context).colorScheme.primary,
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Trattamenti Premium per i Gentlemen Moderni',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  letterSpacing: 1,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: 80,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                            colors: [
-                                Colors.transparent,
-                                Theme.of(context).colorScheme.primary,
-                                Colors.transparent,
-                              ],
+                        const SizedBox(height: 56),
+                        SizedBox(
+                          height: isDesktop ? 400 : 360,
+                          child: const RepaintBoundary(child: _ServicesCarousel()),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            // Footer / Business Card + Announcement
+            Builder(builder: (context) {
+              final isDesktop = MediaQuery.of(context).size.width > 800;
+              final bgColor = Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white;
+              return Container(
+                color: bgColor,
+                padding: EdgeInsets.all(isDesktop ? 40 : 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Announcement Banner
+                        const AnnouncementBanner(),
+                        const SizedBox(height: 24),
+
+                        // Business Card
+                        FadeInUp(
+                          delay: const Duration(milliseconds: 200),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white.withValues(alpha: 0.08)
+                                          : Colors.white.withValues(alpha: 0.7),
+                                      Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white.withValues(alpha: 0.02)
+                                          : Colors.white.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
+                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, spreadRadius: 5)],
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Header with Logo
+                                    Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Theme.of(context).colorScheme.onSurface),
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                                            ),
+                                            child: ClipOval(child: Image.asset('assets/images/icon_premium_v2.png', width: 24, height: 24, fit: BoxFit.cover)),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text('THE GENTLEMEN', style: GoogleFonts.cinzel(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface, letterSpacing: 2)),
+                                              Text('BARBERSTYLE', style: GoogleFonts.montserrat(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), letterSpacing: 4)),
+                                              const SizedBox(height: 4),
+                                              Row(children: [
+                                                const Icon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366), size: 14),
+                                                const SizedBox(width: 8),
+                                                Text('+39 351 482 3048', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+                                              ]),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Content — Row on desktop, Column on mobile
+                                    Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: isDesktop
+                                          ? Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                // Left: contacts + social
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      ContactRow(
+                                                        icon: Icons.location_on,
+                                                        title: 'Via Borgo Eniano, 50',
+                                                        subtitle: '35044 Montagnana PD, Italia',
+                                                        onTap: () async {
+                                                          final uri = Uri.parse('https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
+                                                          if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 24),
+                                                      ContactRow(
+                                                        icon: Icons.phone,
+                                                        title: '+39 351 482 3048',
+                                                        subtitle: 'Chiamaci per info',
+                                                        onTap: () async {
+                                                          final uri = Uri.parse('tel:+393514823048');
+                                                          if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 32),
+                                                      const Row(
+                                                        children: [
+                                                          SocialButton(icon: FontAwesomeIcons.instagram, url: 'https://www.instagram.com/the_gentlemen_barberstyle/'),
+                                                          SizedBox(width: 20),
+                                                          SocialButton(icon: FontAwesomeIcons.whatsapp, url: 'https://wa.me/393514823048'),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 40),
+                                                // Right: hours
+                                                Expanded(
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(16),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black.withValues(alpha: 0.3),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                                    ),
+                                                    child: Column(
+                                                      children: [
+                                                        Text('ORARI DI APERTURA', style: GoogleFonts.montserrat(color: const Color(0xFFFAFAFA), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                                        const SizedBox(height: 16),
+                                                        const HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
+                                                        const SizedBox(height: 8),
+                                                        const HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
+                                                        const SizedBox(height: 8),
+                                                        const HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
+                                                        const SizedBox(height: 8),
+                                                        const HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : Column(
+                                              children: [
+                                                ContactRow(
+                                                  icon: Icons.location_on,
+                                                  title: 'Via Borgo Eniano, 50',
+                                                  subtitle: '35044 Montagnana PD, Italia',
+                                                  onTap: () async {
+                                                    final uri = Uri.parse('https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
+                                                    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                                  },
+                                                ),
+                                                const SizedBox(height: 24),
+                                                ContactRow(
+                                                  icon: Icons.phone,
+                                                  title: '+39 351 482 3048',
+                                                  subtitle: 'Chiamaci per info',
+                                                  onTap: () async {
+                                                    final uri = Uri.parse('tel:+393514823048');
+                                                    if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                                  },
+                                                ),
+                                                const SizedBox(height: 32),
+                                                Container(
+                                                  padding: const EdgeInsets.all(16),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withValues(alpha: 0.3),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                                  ),
+                                                  child: Column(
+                                                    children: [
+                                                      Text('ORARI DI APERTURA', style: GoogleFonts.montserrat(color: const Color(0xFFFAFAFA), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                                      const SizedBox(height: 16),
+                                                      const HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
+                                                      const SizedBox(height: 8),
+                                                      const HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
+                                                      const SizedBox(height: 8),
+                                                      const HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
+                                                      const SizedBox(height: 8),
+                                                      const HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 32),
+                                                const Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    SocialButton(icon: FontAwesomeIcons.instagram, url: 'https://www.instagram.com/the_gentlemen_barberstyle/'),
+                                                    SizedBox(width: 20),
+                                                    SocialButton(icon: FontAwesomeIcons.whatsapp, url: 'https://wa.me/393514823048'),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Trattamenti Premium per i Gentlemen Moderni',
-                          style: GoogleFonts.montserrat(
-                            // Consistent font
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            letterSpacing: 1,
-                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 56),
-
-                  // Service Cards Carousel
-                  const SizedBox(
-                    height: 360, // Increased height for better spacing
-                    child: RepaintBoundary(
-                      child: _ServicesCarousel(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Premium Digital Business Card Section
-            Container(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
-              child: Column(
-                children: [
-                   // Announcement Banner (Moved here)
-                   Container(
-                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
-                      padding: const EdgeInsets.only(top: 24, left: 24, right: 24), // Added padding for spacing
-                      child: const AnnouncementBanner(),
-                   ),
-                   const SizedBox(height: 8),
-                ],
-              ),
-            ),
-
-            // Footer / Business Card Content
-            Container(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A0A) : Colors.white,
-              padding: const EdgeInsets.all(24),
-              child: FadeInUp(
-                delay: const Duration(milliseconds: 200),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white.withOpacity(0.08) 
-                                : Colors.white.withOpacity(0.7),
-                            Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white.withOpacity(0.02) 
-                                : Colors.white.withOpacity(0.3),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          // Header with Logo
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Theme.of(context).dividerColor.withOpacity(0.2),
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border:
-                                        Border.all(color: Theme.of(context).colorScheme.onSurface),
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                  ),
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/icon_premium_v2.png',
-                                      width: 24,
-                                      height: 24,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'THE GENTLEMEN',
-                                      style: GoogleFonts.cinzel(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                    Text(
-                                      'BARBERSTYLE',
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 12,
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                        letterSpacing: 4,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          FontAwesomeIcons.whatsapp,
-                                          color: Color(0xFF25D366),
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '+39 351 482 3048',
-                                          style: GoogleFonts.montserrat(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Theme.of(context).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              children: [
-                                // Address
-                                ContactRow(
-                                  icon: Icons.location_on,
-                                  title: 'Via Borgo Eniano, 50',
-                                  subtitle: '35044 Montagnana PD, Italia',
-                                  onTap: () async {
-                                    final uri = Uri.parse(
-                                        'https://maps.google.com/?q=Via+Borgo+Eniano+50+Montagnana+PD');
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri,
-                                          mode: LaunchMode.externalApplication);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-
-                                // Phone
-                                ContactRow(
-                                  icon: Icons.phone,
-                                  title: '+39 351 482 3048',
-                                  subtitle: 'Chiamaci per info',
-                                  onTap: () async {
-                                    final uri = Uri.parse('tel:+393514823048');
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 32),
-
-                                // Hours Grid
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.05),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        'ORARI DI APERTURA',
-                                        style: GoogleFonts.montserrat(
-                                          color: const Color(0xFFFAFAFA),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      const HoursRow(
-                                          day: 'Lun - Gio',
-                                          hours: '10:00-12:30 | 14:30-20:00'),
-                                      const SizedBox(height: 8),
-                                      const HoursRow(
-                                          day: 'Venerdì',
-                                          hours: '10:00-12:30 | 14:00-20:30'),
-                                      const SizedBox(height: 8),
-                                      const HoursRow(
-                                          day: 'Sabato', hours: '09:00 - 20:00'),
-                                      const SizedBox(height: 8),
-                                      const HoursRow(
-                                          day: 'Domenica', hours: '10:00 - 18:00'),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 32),
-
-                                // Social Actions
-                                const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SocialButton(
-                                      icon: FontAwesomeIcons.instagram,
-                                      url:
-                                          'https://www.instagram.com/the_gentlemen_barberstyle/',
-                                    ),
-                                    SizedBox(width: 20),
-                                    SocialButton(
-                                      icon: FontAwesomeIcons.whatsapp,
-                                      url: 'https://wa.me/393514823048',
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),
@@ -636,9 +617,11 @@ class _HomeCarouselState extends ConsumerState<_HomeCarousel> {
             'assets/images/gallery/gallery_user_7.jpg',
           ];
 
+    final isDesktop = MediaQuery.of(context).size.width > 800;
+
     return Container(
       color: const Color(0xFF0A0A0A),
-      padding: const EdgeInsets.symmetric(vertical: 60),
+      padding: EdgeInsets.symmetric(vertical: 60, horizontal: isDesktop ? 60 : 0),
       child: Column(
         children: [
           FadeInUp(
@@ -660,11 +643,7 @@ class _HomeCarouselState extends ConsumerState<_HomeCarousel> {
                   height: 3,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Color(0xFFFFFFFF),
-                        Colors.transparent,
-                      ],
+                      colors: [Colors.transparent, Color(0xFFFFFFFF), Colors.transparent],
                     ),
                   ),
                 ),
@@ -672,163 +651,174 @@ class _HomeCarouselState extends ConsumerState<_HomeCarousel> {
             ),
           ),
           const SizedBox(height: 40),
-          
-          // Cinematic Carousel
-          SizedBox(
-            height: 400,
-            child: GestureDetector(
-              onPanDown: (_) => _stopAutoPlay(),
-              onPanCancel: () => _startAutoPlay(),
-              onPanEnd: (_) => _startAutoPlay(),
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: _infiniteCount,
-                itemBuilder: (context, index) {
-                  final imageIndex = index % galleryImages.length;
-                  final imagePath = galleryImages[imageIndex];
 
-                  return AnimatedBuilder(
-                    animation: _pageController!,
-                    builder: (context, child) {
-                      double value = 0.0;
-                      // Safe access to position
-                      if (_pageController?.hasClients == true && 
-                          _pageController!.positions.length == 1 &&
-                          _pageController!.position.haveDimensions) {
-                        value = _pageController!.page! - index;
-                      } else {
-                        value = (_currentPage - index).toDouble();
-                      }
+          if (isDesktop)
+            // Desktop: 3-column grid
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: galleryImages.length,
+                  itemBuilder: (context, index) {
+                    final imagePath = galleryImages[index];
+                    return _buildGalleryItem(imagePath);
+                  },
+                ),
+              ),
+            )
+          else ...[
+            // Mobile: cinematic carousel
+            SizedBox(
+              height: 400,
+              child: GestureDetector(
+                onPanDown: (_) => _stopAutoPlay(),
+                onPanCancel: () => _startAutoPlay(),
+                onPanEnd: (_) => _startAutoPlay(),
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemCount: _infiniteCount,
+                  itemBuilder: (context, index) {
+                    final imageIndex = index % galleryImages.length;
+                    final imagePath = galleryImages[imageIndex];
 
-                      // Calculations for 3D effect
-                      final double dist = value.clamp(-1.0, 1.0);
-                      final double scale = 1.0 - (dist.abs() * 0.15); 
-                      final double opacity = 1.0 - (dist.abs() * 0.5).clamp(0.0, 0.6); 
-                      final double rotation = dist * 0.1; 
+                    return AnimatedBuilder(
+                      animation: _pageController!,
+                      builder: (context, child) {
+                        double value = 0.0;
+                        if (_pageController?.hasClients == true &&
+                            _pageController!.positions.length == 1 &&
+                            _pageController!.position.haveDimensions) {
+                          value = _pageController!.page! - index;
+                        } else {
+                          value = (_currentPage - index).toDouble();
+                        }
+                        final double dist = value.clamp(-1.0, 1.0);
+                        final double scale = 1.0 - (dist.abs() * 0.15);
+                        final double opacity = 1.0 - (dist.abs() * 0.5).clamp(0.0, 0.6);
+                        final double rotation = dist * 0.1;
 
-                      final Alignment imageAlignment = Alignment(dist * 0.5, 0);
-
-                      return Transform(
-                        transform: Matrix4.identity()
-                          ..setEntry(3, 2, 0.001)
-                          ..rotateY(rotation),
-                        alignment: Alignment.center,
-                        child: Opacity(
-                          opacity: opacity,
-                          child: Transform.scale(
-                            scale: scale,
-                            child: child,
+                        return Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateY(rotation),
+                          alignment: Alignment.center,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: Transform.scale(scale: scale, child: child),
                           ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFFFFFF).withValues(alpha: 0.3), width: 1),
+                          boxShadow: [BoxShadow(color: const Color(0xFF000000).withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 5, offset: const Offset(0, 10))],
                         ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFFFFFFF).withOpacity(0.3),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF000000).withOpacity(0.5),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Builder(builder: (_) {
-                                if (imagePath.startsWith('assets/')) {
-                                  return Image.asset(
-                                    imagePath,
-                                    fit: BoxFit.cover,
-                                    alignment: Alignment.center,
-                                    errorBuilder: (_, __, ___) => const _GalleryFallback(),
-                                  );
-                                }
-                                try {
-                                  return Image.memory(
-                                    base64Decode(imagePath),
-                                    fit: BoxFit.cover,
-                                    alignment: Alignment.center,
-                                    gaplessPlayback: true,
-                                    errorBuilder: (_, __, ___) => const _GalleryFallback(),
-                                  );
-                                } catch (_) {
-                                  return const _GalleryFallback();
-                                }
-                              }),
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.2),
-                                    Colors.black.withOpacity(0.6),
-                                  ],
-                                  stops: const [0.6, 0.8, 1.0],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              _buildGalleryImage(imagePath),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.2), Colors.black.withValues(alpha: 0.6)],
+                                    stops: const [0.6, 0.8, 1.0],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Animated Indicators
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(galleryImages.length, (index) {
-              final activeIndex = _currentPage % galleryImages.length;
-              final isActive = activeIndex == index;
 
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: isActive ? 32.0 : 8.0,
-                height: 4.0,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: isActive
-                      ? const Color(0xFFFFFFFF)
-                      : const Color(0xFFFFFFFF).withOpacity(0.2),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFFFFFF).withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          )
-                        ]
-                      : null,
-                ),
-              );
-            }).toList(),
-          ),
+            const SizedBox(height: 24),
+
+            // Animated Indicators (mobile only)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(galleryImages.length, (index) {
+                final activeIndex = _currentPage % galleryImages.length;
+                final isActive = activeIndex == index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isActive ? 32.0 : 8.0,
+                  height: 4.0,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: isActive ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF).withValues(alpha: 0.2),
+                    boxShadow: isActive ? [BoxShadow(color: const Color(0xFFFFFFFF).withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)] : null,
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildGalleryItem(String imagePath) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFFFFF).withValues(alpha: 0.15), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 8))],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildGalleryImage(imagePath),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
+                  stops: const [0.6, 1.0],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGalleryImage(String imagePath) {
+    if (imagePath.startsWith('assets/')) {
+      return Image.asset(imagePath, fit: BoxFit.cover, alignment: Alignment.center, errorBuilder: (_, __, ___) => const _GalleryFallback());
+    }
+    try {
+      return Image.memory(base64Decode(imagePath), fit: BoxFit.cover, alignment: Alignment.center, gaplessPlayback: true, errorBuilder: (_, __, ___) => const _GalleryFallback());
+    } catch (_) {
+      return const _GalleryFallback();
+    }
   }
 }
 
@@ -904,14 +894,14 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
               boxShadow: [
                 // Clean White Border Glow - No blurry spread
                 BoxShadow(
-                  color: const Color(0xFFFFFFFF).withOpacity(0.1 + (0.1 * _glowAnimation.value)),
+                  color: const Color(0xFFFFFFFF).withValues(alpha: 0.1 + (0.1 * _glowAnimation.value)),
                   blurRadius: 8, // Sharper
                   spreadRadius: 1, 
                   offset: const Offset(0, 0),
                 ),
                 // Subtle Ambient Shadow
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -942,9 +932,9 @@ class _PremiumAnimatedButtonState extends State<_PremiumAnimatedButton>
                           end: Alignment(_glowAnimation.value, 0.5),
                           colors: [
                             Colors.transparent,
-                            Colors.white.withOpacity(0.0),
-                            Colors.white.withOpacity(0.25), // The "shine"
-                            Colors.white.withOpacity(0.0),
+                            Colors.white.withValues(alpha: 0.0),
+                            Colors.white.withValues(alpha: 0.25), // The "shine"
+                            Colors.white.withValues(alpha: 0.0),
                             Colors.transparent,
                           ],
                           stops: const [0.0, 0.4, 0.5, 0.6, 1.0],
@@ -1197,12 +1187,12 @@ class _ServicesCarouselState extends ConsumerState<_ServicesCarousel> {
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFFFFFFFF)
-                        : const Color(0xFFFFFFFF).withOpacity(0.2),
+                        : const Color(0xFFFFFFFF).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: isActive
                         ? [
                             BoxShadow(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               blurRadius: 6,
                               spreadRadius: 1,
                             )
@@ -1279,10 +1269,10 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
           decoration: BoxDecoration(
             color: const Color(0xFF141414),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -1300,7 +1290,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                     ),
                     child: Icon(widget.icon, color: Colors.white, size: 28),
                   ),
@@ -1326,7 +1316,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                   widget.description,
                   style: GoogleFonts.montserrat(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     height: 1.6,
                     fontWeight: FontWeight.w400,
                   ),
@@ -1342,7 +1332,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1368,7 +1358,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.15)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1436,7 +1426,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 30,
               spreadRadius: -5,
               offset: const Offset(0, 10),
@@ -1455,15 +1445,15 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                   end: Alignment.bottomRight,
                   colors: [
                     widget.featured
-                        ? Colors.white.withOpacity(0.12)
-                        : Colors.white.withOpacity(0.08),
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.08),
                     widget.featured
-                        ? Colors.white.withOpacity(0.04)
-                        : Colors.white.withOpacity(0.02),
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.white.withValues(alpha: 0.02),
                   ],
                 ),
                 border: Border.all(
-                  color: Colors.white.withOpacity(widget.featured ? 0.2 : 0.1),
+                  color: Colors.white.withValues(alpha: widget.featured ? 0.2 : 0.1),
                   width: 1,
                 ),
               ),
@@ -1481,14 +1471,14 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                           padding: EdgeInsets.all(widget.compact ? 10 : 12),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: accentColor.withOpacity(0.1),
+                            color: accentColor.withValues(alpha: 0.1),
                             border: Border.all(
-                              color: accentColor.withOpacity(0.3),
+                              color: accentColor.withValues(alpha: 0.3),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: accentColor.withOpacity(0.15),
+                                color: accentColor.withValues(alpha: 0.15),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               )
@@ -1505,10 +1495,10 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
                                   width: 0.5,
                                 ),
                               ),
@@ -1538,7 +1528,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                         letterSpacing: 1.2,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             offset: const Offset(0, 2),
                             blurRadius: 4,
                           ),
@@ -1552,7 +1542,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                       widget.description,
                       style: GoogleFonts.montserrat(
                         fontSize: widget.compact ? 11 : 12,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.5,
                       ),
                       maxLines: 2,
@@ -1564,7 +1554,7 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                     Container(
                       width: double.infinity,
                       height: 0.5,
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                     const SizedBox(height: 16),
 
@@ -1590,14 +1580,14 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                                 Icon(
                                   Icons.schedule, 
                                   size: 12, 
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   widget.duration,
                                   style: GoogleFonts.montserrat(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -1616,19 +1606,19 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.08),
+                                color: accentColor.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: accentColor.withOpacity(0.3),
+                                  color: accentColor.withValues(alpha: 0.3),
                                 ),
                                 gradient: LinearGradient(
                                   begin: Alignment(_shimmerAnimation.value - 1.0, -0.5),
                                   end: Alignment(_shimmerAnimation.value, 0.5),
                                   colors: [
                                     Colors.transparent,
-                                    Colors.white.withOpacity(0.0),
-                                    Colors.white.withOpacity(0.15),
-                                    Colors.white.withOpacity(0.0),
+                                    Colors.white.withValues(alpha: 0.0),
+                                    Colors.white.withValues(alpha: 0.15),
+                                    Colors.white.withValues(alpha: 0.0),
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.4, 0.5, 0.6, 1.0],

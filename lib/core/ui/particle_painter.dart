@@ -29,11 +29,13 @@ class ParticlePainter extends CustomPainter {
     final paint = Paint()..color = color;
 
     for (var particle in particles) {
-      paint.color = color.withOpacity(particle.opacity);
+      paint.color = color.withValues(alpha: particle.opacity);
       canvas.drawCircle(Offset(particle.x, particle.y), particle.size, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant ParticlePainter oldDelegate) => true;
+  bool shouldRepaint(covariant ParticlePainter oldDelegate) {
+    return particles != oldDelegate.particles || color != oldDelegate.color;
+  }
 }

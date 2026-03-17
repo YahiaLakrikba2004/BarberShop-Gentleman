@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/barber_model.dart';
 import '../models/service_model.dart';
@@ -106,7 +107,7 @@ class SeedService {
           }
         }
       } catch (e) {
-        print('Error creating account for ${member['email']}: $e');
+        debugPrint('Error creating account for ${member['email']}: $e');
         // If user already exists, we might want to update the BarberModel anyway.
         // But we don't have the password to sign in if it's not the default.
         // Assuming this is a fresh run or we accept skipping existing users.
@@ -164,9 +165,9 @@ class SeedService {
         await _firestoreService.updateBarberAvailability(barber.id, {
           'daysOff': daysOff,
         });
-        print('Updated schedule for $name');
+        debugPrint('Updated schedule for $name');
       } catch (e) {
-        print('Barber $name not found or error updating: $e');
+        debugPrint('Barber $name not found or error updating: $e');
       }
     }
   }

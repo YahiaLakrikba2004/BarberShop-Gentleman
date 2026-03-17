@@ -4,11 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/appointment_model.dart';
 
-class GroupedAppointmentsList extends StatelessWidget {
+class GroupedAppointmentsList extends StatefulWidget {
   final List<AppointmentModel> appointments;
   final Function(AppointmentModel) onAppointmentTap;
   final Function(AppointmentModel)? onAppointmentCancel;
   final bool showBarber;
+  /// Number of day-groups shown per page. Defaults to 10.
+  final int pageSize;
 
   const GroupedAppointmentsList({
     super.key,
@@ -16,24 +18,41 @@ class GroupedAppointmentsList extends StatelessWidget {
     required this.onAppointmentTap,
     this.onAppointmentCancel,
     this.showBarber = false,
+    this.pageSize = 10,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Filter active appointments (or handle history logic outside)
-    // Here we assume the list passed is already filtered as needed by the parent
+  State<GroupedAppointmentsList> createState() =>
+      _GroupedAppointmentsListState();
+}
 
+class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
+  int _visibleGroups = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleGroups = widget.pageSize;
+  }
+
+  @override
+  void didUpdateWidget(GroupedAppointmentsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset pagination when the list changes (e.g. filter change)
+    if (oldWidget.appointments != widget.appointments) {
+      _visibleGroups = widget.pageSize;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Group by date
     final Map<DateTime, List<AppointmentModel>> grouped = {};
-    for (var apt in appointments) {
+    for (var apt in widget.appointments) {
       final date = DateTime(apt.date.year, apt.date.month, apt.date.day);
-      if (!grouped.containsKey(date)) {
-        grouped[date] = [];
-      }
-      grouped[date]!.add(apt);
+      grouped.putIfAbsent(date, () => []).add(apt);
     }
 
-    // Sort dates
     final sortedDates = grouped.keys.toList()..sort();
 
     if (sortedDates.isEmpty) {
@@ -45,11 +64,23 @@ class GroupedAppointmentsList extends StatelessWidget {
       );
     }
 
+    final visibleDates = sortedDates.take(_visibleGroups).toList();
+    final remaining = sortedDates.length - visibleDates.length;
+    final hasMore = remaining > 0;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: sortedDates.length,
+      itemCount: visibleDates.length + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final date = sortedDates[index];
+        if (index == visibleDates.length) {
+          return _LoadMoreButton(
+            remaining: remaining,
+            pageSize: widget.pageSize,
+            onTap: () => setState(() => _visibleGroups += widget.pageSize),
+          );
+        }
+
+        final date = visibleDates[index];
         final dayAppointments = grouped[date]!;
         final isToday = date.year == DateTime.now().year &&
             date.month == DateTime.now().month &&
@@ -63,7 +94,7 @@ class GroupedAppointmentsList extends StatelessWidget {
             border: Border.all(
               color: isToday
                   ? const Color(0xFFFFFFFF)
-                  : Colors.white.withOpacity(0.1),
+                  : Colors.white.withValues(alpha: 0.1),
               width: isToday ? 1 : 0.5,
             ),
           ),
@@ -79,7 +110,7 @@ class GroupedAppointmentsList extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                      color: const Color(0xFFFFFFFF).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -95,7 +126,7 @@ class GroupedAppointmentsList extends StatelessWidget {
                         Text(
                           DateFormat('MMM', 'it').format(date).toUpperCase(),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -119,7 +150,7 @@ class GroupedAppointmentsList extends StatelessWidget {
                         Text(
                           '${dayAppointments.length} appuntament${dayAppointments.length == 1 ? "o" : "i"}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 14,
                           ),
                         ),
@@ -132,15 +163,15 @@ class GroupedAppointmentsList extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.only(top: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -149,7 +180,7 @@ class GroupedAppointmentsList extends StatelessWidget {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => onAppointmentTap(apt),
+                      onTap: () => widget.onAppointmentTap(apt),
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -172,19 +203,19 @@ class GroupedAppointmentsList extends StatelessWidget {
                                 Text(
                                   '${apt.durationMinutes} min',
                                   style: GoogleFonts.montserrat(
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                     fontSize: 10,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(width: 16),
-                            
+
                             // Divider
                             Container(
                               width: 1,
                               height: 40,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                             ),
                             const SizedBox(width: 16),
 
@@ -196,14 +227,19 @@ class GroupedAppointmentsList extends StatelessWidget {
                                   Row(
                                     children: [
                                       Icon(
-                                        showBarber ? Icons.content_cut : Icons.person_outline,
+                                        widget.showBarber
+                                            ? Icons.content_cut
+                                            : Icons.person_outline,
                                         size: 14,
-                                        color: Colors.white.withOpacity(0.6),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.6),
                                       ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          showBarber ? apt.barberName : apt.customerName,
+                                          widget.showBarber
+                                              ? apt.barberName
+                                              : apt.customerName,
                                           style: GoogleFonts.cinzel(
                                             color: Colors.white,
                                             fontSize: 16,
@@ -219,7 +255,8 @@ class GroupedAppointmentsList extends StatelessWidget {
                                   Text(
                                     apt.serviceName,
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.7),
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -230,12 +267,16 @@ class GroupedAppointmentsList extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        Icon(Icons.phone_android, size: 12, color: Colors.white.withOpacity(0.4)),
+                                        Icon(Icons.phone_android,
+                                            size: 12,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.4)),
                                         const SizedBox(width: 4),
                                         Text(
                                           apt.customerPhoneNumber!,
                                           style: GoogleFonts.montserrat(
-                                            color: Colors.white.withOpacity(0.4),
+                                            color: Colors.white
+                                                .withValues(alpha: 0.4),
                                             fontSize: 11,
                                           ),
                                         ),
@@ -247,21 +288,24 @@ class GroupedAppointmentsList extends StatelessWidget {
                             ),
 
                             // 3. Actions (Right Side)
-                            if (onAppointmentCancel != null)
+                            if (widget.onAppointmentCancel != null)
                               Padding(
                                 padding: const EdgeInsets.only(left: 8),
                                 child: InkWell(
-                                  onTap: () => onAppointmentCancel!(apt),
+                                  onTap: () =>
+                                      widget.onAppointmentCancel!(apt),
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.redAccent.withOpacity(0.1),
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.close,
-                                      color: Colors.redAccent.withOpacity(0.8),
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.8),
                                       size: 18,
                                     ),
                                   ),
@@ -278,6 +322,54 @@ class GroupedAppointmentsList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _LoadMoreButton extends StatelessWidget {
+  final int remaining;
+  final int pageSize;
+  final VoidCallback onTap;
+
+  const _LoadMoreButton({
+    required this.remaining,
+    required this.pageSize,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final toLoad = remaining.clamp(0, pageSize);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.expand_more,
+                  size: 18, color: Colors.white.withValues(alpha: 0.5)),
+              const SizedBox(width: 8),
+              Text(
+                'Carica altri $toLoad giorni  ($remaining rimanenti)',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

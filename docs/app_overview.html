@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gentleman Barber Shop — Documentazione App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── RESET ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── VARIABLES ── */
+    :root {
+      --gold: #C9A84C;
+      --dark: #0A0A0A;
+      --text: #1a1a1a;
+      --muted: #666;
+      --light-bg: #f8f6f2;
+      --border: #e0d8cc;
+      --accent-bg: #fdf8ee;
+      --font-serif: 'Cinzel', 'Times New Roman', Georgia, serif;
+      --font-sans: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    }
+
+    /* ── BASE ── */
+    body {
+      font-family: var(--font-sans);
+      color: var(--text);
+      background: #fff;
+      font-size: 10.5pt;
+      line-height: 1.7;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .no-print { display: none !important; }
+      body { font-size: 9.5pt; }
+      .cover { page-break-after: always; min-height: 100vh; }
+      .page-break { page-break-before: always; }
+    }
+
+    /* ════════════════════════════════
+       COVER
+    ════════════════════════════════ */
+    .cover {
+      background-color: #0A0A0A;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+    }
+
+    .cover-inner { max-width: 600px; }
+
+    .cover-line {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 0 auto 32px;
+    }
+
+    .cover h1 {
+      font-family: var(--font-serif);
+      font-size: 40pt;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+
+    .cover h2 {
+      font-family: var(--font-serif);
+      font-size: 13pt;
+      font-weight: 400;
+      letter-spacing: 10px;
+      color: var(--gold);
+      margin-bottom: 36px;
+    }
+
+    .cover-line2 {
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 0 auto 36px;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      border: 1px solid rgba(201,168,76,0.4);
+      border-radius: 30px;
+      padding: 7px 22px;
+      font-size: 8.5pt;
+      color: var(--gold);
+      letter-spacing: 2.5px;
+      margin-bottom: 56px;
+    }
+
+    .cover-subtitle {
+      font-size: 10pt;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 3px;
+      font-weight: 300;
+      margin-bottom: 6px;
+    }
+
+    .cover-tagline {
+      font-size: 8.5pt;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 4px;
+      margin-bottom: 60px;
+    }
+
+    .cover-meta {
+      font-size: 8pt;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 1px;
+    }
+
+    /* ════════════════════════════════
+       PAGE WRAPPER
+    ════════════════════════════════ */
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 64px;
+    }
+
+    /* ════════════════════════════════
+       TABLE OF CONTENTS
+    ════════════════════════════════ */
+    .toc-title {
+      font-family: var(--font-serif);
+      font-size: 20pt;
+      letter-spacing: 4px;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .toc-bar {
+      width: 48px;
+      height: 2px;
+      background: var(--gold);
+      margin-bottom: 32px;
+    }
+
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      padding: 5px 0;
+      border-bottom: 1px dotted #ddd;
+      gap: 10px;
+    }
+
+    .toc-num {
+      font-size: 8pt;
+      color: var(--gold);
+      font-weight: 700;
+      min-width: 22px;
+    }
+
+    .toc-label {
+      flex: 1;
+      font-size: 10pt;
+    }
+
+    .toc-sub .toc-label {
+      font-size: 9pt;
+      color: var(--muted);
+      padding-left: 20px;
+    }
+
+    /* ════════════════════════════════
+       SECTION HEADERS
+    ════════════════════════════════ */
+    .sec-head {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 2px solid var(--dark);
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+    }
+
+    .sec-num {
+      font-family: var(--font-serif);
+      font-size: 24pt;
+      color: var(--gold);
+      line-height: 1;
+      min-width: 44px;
+    }
+
+    .sec-title {
+      font-family: var(--font-serif);
+      font-size: 14pt;
+      letter-spacing: 3px;
+      color: var(--dark);
+    }
+
+    .sec-sub {
+      font-size: 8.5pt;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    h3 {
+      font-family: var(--font-serif);
+      font-size: 11pt;
+      letter-spacing: 1px;
+      color: var(--dark);
+      margin: 26px 0 10px;
+    }
+
+    h4 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: var(--dark);
+      margin: 18px 0 7px;
+    }
+
+    p { margin-bottom: 12px; }
+
+    /* ════════════════════════════════
+       CARDS
+    ════════════════════════════════ */
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .grid4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      background: var(--light-bg);
+    }
+
+    .card-ico { font-size: 18pt; display: block; margin-bottom: 8px; }
+
+    .card h4 {
+      font-family: var(--font-serif);
+      font-size: 9pt;
+      letter-spacing: 0.5px;
+      margin: 0 0 6px;
+    }
+
+    .card p { font-size: 8.5pt; color: var(--muted); margin: 0; }
+
+    /* ════════════════════════════════
+       BOXES
+    ════════════════════════════════ */
+    .box-gold {
+      background: var(--accent-bg);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 9.5pt;
+    }
+
+    .box-blue {
+      background: #eef3ff;
+      border-left: 3px solid #4a6cf7;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 9pt;
+      color: #2d3a6b;
+    }
+
+    .box-orange {
+      background: #fff8f0;
+      border-left: 3px solid #e07010;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 9pt;
+      color: #7a3e00;
+    }
+
+    /* ════════════════════════════════
+       ROLES
+    ════════════════════════════════ */
+    .role {
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    .role-client { background: #eef7ff; border: 1px solid #b8d9f5; }
+    .role-barber { background: #fff3e8; border: 1px solid #f5c888; }
+    .role-admin  { background: var(--accent-bg); border: 1px solid #e0c870; }
+
+    .role h4 {
+      font-family: var(--font-serif);
+      font-size: 10.5pt;
+      letter-spacing: 1px;
+      margin: 0 0 4px;
+    }
+
+    .role-client h4 { color: #1565c0; }
+    .role-barber h4 { color: #b05000; }
+    .role-admin  h4 { color: #8a6b00; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .badge-c { background: #1565c0; }
+    .badge-b { background: #b05000; }
+    .badge-a { background: #8a6b00; }
+
+    /* ════════════════════════════════
+       FLOW STEPS
+    ════════════════════════════════ */
+    .flow {
+      display: flex;
+      gap: 4px;
+      margin: 20px 0;
+      align-items: flex-start;
+    }
+
+    .flow-step {
+      flex: 1;
+      text-align: center;
+    }
+
+    .flow-arr {
+      padding-top: 12px;
+      color: var(--gold);
+      font-size: 14pt;
+      line-height: 1;
+    }
+
+    .step-dot {
+      width: 34px;
+      height: 34px;
+      background: var(--dark);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-size: 11pt;
+      font-weight: 700;
+      margin: 0 auto 7px;
+    }
+
+    .step-lbl {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* ════════════════════════════════
+       TABLE
+    ════════════════════════════════ */
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 9pt; }
+
+    th {
+      background: var(--dark);
+      color: #fff;
+      padding: 9px 12px;
+      text-align: left;
+      font-family: var(--font-serif);
+      font-size: 8.5pt;
+      letter-spacing: 1px;
+    }
+
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+
+    tr:nth-child(even) td { background: var(--light-bg); }
+
+    /* ════════════════════════════════
+       LISTS
+    ════════════════════════════════ */
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+
+    li { margin-bottom: 5px; font-size: 9.5pt; }
+
+    ul.feat { list-style: none; padding: 0; }
+
+    ul.feat li {
+      padding: 5px 0 5px 22px;
+      position: relative;
+      border-bottom: 1px solid #f0ece4;
+    }
+
+    ul.feat li::before {
+      content: '✦';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 7pt;
+      top: 9px;
+    }
+
+    /* ════════════════════════════════
+       STATUS CHIPS
+    ════════════════════════════════ */
+    .chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .chip-pend { background: #fff3cd; color: #856404; }
+    .chip-conf { background: #d4edda; color: #155724; }
+    .chip-comp { background: #d1ecf1; color: #0c5460; }
+    .chip-canc { background: #f8d7da; color: #721c24; }
+
+    /* ════════════════════════════════
+       TECH GRID
+    ════════════════════════════════ */
+    .tech-item {
+      text-align: center;
+      padding: 14px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--light-bg);
+    }
+
+    .tech-item .ti { font-size: 16pt; display: block; margin-bottom: 5px; }
+    .tech-item .tn { font-size: 8.5pt; font-weight: 700; color: var(--dark); display: block; }
+    .tech-item .td { font-size: 7.5pt; color: var(--muted); }
+
+    /* ════════════════════════════════
+       SECTION DIVIDER
+    ════════════════════════════════ */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 36px 0 30px;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span {
+      font-family: var(--font-serif);
+      font-size: 9pt;
+      letter-spacing: 3px;
+      color: var(--gold);
+    }
+
+    /* ════════════════════════════════
+       FOOTER
+    ════════════════════════════════ */
+    .footer {
+      background: var(--dark);
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      padding: 28px 40px;
+      font-size: 8pt;
+      letter-spacing: 2px;
+      margin-top: 48px;
+    }
+
+    .footer em { color: var(--gold); font-style: normal; }
+
+    /* ════════════════════════════════
+       PRINT BUTTON
+    ════════════════════════════════ */
+    .print-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--dark);
+      color: #fff;
+      border: 2px solid var(--gold);
+      padding: 11px 22px;
+      border-radius: 28px;
+      font-family: var(--font-sans);
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      z-index: 999;
+      transition: all .2s;
+    }
+
+    .print-btn:hover { background: var(--gold); color: var(--dark); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     COPERTINA
+══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-line"></div>
+    <h1>GENTLEMAN</h1>
+    <h2>BARBER SHOP</h2>
+    <div class="cover-line2"></div>
+    <div class="cover-badge">APP MOBILE &amp; WEB</div>
+    <div class="cover-subtitle">DOCUMENTAZIONE COMPLETA</div>
+    <div class="cover-tagline">FUNZIONALITÀ &nbsp;·&nbsp; GESTIONE &nbsp;·&nbsp; GUIDA OPERATIVA</div>
+    <div class="cover-meta">Versione 1.0 &nbsp;·&nbsp; Marzo 2026 &nbsp;·&nbsp; Uso riservato al proprietario</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     INDICE
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="toc-title">INDICE</div>
+  <div class="toc-bar"></div>
+
+  <div class="toc-item"><span class="toc-num">01</span><span class="toc-label">Introduzione — Cos'è l'App</span></div>
+  <div class="toc-item"><span class="toc-num">02</span><span class="toc-label">Piattaforme Supportate</span></div>
+  <div class="toc-item"><span class="toc-num">03</span><span class="toc-label">Ruoli Utente</span></div>
+  <div class="toc-item"><span class="toc-num">04</span><span class="toc-label">Accesso e Registrazione</span></div>
+  <div class="toc-item"><span class="toc-num">05</span><span class="toc-label">Schermata Home</span></div>
+  <div class="toc-item"><span class="toc-num">06</span><span class="toc-label">Prenotazione Appuntamento</span></div>
+  <div class="toc-item"><span class="toc-num">07</span><span class="toc-label">Calendario e Agenda</span></div>
+  <div class="toc-item"><span class="toc-num">08</span><span class="toc-label">Profilo Cliente</span></div>
+  <div class="toc-item"><span class="toc-num">09</span><span class="toc-label">Pannello Amministratore</span></div>
+  <div class="toc-sub">
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.1 — Dashboard e Statistiche</span></div>
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.2 — Gestione Servizi</span></div>
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.3 — Gestione Barbieri</span></div>
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.4 — Gestione Utenti</span></div>
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.5 — Impostazioni Negozio</span></div>
+    <div class="toc-item"><span class="toc-num"></span><span class="toc-label">9.6 — Agenda Team</span></div>
+  </div>
+  <div class="toc-item"><span class="toc-num">10</span><span class="toc-label">Notifiche Push</span></div>
+  <div class="toc-item"><span class="toc-num">11</span><span class="toc-label">Sicurezza e Privacy</span></div>
+  <div class="toc-item"><span class="toc-num">12</span><span class="toc-label">Tecnologie Utilizzate</span></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     01 — INTRODUZIONE
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <div>
+      <div class="sec-title">INTRODUZIONE</div>
+      <div class="sec-sub">COS'È L'APP E A COSA SERVE</div>
+    </div>
+  </div>
+
+  <p><strong>Gentleman Barber Shop</strong> è un'applicazione completa per la gestione digitale del salone. Permette ai clienti di prenotare appuntamenti online in autonomia, scegliendo il barbiere, il servizio e l'orario preferito — 24 ore su 24, 7 giorni su 7.</p>
+
+  <p>Allo stesso tempo offre al proprietario e ai barbieri un pannello di controllo completo per gestire tutto: appuntamenti, barbieri, servizi, orari, ferie e comunicazioni con i clienti.</p>
+
+  <div class="box-gold">
+    <strong>In poche parole:</strong> meno telefonate, meno confusione negli orari, più professionalità e una presenza digitale moderna per il tuo negozio.
+  </div>
+
+  <h3>Cosa può fare l'app</h3>
+  <div class="grid3">
+    <div class="card"><span class="card-ico">📅</span><h4>Prenotazioni Online</h4><p>I clienti prenotano dal telefono in 2 minuti, senza dover chiamare.</p></div>
+    <div class="card"><span class="card-ico">📊</span><h4>Statistiche Real-time</h4><p>Incassi e appuntamenti di oggi, questa settimana, in totale.</p></div>
+    <div class="card"><span class="card-ico">👥</span><h4>Gestione Team</h4><p>Orari, disponibilità e agenda separata per ogni barbiere.</p></div>
+    <div class="card"><span class="card-ico">🔔</span><h4>Notifiche Push</h4><p>Avvisi automatici per nuove prenotazioni e disdette.</p></div>
+    <div class="card"><span class="card-ico">📱</span><h4>Multi-piattaforma</h4><p>Funziona su telefono Android/iOS e su browser web.</p></div>
+    <div class="card"><span class="card-ico">🛡️</span><h4>Dati Sicuri</h4><p>Backup automatico su cloud Firebase di Google.</p></div>
+  </div>
+
+  <!-- 02 -->
+  <div class="divider"><span>02</span></div>
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <div>
+      <div class="sec-title">PIATTAFORME SUPPORTATE</div>
+      <div class="sec-sub">DOVE FUNZIONA L'APP</div>
+    </div>
+  </div>
+
+  <p>L'app è sviluppata con tecnologia <strong>Flutter</strong>, che permette di distribuire la stessa applicazione su più piattaforme senza riscriverla da zero.</p>
+
+  <table>
+    <thead><tr><th>Piattaforma</th><th>Dispositivo</th><th>Distribuzione</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>📱 <strong>Android</strong></td><td>Smartphone / Tablet</td><td>Google Play Store</td><td>Notifiche push complete</td></tr>
+      <tr><td>🍎 <strong>iOS</strong></td><td>iPhone / iPad</td><td>Apple App Store</td><td>Notifiche push complete</td></tr>
+      <tr><td>🌐 <strong>Web</strong></td><td>PC / Mac — qualsiasi browser</td><td>Link URL</td><td>Nessuna installazione</td></tr>
+      <tr><td>🖥️ <strong>Windows</strong></td><td>PC Windows 10/11</td><td>Installer .exe</td><td>Per uso interno al negozio</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box-blue">💡 <strong>Suggerimento:</strong> per uso quotidiano nel negozio si consiglia la versione web (aperta da qualsiasi PC) o la versione Windows installata sul computer della cassa.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     03 — RUOLI
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <div>
+      <div class="sec-title">RUOLI UTENTE</div>
+      <div class="sec-sub">CHI PUÒ FARE COSA</div>
+    </div>
+  </div>
+
+  <p>L'app distingue tre tipi di utenti, ognuno con accesso a funzionalità diverse.</p>
+
+  <div class="role role-client">
+    <span class="badge badge-c">CLIENTE</span>
+    <h4>Cliente</h4>
+    <p>Ruolo predefinito per chiunque si registri. Il cliente può:</p>
+    <ul style="margin-top:8px;">
+      <li>Prenotare un appuntamento scegliendo barbiere, servizio e orario</li>
+      <li>Visualizzare i propri appuntamenti passati e futuri</li>
+      <li>Annullare un appuntamento</li>
+      <li>Modificare il proprio profilo (nome, foto, email)</li>
+      <li>Ricevere notifiche di promemoria</li>
+    </ul>
+  </div>
+
+  <div class="role role-barber">
+    <span class="badge badge-b">BARBIERE</span>
+    <h4>Barbiere</h4>
+    <p>Assegnato dall'amministratore a un collaboratore. Il barbiere può fare tutto ciò che fa il cliente, più:</p>
+    <ul style="margin-top:8px;">
+      <li>Visualizzare il proprio calendario degli appuntamenti</li>
+      <li>Accedere all'<strong>Agenda Team</strong> (vista giornaliera di tutti i barbieri)</li>
+      <li>Visualizzare i dettagli di ogni appuntamento in agenda</li>
+    </ul>
+  </div>
+
+  <div class="role role-admin">
+    <span class="badge badge-a">AMMINISTRATORE</span>
+    <h4>Amministratore</h4>
+    <p>Il proprietario del negozio o un responsabile di fiducia. L'admin ha accesso completo:</p>
+    <ul style="margin-top:8px;">
+      <li>Pannello di controllo con statistiche e incassi</li>
+      <li>Prenotare e gestire appuntamenti per qualsiasi cliente</li>
+      <li>Gestire barbieri, servizi, utenti e impostazioni negozio</li>
+      <li>Pubblicare annunci, gestire chiusure e galleria fotografica</li>
+      <li>Segnare clienti come "non presentati" e annullare appuntamenti</li>
+    </ul>
+  </div>
+
+  <div class="box-orange">⚠️ <strong>Importante:</strong> il ruolo Amministratore può essere assegnato solo all'email configurata prima dell'installazione. Questo impedisce che un utente qualsiasi possa auto-assegnarsi i permessi di admin.</div>
+
+  <!-- 04 -->
+  <div class="divider"><span>04</span></div>
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <div>
+      <div class="sec-title">ACCESSO E REGISTRAZIONE</div>
+      <div class="sec-sub">COME SI ENTRA NELL'APP</div>
+    </div>
+  </div>
+
+  <p>L'app usa un sistema di accesso basato su <strong>numero di telefono + PIN a 6 cifre</strong>, più semplice e sicuro di una password tradizionale.</p>
+
+  <h3>Nuovo cliente</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="step-dot">1</div><div class="step-lbl">Numero di telefono</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">2</div><div class="step-lbl">Nome, Cognome, Email</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">3</div><div class="step-lbl">Sceglie un PIN a 6 cifre</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">4</div><div class="step-lbl">Registrato ✓</div></div>
+  </div>
+
+  <h3>Cliente già registrato</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="step-dot">1</div><div class="step-lbl">Numero di telefono</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">2</div><div class="step-lbl">PIN a 6 cifre</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">3</div><div class="step-lbl">Accesso immediato ✓</div></div>
+  </div>
+
+  <p><strong>PIN dimenticato:</strong> il cliente può richiedere un link di reset via email. Se non ha un'email reale associata (utenti molto vecchi), deve contattare il negozio.</p>
+  <p><strong>Accesso Admin:</strong> tramite email e password, attraverso un link nascosto "Usa Email e Password" nella schermata di login.</p>
+  <p><strong>Cliente occasionale:</strong> l'admin può inserire prenotazioni per clienti senza account, specificando solo nome e telefono. Vengono salvati e riutilizzabili per prenotazioni future.</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     05 — HOME + 06 — PRENOTAZIONE
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <div>
+      <div class="sec-title">SCHERMATA HOME</div>
+      <div class="sec-sub">LA PRIMA COSA CHE VEDE IL CLIENTE</div>
+    </div>
+  </div>
+
+  <p>La Home è la vetrina digitale del negozio, visibile a tutti gli utenti loggati.</p>
+
+  <div class="grid2">
+    <div class="card"><h4>🎬 Video / Header Visivo</h4><p>In alto un video o immagine rappresentativa del negozio. Personalizzabile.</p></div>
+    <div class="card"><h4>📢 Banner Annunci</h4><p>Se attivato, appare un messaggio in evidenza (es. "Chiusi per ferie dal 15 al 20 agosto").</p></div>
+    <div class="card"><h4>✂️ Servizi in Evidenza</h4><p>Griglia con i servizi disponibili: nome, durata e prezzo di ognuno.</p></div>
+    <div class="card"><h4>📅 Prossimi Appuntamenti</h4><p>Il cliente vede subito i suoi appuntamenti imminenti con tutti i dettagli.</p></div>
+  </div>
+
+  <div class="box-blue">💡 La Home si aggiorna in tempo reale: se l'admin pubblica un annuncio, i clienti lo vedono immediatamente senza aggiornare l'app.</div>
+
+  <div class="divider"><span>06</span></div>
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <div>
+      <div class="sec-title">PRENOTAZIONE APPUNTAMENTO</div>
+      <div class="sec-sub">IL CUORE DELL'APP</div>
+    </div>
+  </div>
+
+  <p>Il modulo di prenotazione guida il cliente passo dopo passo. È accessibile dal menu di navigazione principale.</p>
+
+  <div class="flow" style="margin-bottom:24px;">
+    <div class="flow-step"><div class="step-dot">1</div><div class="step-lbl">Barbiere</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">2</div><div class="step-lbl">Servizio</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">3</div><div class="step-lbl">Data</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">4</div><div class="step-lbl">Orario</div></div>
+    <div class="flow-arr">›</div>
+    <div class="flow-step"><div class="step-dot">5</div><div class="step-lbl">Conferma ✓</div></div>
+  </div>
+
+  <h4>Passo 1 — Scelta del Barbiere</h4>
+  <p>Card con tutti i barbieri prenotabili: nome, specialità e orari. I barbieri non disponibili (malattia, ferie, ecc.) appaiono con la relativa motivazione e non sono selezionabili.</p>
+
+  <h4>Passo 2 — Scelta del Servizio</h4>
+  <p>Ogni servizio mostra nome, durata e prezzo.</p>
+
+  <h4>Passo 3 — Scelta della Data</h4>
+  <p>Il calendario mostra solo le date disponibili. Domeniche, chiusure del negozio e giorni di riposo del barbiere selezionato sono automaticamente bloccati.</p>
+
+  <h4>Passo 4 — Scelta dell'Orario</h4>
+  <p>Vengono mostrati solo gli slot liberi per quel barbiere in quella data (step da 30 minuti). Gli slot già occupati o sovrapposti sono nascosti.</p>
+
+  <h4>Passo 5 — Conferma</h4>
+  <p>Riepilogo completo: barbiere, servizio, data, ora, prezzo. Alla conferma, l'appuntamento viene salvato istantaneamente.</p>
+
+  <div class="box-gold">🔒 <strong>Limite prenotazioni:</strong> il sistema impedisce a un cliente di prenotare più di un appuntamento nella stessa settimana, per evitare monopolizzazioni degli orari.</div>
+
+  <h3>Stati dell'appuntamento</h3>
+  <table>
+    <thead><tr><th>Stato</th><th>Significato</th><th>Chi lo imposta</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip chip-pend">IN ATTESA</span></td><td>Appena prenotato</td><td>Sistema (automatico)</td></tr>
+      <tr><td><span class="chip chip-conf">CONFERMATO</span></td><td>Il negozio ha preso atto</td><td>Amministratore</td></tr>
+      <tr><td><span class="chip chip-comp">COMPLETATO</span></td><td>Servizio erogato</td><td>Amministratore</td></tr>
+      <tr><td><span class="chip chip-canc">ANNULLATO</span></td><td>Disdetta o cliente assente</td><td>Cliente o Amministratore</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     07 — CALENDARIO / 08 — PROFILO
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <div>
+      <div class="sec-title">CALENDARIO E AGENDA</div>
+      <div class="sec-sub">VISUALIZZAZIONE APPUNTAMENTI</div>
+    </div>
+  </div>
+
+  <h3>Calendario Personale</h3>
+  <p>Disponibile per tutti gli utenti. Mostra gli appuntamenti in tre modalità:</p>
+
+  <div class="grid3">
+    <div class="card"><span class="card-ico">📆</span><h4>Vista Giorno</h4><p>Tutti gli appuntamenti del giorno selezionato in ordine cronologico.</p></div>
+    <div class="card"><span class="card-ico">📅</span><h4>Vista Settimana</h4><p>La settimana intera con gli appuntamenti distribuiti nei giorni.</p></div>
+    <div class="card"><span class="card-ico">🗓️</span><h4>Vista Mese</h4><p>Il mese intero con indicatore sui giorni che hanno appuntamenti.</p></div>
+  </div>
+
+  <h3>Agenda Team (solo Barbieri e Admin)</h3>
+  <p>Schermata operativa per l'uso quotidiano in negozio. Mostra tutti i barbieri affiancati su una timeline oraria.</p>
+
+  <ul class="feat">
+    <li>Timeline dalle 09:00 alle 20:00, con step da 30 minuti</li>
+    <li>Ogni barbiere ha la propria colonna con i propri appuntamenti del giorno</li>
+    <li>Toccando un appuntamento: dettagli cliente, servizio, ora e pulsante "Non presentato"</li>
+    <li>Navigazione tra i giorni con frecce o selezione dal calendario</li>
+    <li>Tasto per tornare subito alla data di oggi</li>
+    <li>Su desktop: si adatta mostrando più barbieri senza scorrimento</li>
+  </ul>
+
+  <div class="box-blue">💡 <strong>Uso consigliato:</strong> lasciare l'Agenda Team aperta sul tablet o PC del negozio durante la giornata, per avere sempre sotto controllo la situazione di tutti i barbieri.</div>
+
+  <div class="divider"><span>08</span></div>
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <div>
+      <div class="sec-title">PROFILO CLIENTE</div>
+      <div class="sec-sub">DATI PERSONALI E STORICO</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>👤 Dati Personali</h4>
+      <ul style="font-size:8.5pt; margin-top:8px;">
+        <li>Nome e cognome</li>
+        <li>Indirizzo email</li>
+        <li>Numero di telefono</li>
+        <li>Foto profilo (dalla fotocamera o galleria)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>📋 Storico Appuntamenti</h4>
+      <ul style="font-size:8.5pt; margin-top:8px;">
+        <li>Lista di tutti gli appuntamenti passati e futuri</li>
+        <li>Raggruppati per data, paginati (10 giorni per volta)</li>
+        <li>Filtrabili per stato</li>
+        <li>Possibilità di annullare un appuntamento futuro</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     09 — PANNELLO ADMIN
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">09</div>
+    <div>
+      <div class="sec-title">PANNELLO AMMINISTRATORE</div>
+      <div class="sec-sub">IL CENTRO DI CONTROLLO DEL NEGOZIO</div>
+    </div>
+  </div>
+
+  <p>Accessibile solo agli Amministratori. Raccoglie tutte le funzionalità di gestione in un unico posto.</p>
+
+  <h3>9.1 — Dashboard e Statistiche</h3>
+  <p>Prima schermata al login admin. Riepilogo immediato dell'andamento del negozio.</p>
+
+  <table>
+    <thead><tr><th>Metrica</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Appuntamenti Oggi</strong></td><td>Totale appuntamenti programmati per oggi</td></tr>
+      <tr><td><strong>Confermati Oggi</strong></td><td>Quanti appuntamenti di oggi sono stati confermati</td></tr>
+      <tr><td><strong>Incasso Oggi</strong></td><td>Totale in euro degli appuntamenti non annullati di oggi</td></tr>
+      <tr><td><strong>Incasso Settimana</strong></td><td>Totale in euro della settimana corrente</td></tr>
+      <tr><td><strong>Incasso Totale</strong></td><td>Somma di tutti gli appuntamenti completati/confermati</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box-blue">🔔 La Dashboard riceve notifiche in tempo reale quando arriva una nuova prenotazione o quando un cliente annulla.</div>
+
+  <h3>9.2 — Gestione Servizi</h3>
+  <p>Definisce il catalogo dei servizi offerti. Per ogni servizio si configurano:</p>
+  <ul class="feat">
+    <li><strong>Nome</strong> — es. "Taglio Classico", "Barba Completa", "Taglio + Barba"</li>
+    <li><strong>Durata</strong> — in minuti (determina gli slot orari occupati)</li>
+    <li><strong>Prezzo</strong> — in euro, mostrato al cliente durante la prenotazione</li>
+    <li><strong>Descrizione</strong> — testo opzionale visibile nella card del servizio</li>
+  </ul>
+
+  <div class="box-orange">⚠️ Eliminando un servizio, gli appuntamenti già esistenti che lo usano rimangono intatti, ma il servizio non sarà selezionabile per nuove prenotazioni.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     09 continua — BARBIERI / UTENTI
+══════════════════════════════════════════ -->
+<div class="page page-break">
+
+  <div class="sec-head">
+    <div class="sec-num"></div>
+    <div>
+      <div class="sec-title">9.3 — GESTIONE BARBIERI</div>
+      <div class="sec-sub">PROFILI, ORARI E DISPONIBILITÀ</div>
+    </div>
+  </div>
+
+  <p>Ogni barbiere ha un profilo dettagliato. Queste impostazioni determinano cosa vede il cliente quando prenota.</p>
+
+  <div class="grid2">
+    <div class="card"><h4>📋 Dati Profilo</h4>
+      <ul style="font-size:8.5pt;margin-top:8px;">
+        <li>Nome completo</li>
+        <li>Foto profilo</li>
+        <li>Specialità (es. "Taglio", "Barba", "Trattamenti")</li>
+        <li>Visibilità nelle prenotazioni (attivo/nascosto)</li>
+      </ul>
+    </div>
+    <div class="card"><h4>🕐 Orari di Lavoro</h4>
+      <ul style="font-size:8.5pt;margin-top:8px;">
+        <li>Ora di inizio e fine turno</li>
+        <li>Doppio turno con pausa (es. 9–13 e 15–19)</li>
+        <li>Giorni di riposo settimanali fissi</li>
+      </ul>
+    </div>
+    <div class="card"><h4>📅 Date di Assenza</h4>
+      <ul style="font-size:8.5pt;margin-top:8px;">
+        <li>Calendario per date specifiche di assenza</li>
+        <li>Utile per ferie, malattia, impegni personali</li>
+        <li>In quei giorni il barbiere non appare come prenotabile</li>
+      </ul>
+    </div>
+    <div class="card"><h4>🚦 Stato Disponibilità</h4>
+      <ul style="font-size:8.5pt;margin-top:8px;">
+        <li>Disponibile</li>
+        <li>In malattia</li>
+        <li>In ferie</li>
+        <li>Giorno libero / Assenza</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box-gold">✦ Il barbiere con nome "<strong>NEGOZIO</strong>" o "<strong>GENTLEMAN SHOP</strong>" è un profilo speciale per la gestione interna — non appare nelle prenotazioni dei clienti.</div>
+
+  <div class="divider"><span>9.4</span></div>
+
+  <div class="sec-head">
+    <div class="sec-num"></div>
+    <div>
+      <div class="sec-title">9.4 — GESTIONE UTENTI</div>
+      <div class="sec-sub">CLIENTI REGISTRATI E RUOLI</div>
+    </div>
+  </div>
+
+  <p>Elenco completo di tutti gli utenti registrati nell'app.</p>
+  <ul class="feat">
+    <li><strong>Ricerca</strong> — filtra per nome o indirizzo email</li>
+    <li><strong>Visualizza profilo</strong> — nome, email, ruolo attuale</li>
+    <li><strong>Cambia ruolo</strong> — promuovi un cliente a Barbiere o Admin, o declassa un Barbiere a Cliente</li>
+    <li><strong>Elimina utente</strong> — rimuove l'account con conferma obbligatoria</li>
+  </ul>
+
+  <div class="box-orange">⚠️ Promuovere a <strong>Barbiere</strong> crea automaticamente un profilo barbiere. Declassare un barbiere a Cliente <strong>elimina</strong> il suo profilo barbiere e gli orari configurati.</div>
+
+  <h4>Clienti Occasionali</h4>
+  <p>Persone senza account per cui sono state fatte prenotazioni manuali. Salvati in un elenco separato, riutilizzabili per prenotazioni future. Si eliminano con uno swipe verso sinistra.</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     09 continua — NEGOZIO / AGENDA TEAM
+══════════════════════════════════════════ -->
+<div class="page page-break">
+
+  <div class="sec-head">
+    <div class="sec-num"></div>
+    <div>
+      <div class="sec-title">9.5 — IMPOSTAZIONI NEGOZIO</div>
+      <div class="sec-sub">ANNUNCI, CHIUSURE E GALLERIA</div>
+    </div>
+  </div>
+
+  <h4>📢 Annuncio Globale</h4>
+  <p>Pubblica un messaggio visibile nella Home di tutti i clienti. Si attiva/disattiva con un interruttore senza cancellare il testo. Esempi:</p>
+  <ul>
+    <li><em>"Siamo chiusi per ferie dal 10 al 20 agosto"</em></li>
+    <li><em>"Nuovo servizio disponibile: trattamento barba premium"</em></li>
+  </ul>
+
+  <h4>🔒 Chiusura Manuale</h4>
+  <p>In caso di necessità urgente blocca immediatamente tutte le nuove prenotazioni con un solo toggle.</p>
+  <div class="box-orange">⚠️ La chiusura manuale blocca <strong>tutte</strong> le prenotazioni per tutti i barbieri. Da usare solo in caso di vera emergenza.</div>
+
+  <h4>📅 Chiusure Programmate</h4>
+  <p>Calendario interattivo per selezionare date di chiusura del negozio (festività, ferie). In quelle date nessun barbiere è prenotabile.</p>
+
+  <h4>🖼️ Galleria Fotografica</h4>
+  <p>Fino a <strong>10 foto</strong> mostrate nella Home (lavori, interni del salone). Si caricano dal dispositivo e si eliminano con un tocco.</p>
+
+  <div class="divider"><span>9.6</span></div>
+
+  <div class="sec-head">
+    <div class="sec-num"></div>
+    <div>
+      <div class="sec-title">9.6 — AGENDA TEAM</div>
+      <div class="sec-sub">VISTA OPERATIVA DELLA GIORNATA</div>
+    </div>
+  </div>
+
+  <p>Schermata operativa per l'uso quotidiano. Tutti i barbieri affiancati su una timeline oraria.</p>
+
+  <div class="grid3">
+    <div class="card"><h4>⏱️ Timeline 9–20</h4><p>Ore di apertura in verticale. Ogni slot da 30 minuti è visibile.</p></div>
+    <div class="card"><h4>👥 Colonna per Barbiere</h4><p>Ogni appuntamento appare nella colonna del relativo barbiere.</p></div>
+    <div class="card"><h4>✏️ Azioni Rapide</h4><p>Tocca un appuntamento per vedere i dettagli e segnare "Non presentato".</p></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     10 — NOTIFICHE / 11 — SICUREZZA
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">10</div>
+    <div>
+      <div class="sec-title">NOTIFICHE PUSH</div>
+      <div class="sec-sub">COMUNICAZIONE AUTOMATICA</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Evento</th><th>Chi riceve</th><th>Contenuto</th></tr></thead>
+    <tbody>
+      <tr><td>Nuova prenotazione</td><td>Amministratore</td><td>Nome cliente, barbiere, servizio e orario</td></tr>
+      <tr><td>Prenotazione annullata</td><td>Amministratore</td><td>Avviso disdetta con dettagli appuntamento</td></tr>
+      <tr><td>Promemoria appuntamento</td><td>Cliente</td><td>"Hai un appuntamento tra 1 ora!"</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box-blue">💡 Il promemoria viene programmato automaticamente alla prenotazione. Se l'appuntamento è tra meno di un'ora, il promemoria non viene inviato.<br><br>📱 Le notifiche push funzionano su Android e iOS. Su web e Windows, le notifiche in-app sono visibili nella Dashboard admin.</div>
+
+  <div class="divider"><span>11</span></div>
+  <div class="sec-head">
+    <div class="sec-num">11</div>
+    <div>
+      <div class="sec-title">SICUREZZA E PRIVACY</div>
+      <div class="sec-sub">COME VENGONO PROTETTI I DATI</div>
+    </div>
+  </div>
+
+  <h4>Autenticazione</h4>
+  <p>Gestita da <strong>Firebase Authentication</strong> di Google. Le credenziali non vengono mai salvate in chiaro.</p>
+
+  <h4>Email Admin Protetta</h4>
+  <p>L'email dell'amministratore non è mai visibile nel codice sorgente. Viene configurata come variabile segreta a livello di sistema durante la compilazione.</p>
+
+  <h4>Dati Memorizzati</h4>
+  <table>
+    <thead><tr><th>Dato</th><th>Dove</th><th>Chi può accedervi</th></tr></thead>
+    <tbody>
+      <tr><td>Nome, email, telefono</td><td>Firebase Firestore (Google Cloud)</td><td>Utente stesso + Admin</td></tr>
+      <tr><td>Appuntamenti</td><td>Firebase Firestore</td><td>Cliente, barbiere interessato, Admin</td></tr>
+      <tr><td>Foto profilo</td><td>Firebase Firestore</td><td>Utente stesso + Admin</td></tr>
+      <tr><td>Galleria negozio</td><td>Firebase Firestore</td><td>Tutti (solo lettura)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box-gold">✦ Tutti i dati sono ospitati su <strong>Google Cloud</strong>, con backup automatici, crittografia in transito (HTTPS) e a riposo.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     12 — TECNOLOGIE
+══════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="sec-head">
+    <div class="sec-num">12</div>
+    <div>
+      <div class="sec-title">TECNOLOGIE UTILIZZATE</div>
+      <div class="sec-sub">LA STRUTTURA TECNICA DELL'APP</div>
+    </div>
+  </div>
+
+  <p>Questa sezione è un riferimento tecnico. Non è necessario conoscerla per usare l'app.</p>
+
+  <div class="grid4">
+    <div class="tech-item"><span class="ti">🐦</span><span class="tn">Flutter 3.5</span><span class="td">Framework UI multi-piattaforma</span></div>
+    <div class="tech-item"><span class="ti">🎯</span><span class="tn">Dart 3.5</span><span class="td">Linguaggio di programmazione</span></div>
+    <div class="tech-item"><span class="ti">🔥</span><span class="tn">Firebase</span><span class="td">Backend cloud Google</span></div>
+    <div class="tech-item"><span class="ti">🗄️</span><span class="tn">Firestore</span><span class="td">Database NoSQL real-time</span></div>
+    <div class="tech-item"><span class="ti">🔐</span><span class="tn">Firebase Auth</span><span class="td">Autenticazione sicura</span></div>
+    <div class="tech-item"><span class="ti">🔔</span><span class="tn">FCM</span><span class="td">Notifiche push</span></div>
+    <div class="tech-item"><span class="ti">🌊</span><span class="tn">Riverpod</span><span class="td">Gestione stato app</span></div>
+    <div class="tech-item"><span class="ti">🗺️</span><span class="tn">GoRouter</span><span class="td">Navigazione schermate</span></div>
+  </div>
+
+  <h3>Struttura del Codice</h3>
+  <table>
+    <thead><tr><th>Componente</th><th>Ruolo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Modelli</strong></td><td>Struttura dei dati: Appuntamento, Barbiere, Servizio, Utente, Impostazioni</td></tr>
+      <tr><td><strong>Servizi</strong></td><td>Comunicazione con Firebase: lettura, scrittura, autenticazione, notifiche</td></tr>
+      <tr><td><strong>Schermate</strong></td><td>Interfaccia utente: ogni schermata è un componente indipendente</td></tr>
+      <tr><td><strong>Providers</strong></td><td>Stato globale in tempo reale condiviso tra le schermate</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Costi Operativi</h3>
+  <div class="box-gold">✦ Il costo operativo di Firebase dipende dall'utilizzo effettivo. Per un negozio di medie dimensioni (fino a 500 prenotazioni/mese), i costi rientrano nel <strong>piano gratuito</strong> di Firebase.</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════ -->
+<div class="footer">
+  <div><em>GENTLEMAN BARBER SHOP</em> &nbsp;·&nbsp; Documentazione App &nbsp;·&nbsp; Versione 1.0 &nbsp;·&nbsp; Marzo 2026</div>
+  <div style="margin-top:5px;">Documento riservato — uso interno al negozio</div>
+</div>
+
+
+<!-- ── PULSANTE STAMPA ── -->
+<button class="print-btn no-print" onclick="window.print()">🖨️ &nbsp;STAMPA / SALVA PDF</button>
+
+</body>
+</html>

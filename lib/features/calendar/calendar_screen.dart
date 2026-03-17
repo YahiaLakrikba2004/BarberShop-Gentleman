@@ -33,6 +33,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -56,7 +57,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               FadeInDown(
                 duration: const Duration(milliseconds: 800),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+                  padding: EdgeInsets.fromLTRB(isDesktop ? 60.0 : 24.0, 16.0, isDesktop ? 60.0 : 24.0, 8.0),
                   child: Row(
                     children: [
                       Expanded(
@@ -69,7 +70,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             letterSpacing: 2,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withValues(alpha: 0.5),
                                 offset: const Offset(0, 2),
                                 blurRadius: 4,
                               ),
@@ -171,10 +172,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),
@@ -267,7 +268,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                       child: Text(
                                         DateFormat('HH:mm').format(date),
                                         style: GoogleFonts.montserrat(
-                                          color: Colors.white.withOpacity(0.7),
+                                          color: Colors.white.withValues(alpha: 0.7),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -281,7 +282,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         DateFormat('HH:mm').format(date.add(
                                             const Duration(minutes: 30))),
                                         style: GoogleFonts.montserrat(
-                                          color: Colors.white.withOpacity(0.4),
+                                          color: Colors.white.withValues(alpha: 0.4),
                                           fontSize: 10,
                                           fontWeight: FontWeight.w400,
                                         ),
@@ -295,7 +296,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           minuteSlotSize: MinuteSlotSize.minutes30,
                           heightPerMinute: 2.0,
                           hourIndicatorSettings: HourIndicatorSettings(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             height: 1,
                             offset: 0,
                           ),
@@ -323,7 +324,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   )
@@ -396,7 +397,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               key: _monthViewKey,
                               controller: _eventController,
                               initialMonth: _focusedDate,
-                              borderColor: Colors.white.withOpacity(0.05),
+                              borderColor: Colors.white.withValues(alpha: 0.05),
                               headerStyle: HeaderStyle(
                                 decoration: const BoxDecoration(
                                   color: Color(0xFF0A0A0A),
@@ -482,7 +483,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF0A0A0A),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.1),
+                                        color: Colors.white.withValues(alpha: 0.1),
                                         width: 0.5,
                                       ),
                                     ),
@@ -615,7 +616,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     color: const Color(0xFF0A0A0A),
                                     border: Border(
                                       bottom: BorderSide(
-                                        color: Colors.white.withOpacity(0.1),
+                                        color: Colors.white.withValues(alpha: 0.1),
                                       ),
                                     ),
                                   ),
@@ -669,7 +670,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   child: Text(
                                     DateFormat('H a').format(date),
                                     style: GoogleFonts.montserrat(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color: Colors.white.withValues(alpha: 0.7),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -677,7 +678,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 );
                               },
                               hourIndicatorSettings: HourIndicatorSettings(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 height: 1,
                                 offset: 0,
                               ),
@@ -720,7 +721,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
+                                        color: Colors.black.withValues(alpha: 0.3),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       )
@@ -797,20 +798,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           border: Border(
             top: BorderSide(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 20,
               offset: const Offset(0, -5),
             )
           ],
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -830,7 +835,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.person, color: Colors.white),
@@ -852,7 +857,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       Text(
                         'Cliente',
                         style: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 14,
                         ),
                       ),
@@ -887,7 +892,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           context, event.event as AppointmentModel);
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -930,6 +935,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ],
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
@@ -938,7 +945,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.9), size: 18),
+        Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 18),
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -946,7 +953,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 10,
                 letterSpacing: 0.5,
               ),
@@ -974,7 +981,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         backgroundColor: const Color(0xFF111111),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withOpacity(0.1)),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
         title: Text(
           'ELIMINA APPUNTAMENTO',
@@ -1077,7 +1084,7 @@ class _ViewSelectorButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               blurRadius: 15,
               spreadRadius: 2,
             )
@@ -1088,14 +1095,14 @@ class _ViewSelectorButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.black : Colors.white.withOpacity(0.4),
+              color: isSelected ? Colors.black : Colors.white.withValues(alpha: 0.4),
               size: 20,
             ),
             const SizedBox(height: 6),
             Text(
               title.toUpperCase(),
               style: GoogleFonts.montserrat(
-                color: isSelected ? Colors.black : Colors.white.withOpacity(0.4),
+                color: isSelected ? Colors.black : Colors.white.withValues(alpha: 0.4),
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 letterSpacing: 1.2,
@@ -1126,10 +1133,10 @@ class _AgendaTeamButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: goldColor.withOpacity(0.1),
+              color: goldColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: goldColor.withOpacity(0.3),
+                color: goldColor.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),

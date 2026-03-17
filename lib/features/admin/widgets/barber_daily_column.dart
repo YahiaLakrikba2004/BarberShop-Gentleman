@@ -42,10 +42,10 @@ class BarberDailyColumn extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.05),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.05),
         border: Border(
           right: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -63,18 +63,18 @@ class BarberDailyColumn extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Theme.of(context).colorScheme.surface,
-                  Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                 ],
               ),
               border: Border(
                 bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

@@ -33,11 +33,11 @@ class MessagingService {
       if (await canLaunchUrl(whatsappUrl)) {
         await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
       } else {
-        if (kDebugMode) print("Could not launch WhatsApp for $cleanPhone");
+        if (kDebugMode) debugPrint("Could not launch WhatsApp for $cleanPhone");
         // Fallback or error handling
       }
     } catch (e) {
-      if (kDebugMode) print("Error launching WhatsApp: $e");
+      if (kDebugMode) debugPrint("Error launching WhatsApp: $e");
     }
   }
 
@@ -57,10 +57,10 @@ class MessagingService {
       if (await canLaunchUrl(smsLaunchUri)) {
         await launchUrl(smsLaunchUri);
       } else {
-         if (kDebugMode) print("Could not launch SMS");
+         if (kDebugMode) debugPrint("Could not launch SMS");
       }
     } catch (e) {
-       if (kDebugMode) print("Error launching SMS: $e");
+       if (kDebugMode) debugPrint("Error launching SMS: $e");
     }
   }
 }

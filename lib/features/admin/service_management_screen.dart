@@ -36,7 +36,7 @@ class ServiceManagementScreen extends ConsumerWidget {
             return Center(
               child: Text(
                 'Nessun servizio disponibile',
-                style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
             );
           }
@@ -56,12 +56,12 @@ class ServiceManagementScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
                     ],
-                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                    border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -83,7 +83,7 @@ class ServiceManagementScreen extends ConsumerWidget {
                             Text(
                               '${service.durationMinutes} min • €${service.price.toStringAsFixed(0)}',
                               style: GoogleFonts.montserrat(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                             ),
@@ -92,7 +92,7 @@ class ServiceManagementScreen extends ConsumerWidget {
                               Text(
                                 service.description,
                                 style: GoogleFonts.montserrat(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -107,7 +107,7 @@ class ServiceManagementScreen extends ConsumerWidget {
                         children: [
                           IconButton(
                             icon: Icon(Icons.edit_outlined,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                             onPressed: () => _showServiceDialog(context, ref,
                                 service: service),
                           ),
@@ -151,7 +151,7 @@ class ServiceManagementScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161616) : Colors.white,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2))),
+            side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
         title: Text(
           service == null ? 'Nuovo Servizio' : 'Modifica Servizio',
           style: GoogleFonts.cinzel(
@@ -221,8 +221,10 @@ class ServiceManagementScreen extends ConsumerWidget {
                 }
                 if (context.mounted) Navigator.pop(context);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Errore: $e')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Errore: $e')));
+                }
               }
             },
             child: Text('Salva',
@@ -241,13 +243,13 @@ class ServiceManagementScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF161616) : Colors.white,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.redAccent.withOpacity(0.3))),
+            side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3))),
         title: Text('Elimina Servizio',
             style: GoogleFonts.cinzel(
                 color: Colors.redAccent, fontWeight: FontWeight.bold)),
         content: Text(
             'Sei sicuro di voler eliminare "${service.name}"? Questa azione è irreversibile.',
-            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+            style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -278,15 +280,15 @@ class ServiceManagementScreen extends ConsumerWidget {
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withOpacity(0.6), size: 20),
+          labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6), size: 20),
           filled: true,
           fillColor: Theme.of(context).brightness == Brightness.dark 
-              ? Colors.white.withOpacity(0.05) 
+              ? Colors.white.withValues(alpha: 0.05) 
               : Colors.grey[100],
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+            borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

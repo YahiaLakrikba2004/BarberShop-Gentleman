@@ -34,6 +34,8 @@ class ProfileScreen extends ConsumerWidget {
         );
     }
 
+    final isDesktop = MediaQuery.of(context).size.width > 800;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -58,7 +60,10 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ],
         ),
-        body: Column(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isDesktop ? 900 : double.infinity),
+            child: Column(
           children: [
             // Premium Header
             FadeInDown(
@@ -66,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
               child: Container(
                 width: double.infinity,
                 padding:
-                    const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                    EdgeInsets.symmetric(vertical: 32, horizontal: isDesktop ? 48 : 24),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0A0A0A),
                   gradient: const LinearGradient(
@@ -79,7 +84,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   border: Border(
                     bottom: BorderSide(
-                      color: const Color(0xFFFFFFFF).withOpacity(0.1),
+                      color: const Color(0xFFFFFFFF).withValues(alpha: 0.1),
                     ),
                   ),
                 ),
@@ -101,7 +106,7 @@ class ProfileScreen extends ConsumerWidget {
                               boxShadow: [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFFFFFFFF).withOpacity(0.15),
+                                      const Color(0xFFFFFFFF).withValues(alpha: 0.15),
                                   blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
@@ -171,7 +176,7 @@ class ProfileScreen extends ConsumerWidget {
                                 user.email,
                                 style: GoogleFonts.montserrat(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -184,13 +189,13 @@ class ProfileScreen extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.add_circle_outline,
-                                    size: 14, color: const Color(0xFFD4AF37).withOpacity(0.7)),
+                                    size: 14, color: const Color(0xFFD4AF37).withValues(alpha: 0.7)),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Aggiungi email',
                                   style: GoogleFonts.montserrat(
                                     fontSize: 13,
-                                    color: const Color(0xFFD4AF37).withOpacity(0.7),
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.7),
                                     letterSpacing: 0.5,
                                     fontStyle: FontStyle.italic,
                                   ),
@@ -211,7 +216,7 @@ class ProfileScreen extends ConsumerWidget {
                                 user.phoneNumber!,
                                 style: GoogleFonts.montserrat(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -254,6 +259,8 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
@@ -466,12 +473,82 @@ class ProfileScreen extends ConsumerWidget {
                       letterSpacing: 1.5,
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Column(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 0.5,
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildMonogram('Y'),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Container(
+                              width: 3,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                            ),
+                          ),
+                          _buildMonogram('O'),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Yahia & Omar',
+                        style: GoogleFonts.playfairDisplay(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: 32,
+                        height: 0.5,
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 36),
                 ],
               ),
             ),
           ),
         ),
+    );
+  }
+
+  Widget _buildMonogram(String initial) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.14),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: GoogleFonts.cinzel(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white.withValues(alpha: 0.28),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
     );
   }
 
@@ -595,10 +672,10 @@ class ProfileScreen extends ConsumerWidget {
         child: ValueListenableBuilder<bool>(
           valueListenable: isSaving,
           builder: (context, saving, child) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+            backgroundColor: const Color(0xFF1E1E1E).withValues(alpha: 0.95),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
             ),
             title: Text(
               'MODIFICA PROFILO',
@@ -624,18 +701,18 @@ class ProfileScreen extends ConsumerWidget {
                     decoration: InputDecoration(
                       labelText: 'NOME',
                       labelStyle: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                          color: Colors.white.withValues(alpha: 0.5), fontSize: 12, letterSpacing: 1.0),
                       prefixIcon: Icon(Icons.person_outline, 
-                          color: Colors.white.withOpacity(0.7), size: 20),
+                          color: Colors.white.withValues(alpha: 0.7), size: 20),
                       filled: true,
-                      fillColor: Colors.black.withOpacity(0.3),
+                      fillColor: Colors.black.withValues(alpha: 0.3),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
@@ -651,14 +728,14 @@ class ProfileScreen extends ConsumerWidget {
                     decoration: InputDecoration(
                       labelText: 'TELEFONO',
                       labelStyle: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.3), fontSize: 12, letterSpacing: 1.0),
+                          color: Colors.white.withValues(alpha: 0.3), fontSize: 12, letterSpacing: 1.0),
                       prefixIcon: Icon(Icons.phone_outlined,
-                          color: Colors.white.withOpacity(0.3), size: 20),
+                          color: Colors.white.withValues(alpha: 0.3), size: 20),
                       filled: true,
-                      fillColor: Colors.black.withOpacity(0.15),
+                      fillColor: Colors.black.withValues(alpha: 0.15),
                       disabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
@@ -673,18 +750,18 @@ class ProfileScreen extends ConsumerWidget {
                    decoration: InputDecoration(
                     labelText: 'EMAIL',
                     labelStyle: GoogleFonts.montserrat(
-                        color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 1.0),
+                        color: Colors.white.withValues(alpha: 0.5), fontSize: 12, letterSpacing: 1.0),
                     prefixIcon: Icon(Icons.email_outlined, 
-                        color: Colors.white.withOpacity(0.7), size: 20),
+                        color: Colors.white.withValues(alpha: 0.7), size: 20),
                     filled: true,
-                    fillColor: Colors.black.withOpacity(0.3),
+                    fillColor: Colors.black.withValues(alpha: 0.3),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                       borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                       borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
                     ),
                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
@@ -714,11 +791,11 @@ class ProfileScreen extends ConsumerWidget {
                            }
                          }
                       },
-                      icon: Icon(Icons.lock_reset, color: Colors.white.withOpacity(0.6), size: 18),
+                      icon: Icon(Icons.lock_reset, color: Colors.white.withValues(alpha: 0.6), size: 18),
                       label: Text(
                         'CAMBIA PASSWORD',
                         style: GoogleFonts.montserrat(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                           letterSpacing: 1.0,
@@ -741,12 +818,12 @@ class ProfileScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.white.withOpacity(0.1))
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.1))
                         ),
                       ),
                       child: Text('ANNULLA', 
                           style: GoogleFonts.montserrat(
-                              color: Colors.white.withOpacity(0.6), 
+                              color: Colors.white.withValues(alpha: 0.6), 
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.0
                           )
@@ -851,10 +928,10 @@ class _ChangePinSheet extends StatefulWidget {
 }
 
 class _ChangePinSheetState extends State<_ChangePinSheet> {
-  // Step 0 = current PIN, step 1 = new PIN
   int _step = 0;
   bool _isLoading = false;
-  String? _errorText;
+  // ValueNotifier so error text updates without rebuilding the TextFields
+  final _errorNotifier = ValueNotifier<String?>(null);
 
   final _currentControllers = List.generate(6, (_) => TextEditingController());
   final _currentFocus = List.generate(6, (_) => FocusNode());
@@ -863,54 +940,56 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
 
   @override
   void dispose() {
-    for (final c in [..._currentControllers, ..._newControllers]) c.dispose();
-    for (final f in [..._currentFocus, ..._newFocus]) f.dispose();
+    _errorNotifier.dispose();
+    for (final c in [..._currentControllers, ..._newControllers]) { c.dispose(); }
+    for (final f in [..._currentFocus, ..._newFocus]) { f.dispose(); }
     super.dispose();
   }
 
   Future<void> _submitCurrentPin() async {
     final currentPin = _currentControllers.map((c) => c.text).join();
     if (currentPin.length < 6) return;
-    setState(() { _isLoading = true; _errorText = null; });
+    setState(() => _isLoading = true);
+    _errorNotifier.value = null;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) {
-      setState(() { _isLoading = false; _errorText = 'Utente non trovato'; });
+      setState(() => _isLoading = false);
+      _errorNotifier.value = 'Utente non trovato';
       return;
     }
 
     try {
       final credential = EmailAuthProvider.credential(email: user.email!, password: currentPin);
       await user.reauthenticateWithCredential(credential);
-      // Re-auth OK → go to step 1
       setState(() { _step = 1; _isLoading = false; });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _newFocus[0].requestFocus();
       });
     } on FirebaseAuthException catch (e) {
-      for (final c in _currentControllers) c.clear();
+      for (final c in _currentControllers) { c.clear(); }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _currentFocus[0].requestFocus();
       });
-      setState(() {
-        _isLoading = false;
-        _errorText = e.code == 'wrong-password' || e.code == 'invalid-credential'
-            ? 'PIN attuale non corretto'
-            : 'Errore: ${e.message}';
-      });
+      setState(() => _isLoading = false);
+      _errorNotifier.value = e.code == 'wrong-password' || e.code == 'invalid-credential'
+          ? 'PIN attuale non corretto'
+          : 'Errore: ${e.message}';
     }
   }
 
   Future<void> _submitNewPin() async {
     final newPin = _newControllers.map((c) => c.text).join();
     if (newPin.length < 6) return;
-    setState(() { _isLoading = true; _errorText = null; });
+    setState(() => _isLoading = true);
+    _errorNotifier.value = null;
 
+    final messenger = ScaffoldMessenger.of(widget.outerContext);
     try {
       await FirebaseAuth.instance.currentUser!.updatePassword(newPin);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(widget.outerContext).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('PIN aggiornato con successo'),
             backgroundColor: Color(0xFF22C55E),
@@ -919,14 +998,16 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
         );
       }
     } catch (e) {
-      for (final c in _newControllers) c.clear();
+      for (final c in _newControllers) { c.clear(); }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _newFocus[0].requestFocus();
       });
-      setState(() { _isLoading = false; _errorText = 'Errore aggiornamento PIN'; });
+      setState(() => _isLoading = false);
+      _errorNotifier.value = 'Errore aggiornamento PIN';
     }
   }
 
+  // Stable PIN row — no dependency on _errorNotifier, no setState on keypress
   Widget _pinRow(List<TextEditingController> ctrls, List<FocusNode> fNodes, void Function() onComplete) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -937,11 +1018,7 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: _errorText != null
-                ? const Color(0xFFDC143C).withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.12),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: TextField(
           controller: ctrls[i],
@@ -954,7 +1031,8 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
           decoration: const InputDecoration(counterText: '', border: InputBorder.none, contentPadding: EdgeInsets.zero),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (val) {
-            setState(() => _errorText = null);
+            // Clear error without setState to avoid keyboard flicker
+            if (_errorNotifier.value != null) _errorNotifier.value = null;
             if (val.isNotEmpty && i < 5) fNodes[i + 1].requestFocus();
             if (val.isEmpty && i > 0) fNodes[i - 1].requestFocus();
             if (ctrls.every((c) => c.text.isNotEmpty)) onComplete();
@@ -993,14 +1071,20 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
             isCurrent
                 ? _pinRow(_currentControllers, _currentFocus, _submitCurrentPin)
                 : _pinRow(_newControllers, _newFocus, _submitNewPin),
-            if (_errorText != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _errorText!,
-                style: GoogleFonts.montserrat(color: const Color(0xFFDC143C), fontSize: 12),
-              ),
-            ],
-            const SizedBox(height: 24),
+            // Error text only — no rebuild of PIN boxes
+            ValueListenableBuilder<String?>(
+              valueListenable: _errorNotifier,
+              builder: (_, error, __) => error != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        error,
+                        style: GoogleFonts.montserrat(color: const Color(0xFFDC143C), fontSize: 12),
+                      ),
+                    )
+                  : const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -1030,10 +1114,10 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
       builder: (context) => BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
         child: AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+          backgroundColor: const Color(0xFF1E1E1E).withValues(alpha: 0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: const Color(0xFFFF453A).withOpacity(0.3), width: 1),
+            side: BorderSide(color: const Color(0xFFFF453A).withValues(alpha: 0.3), width: 1),
           ),
           title: Text(
             'ELIMINA ACCOUNT',
@@ -1048,7 +1132,7 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
           content: Text(
             'Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati e appuntamenti.',
             style: GoogleFonts.montserrat(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
               height: 1.5,
             ),
@@ -1065,12 +1149,12 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.white.withOpacity(0.1))
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.1))
                       ),
                     ),
                     child: Text('ANNULLA', 
                         style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.6), 
+                            color: Colors.white.withValues(alpha: 0.6), 
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.0
                         )
@@ -1099,7 +1183,7 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: const Color(0xFFFF453A).withOpacity(0.5)),
+                        side: BorderSide(color: const Color(0xFFFF453A).withValues(alpha: 0.5)),
                       ),
                     ),
                     child: Text('ELIMINA', 
@@ -1164,7 +1248,7 @@ class _AppointmentsList extends ConsumerWidget {
                 Icon(
                   isHistory ? Icons.history : Icons.calendar_today,
                   size: 64,
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -1172,7 +1256,7 @@ class _AppointmentsList extends ConsumerWidget {
                       ? 'Nessun appuntamento passato'
                       : 'Nessun appuntamento in programma',
                   style: TextStyle(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     fontSize: 16,
                     letterSpacing: 1,
                   ),
@@ -1207,7 +1291,7 @@ class _AppointmentsList extends ConsumerWidget {
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+          side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
         ),
         title: const Text('ELIMINA APPUNTAMENTO',
             style: TextStyle(
@@ -1257,7 +1341,7 @@ class _AppointmentsList extends ConsumerWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.9), // Darker barrier
+      barrierColor: Colors.black.withValues(alpha: 0.9), // Darker barrier
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, animation, secondaryAnimation) => Container(),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
@@ -1274,17 +1358,17 @@ class _AppointmentsList extends ConsumerWidget {
                   color: const Color(0xFF141414),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1), // Subtle Silver Border
+                    color: Colors.white.withValues(alpha: 0.1), // Subtle Silver Border
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withOpacity(0.05), // Cold Silver Glow
+                      color: Colors.white.withValues(alpha: 0.05), // Cold Silver Glow
                       blurRadius: 30,
                       spreadRadius: -2,
                     ),
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.8),
+                      color: Colors.black.withValues(alpha: 0.8),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -1305,7 +1389,7 @@ class _AppointmentsList extends ConsumerWidget {
                         ),
                         border: Border(
                           bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.05)),
+                              color: Colors.white.withValues(alpha: 0.05)),
                         ),
                       ),
                       child: Column(
@@ -1319,17 +1403,17 @@ class _AppointmentsList extends ConsumerWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                   Colors.white.withOpacity(0.05),
+                                   Colors.white.withValues(alpha: 0.05),
                                    Colors.transparent,
                                 ],
                               ),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 width: 1,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   blurRadius: 20,
                                   spreadRadius: 1,
                                 ),
@@ -1362,7 +1446,7 @@ class _AppointmentsList extends ConsumerWidget {
                               letterSpacing: 4,
                               shadows: [
                                 Shadow(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   blurRadius: 15,
                                 ),
                               ],
@@ -1374,7 +1458,7 @@ class _AppointmentsList extends ConsumerWidget {
                             style: GoogleFonts.montserrat(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               letterSpacing: 4,
                             ),
                           ),
@@ -1393,7 +1477,7 @@ class _AppointmentsList extends ConsumerWidget {
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 18,
                               fontStyle: FontStyle.italic,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -1402,7 +1486,7 @@ class _AppointmentsList extends ConsumerWidget {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
-                              color: Colors.white.withOpacity(0.6),
+                              color: Colors.white.withValues(alpha: 0.6),
                               height: 1.6,
                               letterSpacing: 0.3,
                             ),
@@ -1416,7 +1500,7 @@ class _AppointmentsList extends ConsumerWidget {
                               color: Colors.white, // Solid White
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                   blurRadius: 15,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1471,7 +1555,7 @@ class _AppointmentsList extends ConsumerWidget {
                       decoration: BoxDecoration(
                          border: Border(
                           top: BorderSide(
-                              color: Colors.white.withOpacity(0.05)),
+                              color: Colors.white.withValues(alpha: 0.05)),
                         ),
                       ),
                       width: double.infinity,
@@ -1489,7 +1573,7 @@ class _AppointmentsList extends ConsumerWidget {
                         child: Text(
                           'CHIUDI',
                           style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.4),
+                            color: Colors.white.withValues(alpha: 0.4),
                             fontWeight: FontWeight.w600,
                             letterSpacing: 2.0,
                             fontSize: 12,

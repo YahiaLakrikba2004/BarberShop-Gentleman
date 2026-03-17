@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../core/firebase_error_handler.dart';
 
 enum _AuthStep { phone, pin, register, email }
 
@@ -106,7 +107,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         if (mounted) _pinFocusNodes[0].requestFocus();
       });
     } catch (e) {
-      _showError("Errore: $e");
+      _showError(FirebaseErrorHandler.generic(e));
       setState(() => _isLoading = false);
     }
   }
@@ -129,12 +130,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       if (!mounted) return;
       setState(() => _isLoading = false);
       _shakePin();
-      _showError(_mapFirebaseError(e));
+      _showError(FirebaseErrorHandler.auth(e));
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       _shakePin();
-      _showError("Errore: $e");
+      _showError(FirebaseErrorHandler.generic(e));
     }
   }
 
@@ -170,7 +171,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         );
       }
     } on FirebaseAuthException catch (e) {
-      _showError(_mapFirebaseError(e));
+      _showError(FirebaseErrorHandler.auth(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -211,7 +212,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
       if (mounted) context.go('/');
     } catch (e) {
-      _showError("Errore registrazione: $e");
+      _showError(FirebaseErrorHandler.generic(e));
       setState(() => _isLoading = false);
     }
   }
@@ -227,25 +228,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       );
       if (mounted) context.go('/');
     } catch (e) {
-      _showError(e.toString());
+      _showError(FirebaseErrorHandler.generic(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-  String _mapFirebaseError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found': return 'Nessun account trovato';
-      case 'wrong-password':
-      case 'invalid-credential': return 'PIN non corretto';
-      case 'email-already-in-use': return 'Email già registrata';
-      case 'invalid-email': return 'Email non valida';
-      case 'too-many-requests': return 'Troppi tentativi. Riprova tra qualche minuto';
-      default: return e.message ?? 'Errore sconosciuto';
-    }
-  }
 
   void _showError(String message) {
     if (!mounted) return;
@@ -272,6 +261,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   @override
   Widget build(BuildContext context) {
     const inputFill = Color(0xFF1E1E1E);
+    final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -285,60 +275,147 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+          child: isDesktop
+              ? _buildDesktopLayout(inputFill)
+              : _buildMobileLayout(inputFill),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(Color inputFill) {
+    const goldColor = Color(0xFFD4AF37);
+    return Row(
+      children: [
+        // Left panel — brand
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+            ),
+            child: Center(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  FadeInDown(
+                  AnimatedBuilder(
+                    animation: _rotationController,
+                    builder: (_, child) => Transform.rotate(
+                      angle: _rotationController.value * 2 * 3.14159,
+                      child: child,
+                    ),
                     child: Container(
-                      height: 120,
-                      width: 120,
+                      height: 140,
+                      width: 140,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
+                        border: Border.all(color: goldColor.withValues(alpha: 0.3), width: 1.5),
                         boxShadow: [
-                          BoxShadow(color: Colors.white.withValues(alpha: 0.08), blurRadius: 40, spreadRadius: 4),
+                          BoxShadow(color: goldColor.withValues(alpha: 0.15), blurRadius: 60, spreadRadius: 8),
                         ],
                       ),
                       child: ClipOval(
                         child: Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.all(18),
                           child: Image.asset('assets/images/icon_premium_v2.png', fit: BoxFit.contain),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  Text('GENTLEMAN', style: GoogleFonts.cinzel(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4)),
-                  const SizedBox(height: 8),
-                  Text('BARBER SHOP', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54, letterSpacing: 6)),
-                  const SizedBox(height: 50),
-
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutQuart,
-                    child: _buildCurrentStep(inputFill),
+                  const SizedBox(height: 36),
+                  Text('THE GENTLEMEN',
+                    style: GoogleFonts.cinzel(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 5)),
+                  const SizedBox(height: 10),
+                  Text('BARBER SHOP',
+                    style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white38, letterSpacing: 8)),
+                  const SizedBox(height: 40),
+                  Container(
+                    width: 40,
+                    height: 1,
+                    color: goldColor.withValues(alpha: 0.4),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  if (_step == _AuthStep.phone)
-                    TextButton(
-                      onPressed: () => setState(() => _isEmailLoginMode = !_isEmailLoginMode),
-                      child: Text(
-                        _isEmailLoginMode ? "Usa Numero di Telefono" : "Usa Email e Password",
-                        style: const TextStyle(color: Colors.white38, fontSize: 12),
-                      ),
-                    ),
+                  const SizedBox(height: 24),
+                  Text('STILE • ELEGANZA • PRECISIONE',
+                    style: GoogleFonts.montserrat(fontSize: 10, color: Colors.white24, letterSpacing: 3)),
                 ],
               ),
             ),
           ),
         ),
+        // Right panel — form
+        SizedBox(
+          width: 480,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(48),
+              child: _buildFormContent(inputFill),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(Color inputFill) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FadeInDown(
+              child: Container(
+                height: 120,
+                width: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
+                  boxShadow: [
+                    BoxShadow(color: Colors.white.withValues(alpha: 0.08), blurRadius: 40, spreadRadius: 4),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Image.asset('assets/images/icon_premium_v2.png', fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Text('GENTLEMAN', style: GoogleFonts.cinzel(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4)),
+            const SizedBox(height: 8),
+            Text('BARBER SHOP', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54, letterSpacing: 6)),
+            const SizedBox(height: 50),
+            _buildFormContent(inputFill),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFormContent(Color inputFill) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutQuart,
+          child: _buildCurrentStep(inputFill),
+        ),
+        const SizedBox(height: 32),
+        if (_step == _AuthStep.phone)
+          TextButton(
+            onPressed: () => setState(() => _isEmailLoginMode = !_isEmailLoginMode),
+            child: Text(
+              _isEmailLoginMode ? "Usa Numero di Telefono" : "Usa Email e Password",
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ),
+      ],
     );
   }
 

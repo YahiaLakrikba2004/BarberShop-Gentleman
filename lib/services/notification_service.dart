@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui'; 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -38,7 +37,7 @@ class NotificationService {
       // Initialize time zones
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Europe/Rome'));
-      if (kDebugMode) print('NotificationService: Time zones initialized (Europe/Rome)');
+      if (kDebugMode) debugPrint('NotificationService: Time zones initialized (Europe/Rome)');
 
       // 1. Request permissions (Firebase)
       NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -47,7 +46,7 @@ class NotificationService {
         sound: true,
         provisional: false,
       );
-      if (kDebugMode) print('User granted permission: ${settings.authorizationStatus}');
+      if (kDebugMode) debugPrint('User granted permission: ${settings.authorizationStatus}');
 
       // iOS: Enable foreground notifications (banner + sound + badge)
       await _firebaseMessaging.setForegroundNotificationPresentationOptions(
@@ -75,13 +74,13 @@ class NotificationService {
       await _localNotifications.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          if (kDebugMode) print("Notification tapped: ${response.payload}");
+          if (kDebugMode) debugPrint("Notification tapped: ${response.payload}");
           if (response.payload != null) {
             _onNotificationOpenStr.add(response.payload);
           }
         },
       );
-      if (kDebugMode) print('NotificationService: Local notifications initialized');
+      if (kDebugMode) debugPrint('NotificationService: Local notifications initialized');
 
       // 3. Create Android Notification Channel
       try {
@@ -98,18 +97,18 @@ class NotificationService {
           );
 
           await androidImplementation.createNotificationChannel(channel);
-          if (kDebugMode) print('NotificationService: Android channel created');
+          if (kDebugMode) debugPrint('NotificationService: Android channel created');
 
           // Explicitly request notification permission for Android 13+
           final granted = await androidImplementation.requestNotificationsPermission();
-          if (kDebugMode) print('NotificationService: Android Notification Permission granted: $granted');
+          if (kDebugMode) debugPrint('NotificationService: Android Notification Permission granted: $granted');
 
           // Request exact alarm permission once at init (Android 12+)
           final exactAlarmGranted = await androidImplementation.requestExactAlarmsPermission();
-          if (kDebugMode) print('NotificationService: Exact Alarm Permission granted: $exactAlarmGranted');
+          if (kDebugMode) debugPrint('NotificationService: Exact Alarm Permission granted: $exactAlarmGranted');
         }
       } catch (e) {
-         if (kDebugMode) print("Error creating Android channel: $e");
+         if (kDebugMode) debugPrint("Error creating Android channel: $e");
       }
 
       // 4. Get and Save Token
@@ -123,13 +122,13 @@ class NotificationService {
            // iOS Special: Check APNS token status
            if (Platform.isIOS) {
              final apnsToken = await _firebaseMessaging.getAPNSToken();
-             if (kDebugMode) print('APNS TOKEN: $apnsToken');
+             if (kDebugMode) debugPrint('APNS TOKEN: $apnsToken');
              if (apnsToken == null && kDebugMode) {
-               print('WARNING: APNS Token is null. Push notifications will NOT work on real device until APNS is configured.');
+               debugPrint('WARNING: APNS Token is null. Push notifications will NOT work on real device until APNS is configured.');
              }
            }
         }
-        if (kDebugMode) print('FCM TOKEN: $fcmToken');
+        if (kDebugMode) debugPrint('FCM TOKEN: $fcmToken');
         if (fcmToken != null) {
           await _saveTokenToFirestore(fcmToken);
         }
@@ -138,12 +137,12 @@ class NotificationService {
            _saveTokenToFirestore(token);
         });
       } catch (e) {
-        if (kDebugMode) print("Error handling FCM Token: $e");
+        if (kDebugMode) debugPrint("Error handling FCM Token: $e");
       }
 
       // 5. Handle Foreground Messages (Android + iOS)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (kDebugMode) print('Got a message whilst in the foreground: ${message.messageId}');
+        if (kDebugMode) debugPrint('Got a message whilst in the foreground: ${message.messageId}');
 
         RemoteNotification? notification = message.notification;
         
@@ -153,7 +152,7 @@ class NotificationService {
         if (notification != null) {
           _showForegroundNotification(notification);
         } else if (message.data.isNotEmpty && kDebugMode) {
-          print("Received data-only message in foreground: ${message.data}");
+          debugPrint("Received data-only message in foreground: ${message.data}");
         }
       });
       
@@ -170,11 +169,11 @@ class NotificationService {
             _onNotificationOpenStr.add(initialMessage.data['path']);
         }
       } catch (e) {
-         if (kDebugMode) print("Error getting initial message: $e");
+         if (kDebugMode) debugPrint("Error getting initial message: $e");
       }
       
     } catch (e) {
-      if (kDebugMode) print("CRITICAL ERROR initializing NotificationService: $e");
+      if (kDebugMode) debugPrint("CRITICAL ERROR initializing NotificationService: $e");
     }
   }
 
@@ -251,7 +250,7 @@ class NotificationService {
       await file.writeAsBytes(bytes);
       return file.path;
     } catch (e) {
-      if (kDebugMode) print("Error saving asset to file: $e");
+      if (kDebugMode) debugPrint("Error saving asset to file: $e");
       return null;
     }
   }
@@ -278,7 +277,7 @@ class NotificationService {
     required DateTime scheduledDate,
   }) async {
     try {
-      if (kDebugMode) print("Attempting to schedule notification: $title at $scheduledDate");
+      if (kDebugMode) debugPrint("Attempting to schedule notification: $title at $scheduledDate");
 
       final details = await _getPremiumNotificationDetails(
         title: title,
@@ -295,15 +294,15 @@ class NotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-      if (kDebugMode) print("SUCCESS: Notification scheduled: $title");
+      if (kDebugMode) debugPrint("SUCCESS: Notification scheduled: $title");
     } catch (e) {
-      if (kDebugMode) print("ERROR Scheduling Notification: $e");
+      if (kDebugMode) debugPrint("ERROR Scheduling Notification: $e");
     }
   }
 
   Future<void> cancelNotification(int id) async {
     await _localNotifications.cancel(id);
-    if (kDebugMode) print("Notification cancelled: $id");
+    if (kDebugMode) debugPrint("Notification cancelled: $id");
   }
 
   Future<void> _saveTokenToFirestore(String token) async {
@@ -317,9 +316,9 @@ class NotificationService {
           'platform': Platform.isIOS ? 'ios' : 'android',
         }, SetOptions(merge: true));
         
-        if (kDebugMode) print('FCM Token saved to Firestore for user: ${user.uid}');
+        if (kDebugMode) debugPrint('FCM Token saved to Firestore for user: ${user.uid}');
       } catch (e) {
-        if (kDebugMode) print('Error saving FCM Token: $e');
+        if (kDebugMode) debugPrint('Error saving FCM Token: $e');
       }
     }
   }
@@ -333,10 +332,10 @@ class NotificationService {
         );
       }
     } catch (e) {
-      if (kDebugMode) print("Firebase init error in background: $e");
+      if (kDebugMode) debugPrint("Firebase init error in background: $e");
     }
 
-    if (kDebugMode) print("Handling a background message: ${message.messageId}");
+    if (kDebugMode) debugPrint("Handling a background message: ${message.messageId}");
 
     // If it's a data-only message (no notification payload), Android/iOS won't show it automatically.
     // We show a local notification manually.
@@ -412,11 +411,11 @@ class NotificationService {
       details,
       payload: payload,
     );
-    if (kDebugMode) print("Immediate notification shown: $title");
+    if (kDebugMode) debugPrint("Immediate notification shown: $title");
   }
 
   Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {
-    if (kDebugMode) print("Rescheduling all ${appointments.length} appointments...");
+    if (kDebugMode) debugPrint("Rescheduling all ${appointments.length} appointments...");
     
     // Optional: Cancel all existing to ensure clean slate? 
     // For now we just overwrite since we use consistent IDs.
@@ -442,7 +441,7 @@ class NotificationService {
         }
       }
     }
-    if (kDebugMode) print("Rescheduled $scheduledCount notifications.");
+    if (kDebugMode) debugPrint("Rescheduled $scheduledCount notifications.");
   }
 
   Future<ByteArrayAndroidBitmap?> _getAssetBitmap(String assetPath) async {
@@ -451,7 +450,7 @@ class NotificationService {
       final Uint8List bytes = byteData.buffer.asUint8List();
       return ByteArrayAndroidBitmap(bytes);
     } catch (e) {
-      if (kDebugMode) print("Error loading asset bitmap: $e");
+      if (kDebugMode) debugPrint("Error loading asset bitmap: $e");
       return null;
     }
   }

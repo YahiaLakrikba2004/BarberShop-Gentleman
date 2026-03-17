@@ -66,12 +66,12 @@ class _BarberManagementCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -86,12 +86,12 @@ class _BarberManagementCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.5), 
+                          color: Colors.white.withValues(alpha: 0.5), 
                           width: 2
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
@@ -146,9 +146,9 @@ class _BarberManagementCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +157,7 @@ class _BarberManagementCard extends ConsumerWidget {
                         'STATO E PIANIFICAZIONE',
                         style: GoogleFonts.cinzel(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                           fontSize: 10,
                           letterSpacing: 2,
                         ),
@@ -218,7 +218,7 @@ class _BarberManagementCard extends ConsumerWidget {
                               child: _StatusButton(
                                 label: 'Pianifica Ferie Future',
                                 isSelected: false,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 icon: Icons.calendar_month,
                                 onTap: () => _showBarberVacationDialog(context, ref, barber),
                               ),
@@ -242,10 +242,10 @@ class _BarberManagementCard extends ConsumerWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).brightness == Brightness.dark 
-                            ? Colors.white.withOpacity(0.05) 
+                            ? Colors.white.withValues(alpha: 0.05) 
                             : Colors.grey[100],
                         shape: BoxShape.circle,
-                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+                        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
                       ),
                       child: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.onSurface, size: 20),
                     ),
@@ -334,9 +334,9 @@ class _BarberManagementCard extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF141414),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withOpacity(0.07)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 40, spreadRadius: 5),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 40, spreadRadius: 5),
                 ],
               ),
               child: ClipRRect(
@@ -348,16 +348,16 @@ class _BarberManagementCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
                       decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.06))),
+                        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.12),
+                              color: Colors.orange.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                             ),
                             child: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
                           ),
@@ -402,9 +402,9 @@ class _BarberManagementCard extends ConsumerWidget {
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.04),
+                                    color: Colors.white.withValues(alpha: 0.04),
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white.withOpacity(0.07)),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
                                   ),
                                   child: Row(
                                     children: [
@@ -434,9 +434,9 @@ class _BarberManagementCard extends ConsumerWidget {
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: Colors.green.withOpacity(0.12),
+                                            color: Colors.green.withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: Colors.green.withOpacity(0.25)),
+                                            border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
                                           ),
                                           child: const Icon(Icons.perm_phone_msg, color: Colors.green, size: 17),
                                         ),
@@ -454,9 +454,9 @@ class _BarberManagementCard extends ConsumerWidget {
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: Colors.red.withOpacity(0.12),
+                                            color: Colors.red.withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: Colors.red.withOpacity(0.25)),
+                                            border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
                                           ),
                                           child: const Icon(Icons.close_rounded, color: Colors.redAccent, size: 17),
                                         ),
@@ -473,13 +473,13 @@ class _BarberManagementCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(height: 1, color: Colors.white.withOpacity(0.05), margin: const EdgeInsets.only(bottom: 14)),
+                          Container(height: 1, color: Colors.white.withValues(alpha: 0.05), margin: const EdgeInsets.only(bottom: 14)),
                           // Primary: auto-notify
                           Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: [Colors.orange.shade700, Colors.orange.shade500], begin: Alignment.centerLeft, end: Alignment.centerRight),
                               borderRadius: BorderRadius.circular(14),
-                              boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))],
+                              boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))],
                             ),
                             child: Material(
                               color: Colors.transparent,
@@ -520,9 +520,9 @@ class _BarberManagementCard extends ConsumerWidget {
                               Expanded(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.05),
+                                    color: Colors.white.withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                                   ),
                                   child: Material(
                                     color: Colors.transparent,
@@ -585,7 +585,7 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF141414) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+          side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
         ),
         title: Column(
           children: [
@@ -601,7 +601,7 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
             Text(
               widget.barber.name.toUpperCase(),
               style: GoogleFonts.montserrat(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
                 letterSpacing: 1,
@@ -618,10 +618,10 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                 Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).brightness == Brightness.dark 
-                        ? Colors.black.withOpacity(0.3) 
+                        ? Colors.black.withValues(alpha: 0.3) 
                         : Colors.grey[50],
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                    border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                   ),
                   child: TableCalendar(
                     locale: 'it_IT',
@@ -641,9 +641,9 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                     ),
                     calendarStyle: CalendarStyle(
                       defaultTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                      weekendTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                      weekendTextStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                       todayDecoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       selectedDecoration: BoxDecoration(
@@ -692,11 +692,11 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                     children: _unavailableDates.map((date) => Chip(
                       label: Text(DateFormat('dd/MM').format(date), style: const TextStyle(fontSize: 10)),
                       onDeleted: () => setState(() => _unavailableDates.removeWhere((d) => isSameDay(d, date))),
-                      backgroundColor: Colors.white.withOpacity(0.1),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                       labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       deleteIconColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                     )).toList(),
                   ),
                 ],
@@ -708,7 +708,7 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('ANNULLA', style: GoogleFonts.montserrat(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), 
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), 
               fontWeight: FontWeight.bold
             )),
           ),
@@ -764,8 +764,8 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
           decoration: BoxDecoration(
             color: const Color(0xFF141414),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withOpacity(0.07)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 40, spreadRadius: 5)],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 40, spreadRadius: 5)],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
@@ -776,16 +776,16 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.06))),
+                    border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.12),
+                          color: Colors.orange.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                         ),
                         child: const Icon(Icons.event_busy_rounded, color: Colors.orange, size: 20),
                       ),
@@ -815,9 +815,9 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
+                        color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.07)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
                       ),
                       child: Row(
                         children: [
@@ -844,9 +844,9 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.12),
+                                color: Colors.green.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.green.withOpacity(0.25)),
+                                border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
                               ),
                               child: const Icon(Icons.perm_phone_msg, color: Colors.green, size: 17),
                             ),
@@ -862,12 +862,12 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(height: 1, color: Colors.white.withOpacity(0.05), margin: const EdgeInsets.only(bottom: 14)),
+                      Container(height: 1, color: Colors.white.withValues(alpha: 0.05), margin: const EdgeInsets.only(bottom: 14)),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.orange.shade700, Colors.orange.shade500], begin: Alignment.centerLeft, end: Alignment.centerRight),
                           borderRadius: BorderRadius.circular(14),
-                          boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4))],
+                          boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))],
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -919,9 +919,9 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: Colors.white.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                               ),
                               child: Material(
                                 color: Colors.transparent,
@@ -977,7 +977,7 @@ class _StatusButton extends StatelessWidget {
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color : Theme.of(context).dividerColor.withOpacity(0.1),
+            color: isSelected ? color : Theme.of(context).dividerColor.withValues(alpha: 0.1),
             width: 1.5,
           ),
         ),
@@ -994,7 +994,7 @@ class _StatusButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 11,
               ),
@@ -1076,8 +1076,8 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                 style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: 'Nome',
-                  labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2))),
+                  labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
                   focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
                 ),
               ),
@@ -1182,7 +1182,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Annulla', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+            child: Text('Annulla', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
           ),
           TextButton(
             onPressed: () async {
