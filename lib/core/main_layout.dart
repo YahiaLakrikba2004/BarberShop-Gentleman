@@ -86,11 +86,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                             selectedIcon: Icons.event_note,
                             label: 'Agenda',
                             onTap: () {
-                              if (AdminConfig.isShopAccount(user.email)) {
-                                context.go('/team-agenda');
-                              } else {
-                                context.go('/calendar');
-                              }
+                              context.go('/team-agenda');
                             },
                           ),
                         if (user == null || user.role == UserRole.client)
@@ -172,23 +168,22 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ),
           ),
           
-          if (isSelected) ...[
-            const SizedBox(height: 4),
-            Text(
+          const SizedBox(height: 4),
+          Visibility(
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            visible: isSelected,
+            child: Text(
               label,
-              style: GoogleFonts.montserrat( // Elegant font
+              style: GoogleFonts.montserrat(
                 color: goldColor,
                 fontWeight: FontWeight.w600,
                 fontSize: 10,
                 letterSpacing: 1,
               ),
             ),
-          ] else ...[
-             // Placeholder to prevent jumpy layout, or just remove if we want it compact.
-             // Keeping it compact for unselected.
-             const SizedBox(height: 4),
-             const SizedBox(height: 12), // Height of text approx
-          ],
+          ),
         ],
       ),
     );

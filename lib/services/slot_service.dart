@@ -53,14 +53,30 @@ class SlotService {
     }
     
     
-    // Start and End times for the barber
-    final DateTime startOfDay = DateTime(date.year, date.month, date.day, barber.startHour);
-    final DateTime endOfDay = DateTime(date.year, date.month, date.day, barber.endHour);
+    // 4. Check Shop Weekly Schedule for this weekday
+    final shopDay = shopSettings.weeklySchedule[date.weekday];
+    if (shopDay != null && shopDay.isClosed) {
+      return [];
+    }
 
-    // Pausa del doppio turno (se attiva)
+    // Start and End times: use per-day override if set, then clamp to shop hours
+    final int barberStart = barber.startHourFor(date.weekday);
+    final int barberEnd   = barber.endHourFor(date.weekday);
+
+    final int effectiveStart = (shopDay != null)
+        ? barberStart.clamp(shopDay.openHour, shopDay.closeHour).toInt()
+        : barberStart;
+    final int effectiveEnd = (shopDay != null)
+        ? barberEnd.clamp(shopDay.openHour, shopDay.closeHour).toInt()
+        : barberEnd;
+
+    final DateTime startOfDay = DateTime(date.year, date.month, date.day, effectiveStart);
+    final DateTime endOfDay = DateTime(date.year, date.month, date.day, effectiveEnd);
+
+    // Pausa del doppio turno (se attiva per questo giorno)
     DateTime? breakStart;
     DateTime? breakEnd;
-    if (barber.hasDoubleShift) {
+    if (barber.hasBreakOn(date.weekday)) {
       breakStart = DateTime(date.year, date.month, date.day, barber.breakStartHour);
       breakEnd = DateTime(date.year, date.month, date.day, barber.breakEndHour);
     }
@@ -87,8 +103,9 @@ class SlotService {
       bool isOccupied = false;
 
       for (var appointment in existingAppointments) {
-        // Ignore cancelled appointments
-        if (appointment.status == AppointmentStatus.cancelled) {
+        // Ignore cancelled/no-show appointments
+        if (appointment.status == AppointmentStatus.cancelled ||
+            appointment.status == AppointmentStatus.noShow) {
           continue;
         }
 

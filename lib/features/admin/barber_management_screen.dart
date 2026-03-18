@@ -7,15 +7,44 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/barber_model.dart';
 import '../../models/appointment_model.dart';
+import '../../models/shop_settings_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/messaging_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/seed_service.dart';
 
-class BarberManagementScreen extends ConsumerWidget {
+class BarberManagementScreen extends ConsumerStatefulWidget {
   const BarberManagementScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BarberManagementScreen> createState() => _BarberManagementScreenState();
+}
+
+class _BarberManagementScreenState extends ConsumerState<BarberManagementScreen> {
+  bool _migrating = false;
+
+  Future<void> _runMigration() async {
+    setState(() => _migrating = true);
+    try {
+      await ref.read(seedServiceProvider).fixBarberSchedules();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Migrazione completata'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore migrazione: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _migrating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final barbersAsync = ref.watch(barberListProvider);
 
     return Scaffold(
@@ -29,6 +58,19 @@ class BarberManagementScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (_migrating)
+            const Padding(
+              padding: EdgeInsets.all(14),
+              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.build_outlined, size: 20),
+              tooltip: 'Migra dati barbieri',
+              onPressed: _runMigration,
+            ),
+        ],
       ),
       body: barbersAsync.when(
         data: (barbers) {
@@ -56,9 +98,28 @@ class _BarberManagementCard extends ConsumerWidget {
 
   const _BarberManagementCard({required this.barber});
 
+  String _effectiveHours(BarberModel b, ShopDaySchedule? shopDay) {
+    String h(int v) => '${v.toString().padLeft(2, '0')}:00';
+    final today = DateTime.now().weekday;
+    final dayStart = b.startHourFor(today);
+    final dayEnd   = b.endHourFor(today);
+    final effStart = shopDay != null && !shopDay.isClosed
+        ? dayStart.clamp(shopDay.openHour, shopDay.closeHour)
+        : dayStart;
+    final effEnd = shopDay != null && !shopDay.isClosed
+        ? dayEnd.clamp(shopDay.openHour, shopDay.closeHour)
+        : dayEnd;
+    if (b.hasBreakOn(today)) {
+      return '${h(effStart)}–${h(b.breakStartHour)}  |  ${h(b.breakEndHour)}–${h(effEnd)}';
+    }
+    return '${h(effStart)} — ${h(effEnd)}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shopSettings = ref.watch(shopSettingsProvider).valueOrNull;
+    final todaySchedule = shopSettings?.weeklySchedule[DateTime.now().weekday];
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -111,14 +172,40 @@ class _BarberManagementCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            barber.name.toUpperCase(),
-                            style: GoogleFonts.cinzel(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              letterSpacing: 1.5,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  barber.name.toUpperCase(),
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ),
+                              if (!barber.isBookable) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(
+                                    'NASCOSTO',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.orange,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -126,9 +213,7 @@ class _BarberManagementCard extends ConsumerWidget {
                               Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)),
                               const SizedBox(width: 6),
                               Text(
-                                barber.hasDoubleShift
-                                    ? '${barber.startHour}:00–${barber.breakStartHour}:00  |  ${barber.breakEndHour}:00–${barber.endHour}:00'
-                                    : '${barber.startHour}:00 — ${barber.endHour}:00',
+                                _effectiveHours(barber, todaySchedule),
                                 style: GoogleFonts.montserrat(
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                   fontSize: 12,
@@ -1008,240 +1093,626 @@ class _StatusButton extends StatelessWidget {
 }
 
 Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberModel barber) async {
-  final nameController = TextEditingController(text: barber.name);
-  final startHourController = TextEditingController(text: barber.startHour.toString());
-  final breakStartController = TextEditingController(text: barber.breakStartHour.toString());
-  final breakEndController = TextEditingController(text: barber.breakEndHour.toString());
-  final endHourController = TextEditingController(text: barber.endHour.toString());
   String? newImageBase64;
   final ImagePicker picker = ImagePicker();
+  final nameCtrl = TextEditingController(text: barber.name);
 
-  await showDialog(
+  // Integer state maps — no TextEditingControllers for hours
+  final Map<int, int> dayStart = {
+    for (var i = 1; i <= 7; i++) i: barber.daySchedule[i]?[0] ?? barber.startHour,
+  };
+  final Map<int, int> dayEnd = {
+    for (var i = 1; i <= 7; i++) i: barber.daySchedule[i]?[1] ?? barber.endHour,
+  };
+  final Set<int> daysOff = Set.from(barber.daysOff);
+  bool hasBreak = barber.hasDoubleShift;
+  int breakStart = barber.breakStartHour;
+  int breakEnd = barber.breakEndHour;
+  // Se doubleShiftDays è vuoto su un barbiere esistente con hasDoubleShift=true,
+  // default a Lun–Ven (retrocompatibilità: il sabato di solito non ha pausa)
+  final Set<int> breakDays = barber.doubleShiftDays.isNotEmpty
+      ? Set.from(barber.doubleShiftDays)
+      : (barber.hasDoubleShift ? {1, 2, 3, 4, 5} : <int>{});
+  bool isBookable = barber.isBookable;
+
+  await showModalBottomSheet(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A1A) : Colors.white,
-        title: Text('Modifica Barbiere', style: GoogleFonts.cinzel(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold
-        )),
-        content: SingleChildScrollView(
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.88),
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setS) {
+        String fmtH(int h) => '${h.toString().padLeft(2, '0')}:00';
+
+        Future<void> pickHour(int current, void Function(int) onPicked) async {
+          final t = await showTimePicker(
+            context: ctx,
+            initialTime: TimeOfDay(hour: current, minute: 0),
+            builder: (c, child) => MediaQuery(
+              data: MediaQuery.of(c).copyWith(alwaysUse24HourFormat: true),
+              child: child!,
+            ),
+          );
+          if (t != null) onPicked(t.hour);
+        }
+
+        Widget timeChip(int hour, VoidCallback onTap) => GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Text(
+              fmtH(hour),
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        );
+
+        Widget toggle(bool isOn, VoidCallback onTap) => GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 26,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(13),
+              color: isOn
+                  ? Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: isOn ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isOn ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        Widget dayRow(int weekday) {
+          const names = ['', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
+          final isOff = daysOff.contains(weekday);
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    names[weekday],
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: isOff
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : Colors.white.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isOff)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      ),
+                      child: Text(
+                        'RIPOSO',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                  )
+                else ...[
+                  timeChip(dayStart[weekday]!, () => pickHour(
+                    dayStart[weekday]!,
+                    (h) => setS(() => dayStart[weekday] = h),
+                  )),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      '—',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 16),
+                    ),
+                  ),
+                  timeChip(dayEnd[weekday]!, () => pickHour(
+                    dayEnd[weekday]!,
+                    (h) => setS(() => dayEnd[weekday] = h),
+                  )),
+                  const Spacer(),
+                ],
+                const SizedBox(width: 10),
+                toggle(
+                  !isOff,
+                  () => setS(() {
+                    if (isOff) { daysOff.remove(weekday); }
+                    else { daysOff.add(weekday); }
+                  }),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.90,
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F0F0F),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: () async {
-                  final XFile? image = await picker.pickImage(
-                    source: ImageSource.gallery,
-                    maxWidth: 512,
-                    maxHeight: 512,
-                    imageQuality: 25,
-                  );
-                  if (image != null) {
-                    final bytes = await image.readAsBytes();
-                    setState(() {
-                      newImageBase64 = base64Encode(bytes);
-                    });
-                  }
-                },
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    shape: BoxShape.circle,
-                    image: newImageBase64 != null
-                        ? DecorationImage(
-                            image: MemoryImage(base64Decode(newImageBase64!)),
-                            fit: BoxFit.cover,
-                          )
-                        : (barber.imageUrl.isNotEmpty
-                            ? DecorationImage(
-                                image: _getBarberImage(barber.imageUrl)!,
-                                fit: BoxFit.cover,
-                              )
-                            : null),
-                    border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+              // ── Drag handle ──────────────────────────────────
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // ── Scrollable content ───────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 16,
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
                   ),
-                  child: newImageBase64 == null && barber.imageUrl.isEmpty
-                      ? const Icon(Icons.camera_alt, color: Colors.white, size: 40)
-                      : (newImageBase64 != null ? null : const Icon(Icons.camera_alt, color: Colors.white54, size: 30)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('Tocca per cambiare foto', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              const SizedBox(height: 24),
-              TextField(
-                controller: nameController,
-                style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: 'Nome',
-                  labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
-                ),
-              ),
-              const SizedBox(height: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Photo + name row
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final XFile? img = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                maxWidth: 512,
+                                maxHeight: 512,
+                                imageQuality: 25,
+                              );
+                              if (img != null) {
+                                final bytes = await img.readAsBytes();
+                                setS(() => newImageBase64 = base64Encode(bytes));
+                              }
+                            },
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 34,
+                                  backgroundImage: newImageBase64 != null
+                                      ? MemoryImage(base64Decode(newImageBase64!))
+                                      : _getBarberImage(barber.imageUrl),
+                                  backgroundColor: const Color(0xFF1A1A1A),
+                                  child: (newImageBase64 == null && barber.imageUrl.isEmpty)
+                                      ? const Icon(Icons.person, color: Colors.white24, size: 32)
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(ctx).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: const Color(0xFF0F0F0F), width: 1.5),
+                                    ),
+                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 11),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: TextField(
+                              controller: nameCtrl,
+                              style: GoogleFonts.cinzel(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Nome barbiere',
+                                hintStyle: GoogleFonts.cinzel(
+                                  color: Colors.white24,
+                                  fontSize: 15,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: Theme.of(ctx).colorScheme.primary,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
-              // --- Turno Mattina ---
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'TURNO MATTINA',
-                  style: GoogleFonts.montserrat(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                      // ── Visibile per prenotazioni ─────────────
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'VISIBILE PER PRENOTAZIONI',
+                                    style: GoogleFonts.cinzel(
+                                      color: isBookable
+                                          ? Theme.of(ctx).colorScheme.primary
+                                          : Colors.white.withValues(alpha: 0.3),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    isBookable
+                                        ? 'Appare nella selezione barbieri'
+                                        : 'Nascosto dalla selezione barbieri',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            toggle(isBookable, () => setS(() => isBookable = !isBookable)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Weekly schedule ──────────────────────
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'ORARIO SETTIMANALE',
+                                  style: GoogleFonts.cinzel(
+                                    color: Theme.of(ctx).colorScheme.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  'tocca per cambiare',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Container(height: 0.5, color: Colors.white.withValues(alpha: 0.06)),
+                            const SizedBox(height: 10),
+                            ...List.generate(7, (i) => dayRow(i + 1)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Break section ────────────────────────
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'PAUSA PRANZO',
+                                        style: GoogleFonts.cinzel(
+                                          color: Theme.of(ctx).colorScheme.primary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        'Doppio turno con pausa centrale',
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                toggle(hasBreak, () => setS(() => hasBreak = !hasBreak)),
+                              ],
+                            ),
+                            if (hasBreak) ...[
+                              const SizedBox(height: 14),
+                              Container(height: 0.5, color: Colors.white.withValues(alpha: 0.06)),
+                              const SizedBox(height: 14),
+                              // Day chips — which days have the break
+                              Wrap(
+                                spacing: 6,
+                                children: List.generate(7, (i) {
+                                  const labels = ['', 'L', 'M', 'M', 'G', 'V', 'S', 'D'];
+                                  final wd = i + 1;
+                                  final active = breakDays.contains(wd);
+                                  return GestureDetector(
+                                    onTap: () => setS(() {
+                                      if (active) { breakDays.remove(wd); }
+                                      else { breakDays.add(wd); }
+                                    }),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 180),
+                                      width: 32,
+                                      height: 32,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: active
+                                            ? Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.85)
+                                            : Colors.white.withValues(alpha: 0.06),
+                                        border: Border.all(
+                                          color: active
+                                              ? Theme.of(ctx).colorScheme.primary
+                                              : Colors.white.withValues(alpha: 0.1),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        labels[wd],
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Dalle',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withValues(alpha: 0.4),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  timeChip(breakStart, () => pickHour(
+                                    breakStart,
+                                    (h) => setS(() => breakStart = h),
+                                  )),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'alle',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white.withValues(alpha: 0.4),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  timeChip(breakEnd, () => pickHour(
+                                    breakEnd,
+                                    (h) => setS(() => breakEnd = h),
+                                  )),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: startHourController,
-                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Inizio',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: breakStartController,
-                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Fine',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
 
-              const SizedBox(height: 16),
-
-              // --- Turno Pomeriggio ---
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'TURNO POMERIGGIO',
-                  style: GoogleFonts.montserrat(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+              // ── Bottom action bar ────────────────────────────
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  24, 14, 24,
+                  MediaQuery.of(ctx).padding.bottom + 18,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F0F0F),
+                  border: Border(
+                    top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: breakEndController,
-                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Inizio',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Text(
+                            'ANNULLA',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white38,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: endHourController,
-                      style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Fine',
-                        labelStyle: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: () async {
+                          try {
+                            if (newImageBase64 != null) {
+                              final sizeInBytes = (newImageBase64!.length * 3) / 4;
+                              if (sizeInBytes > 1000000) {
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Immagine troppo grande. Scegli un\'altra foto.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                            }
+                            final newDaySchedule = {
+                              for (var i = 1; i <= 7; i++) i: [dayStart[i]!, dayEnd[i]!],
+                            };
+                            final updatedBarber = barber.copyWith(
+                              name: nameCtrl.text.trim(),
+                              imageUrl: newImageBase64 ?? barber.imageUrl,
+                              hasDoubleShift: hasBreak,
+                              breakStartHour: breakStart,
+                              breakEndHour: breakEnd,
+                              doubleShiftDays: breakDays.toList(),
+                              daysOff: daysOff.toList(),
+                              isBookable: isBookable,
+                              daySchedule: newDaySchedule,
+                            );
+                            await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Barbiere aggiornato!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text('Errore: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(ctx).colorScheme.primary,
+                                Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.75),
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.25),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'SALVA',
+                            style: GoogleFonts.cinzel(
+                              color: Theme.of(ctx).colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annulla', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                if (newImageBase64 != null) {
-                  final sizeInBytes = (newImageBase64!.length * 3) / 4;
-                  if (sizeInBytes > 1000000) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('L\'immagine è ancora troppo grande. Riprova con un\'altra foto.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return;
-                  }
-                }
-
-                final parsedBreakStart = int.tryParse(breakStartController.text) ?? barber.breakStartHour;
-                final parsedBreakEnd = int.tryParse(breakEndController.text) ?? barber.breakEndHour;
-                final updatedBarber = barber.copyWith(
-                  name: nameController.text,
-                  imageUrl: newImageBase64 ?? barber.imageUrl,
-                  startHour: int.tryParse(startHourController.text) ?? barber.startHour,
-                  endHour: int.tryParse(endHourController.text) ?? barber.endHour,
-                  hasDoubleShift: parsedBreakStart < parsedBreakEnd,
-                  breakStartHour: parsedBreakStart,
-                  breakEndHour: parsedBreakEnd,
-                );
-
-                await ref.read(firestoreServiceProvider).updateBarber(updatedBarber);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Barbiere aggiornato con successo!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Errore durante l\'aggiornamento: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text('SALVA', style: GoogleFonts.cinzel(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold
-            )),
-          ),
-        ],
-      ),
+        );
+      },
     ),
   );
+
+  nameCtrl.dispose();
 }
 
 ImageProvider? _getBarberImage(String imageUrl) {

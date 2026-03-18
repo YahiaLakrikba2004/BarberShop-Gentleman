@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'package:intl/intl.dart';
@@ -33,20 +34,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
+    final user = userAsync.value;
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
+    // Clients have no business here — send them to their profile
+    if (userAsync.hasValue && (user == null || user.role == UserRole.client)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/profile');
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // Custom body with gradient background
       body: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0A0A0A),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.5,
             colors: [
-              Color(0xFF1F1F1F),
-              Color(0xFF0A0A0A),
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).scaffoldBackgroundColor,
             ],
           ),
         ),

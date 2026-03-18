@@ -35,9 +35,10 @@ class BarberDailyColumn extends StatelessWidget {
     // simpler to just render the column and show "OFF" if needed overlay
     
     // Filter appointments for this barber and exclude cancelled/no-shows
-    final myAppointments = appointments.where((a) => 
-      a.barberId == barber.id && 
-      a.status != AppointmentStatus.cancelled
+    final myAppointments = appointments.where((a) =>
+      a.barberId == barber.id &&
+      a.status != AppointmentStatus.cancelled &&
+      a.status != AppointmentStatus.noShow
     ).toList();
 
     return Container(
@@ -182,7 +183,7 @@ class BarberDailyColumn extends StatelessWidget {
                   ),
 
                   // Break / Pausa overlay (double shift)
-                  if (barber.hasDoubleShift)
+                  if (barber.hasBreakOn(date.weekday))
                     Positioned(
                       top: (barber.breakStartHour - startHour) * hourHeight,
                       left: 0,
@@ -404,6 +405,8 @@ class BarberDailyColumn extends StatelessWidget {
         return const Color(0xFF2B2B2B); // Rich Graphite
       case AppointmentStatus.cancelled:
         return const Color(0xFF7A0909); // Deep Crimson
+      case AppointmentStatus.noShow:
+        return const Color(0xFF4A0A4A); // Deep Purple
     }
   }
 

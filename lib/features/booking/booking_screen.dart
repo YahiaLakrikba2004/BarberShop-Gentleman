@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../models/user_model.dart';
 import '../../models/barber_model.dart';
@@ -14,6 +15,7 @@ import '../../models/appointment_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/slot_service.dart';
 import 'booking_widgets.dart';
 import 'steps/customer_selection_step.dart';
 import 'steps/barber_selection_step.dart';
@@ -40,6 +42,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   DateTime? _selectedSlot;
   bool _bookingSuccess = false;
   bool _bookingBlocked = false;
+  bool _isBooking = false;
 
   @override
   void dispose() {
@@ -68,13 +71,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'PRENOTA APPUNTAMENTO',
-          style: GoogleFonts.cinzel(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            fontSize: isDesktop ? 20 : null,
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            _stepTitle(isPrivileged),
+            key: ValueKey(_stepTitle(isPrivileged)),
+            style: GoogleFonts.cinzel(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              fontSize: isDesktop ? 20 : null,
+            ),
           ),
         ),
         centerTitle: true,
@@ -243,7 +250,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               duration: const Duration(milliseconds: 600),
               child: OutlinedButton.icon(
                 onPressed: () {
-                  setState(() => _bookingBlocked = false);
+                  setState(() {
+                    _bookingBlocked = false;
+                    _currentStep = 0;
+                    _selectedService = null;
+                    _selectedSlot = null;
+                  });
                 },
                 icon: const Icon(Icons.arrow_back),
                 label: Text(
@@ -767,72 +779,175 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   Widget _buildTimeSelection() {
     if (_selectedBarber == null || _selectedService == null) {
       return Center(
-        child: Text('Seleziona prima un barbiere e un servizio.', style: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+        child: Text('Seleziona prima un barbiere e un servizio.',
+            style: GoogleFonts.montserrat(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
       );
     }
+
+    final shopSettings = ref.watch(shopSettingsProvider).valueOrNull;
+    final slotSvc = ref.read(slotServiceProvider);
+    final barber = _selectedBarber!;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastDay = today.add(const Duration(days: 30));
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    bool isDayUnavailable(DateTime day) {
+      final d = DateTime(day.year, day.month, day.day);
+      if (d.isBefore(today) || d.isAfter(lastDay)) return true;
+      if (day.weekday == DateTime.sunday) return true;
+      if (barber.availabilityStatus != BarberAvailability.available) return true;
+      if (barber.daysOff.contains(day.weekday)) return true;
+      if (barber.unavailableDates.any(
+          (u) => u.year == day.year && u.month == day.month && u.day == day.day)) return true;
+      if (shopSettings != null) {
+        if (shopSettings.isShopClosedManually) return true;
+        if (shopSettings.closures.any(
+            (c) => c.year == day.year && c.month == day.month && c.day == day.day)) return true;
+        final shopDay = shopSettings.weeklySchedule[day.weekday];
+        if (shopDay != null && shopDay.isClosed) return true;
+      }
+      return false;
+    }
+
+    // Calcola il numero di slot liberi per un giorno (usa solo dati già in memoria)
+    // Restituisce null se non si può sapere (appointments non ancora caricati)
+    final appointmentsAsync =
+        ref.watch(barberAppointmentsProvider((barberId: barber.id, date: _selectedDate)));
+    final selectedDayAppointments = appointmentsAsync.valueOrNull ?? [];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'SELEZIONA DATA',
-            style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-          ),
+          Text('SELEZIONA DATA',
+              style: GoogleFonts.cinzel(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF111111)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
             ),
-            padding: const EdgeInsets.all(8),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: Theme.of(context).colorScheme.primary,
-                  brightness: Theme.of(context).brightness,
-                  primary: Theme.of(context).colorScheme.primary,
-                  onPrimary: Theme.of(context).colorScheme.onPrimary,
-                  surface: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-                  onSurface: Theme.of(context).colorScheme.onSurface,
-                ),
-                textTheme: TextTheme(
-                  bodyLarge: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                  bodyMedium: GoogleFonts.montserrat(color: Theme.of(context).colorScheme.onSurface),
-                  titleMedium: GoogleFonts.cinzel(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
-                ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: TableCalendar(
+              locale: 'it_IT',
+              firstDay: today,
+              lastDay: lastDay,
+              focusedDay: _selectedDate,
+              calendarFormat: CalendarFormat.month,
+              selectedDayPredicate: (day) => isSameDay(day, _selectedDate),
+              enabledDayPredicate: (day) => !isDayUnavailable(day),
+              onDaySelected: (selected, focused) {
+                if (!isDayUnavailable(selected)) {
+                  setState(() {
+                    _selectedDate = selected;
+                    _selectedSlot = null;
+                  });
+                }
+              },
+              onPageChanged: (_) {},
+              headerStyle: HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: GoogleFonts.cinzel(
+                    color: onSurface, fontWeight: FontWeight.bold, fontSize: 15),
+                leftChevronIcon: Icon(Icons.chevron_left, color: primary),
+                rightChevronIcon: Icon(Icons.chevron_right, color: primary),
               ),
-              child: CalendarDatePicker(
-                initialDate: _selectedDate,
-                firstDate: DateTime.now(),
-                lastDate: DateTime.now().add(const Duration(days: 30)),
-                onDateChanged: (date) => setState(() {
-                  _selectedDate = date;
-                  _selectedSlot = null;
-                }),
+              daysOfWeekStyle: DaysOfWeekStyle(
+                weekdayStyle: GoogleFonts.montserrat(
+                    color: onSurface.withValues(alpha: 0.5), fontSize: 11),
+                weekendStyle: GoogleFonts.montserrat(
+                    color: onSurface.withValues(alpha: 0.3), fontSize: 11),
+              ),
+              calendarStyle: CalendarStyle(
+                outsideDaysVisible: false,
+                defaultTextStyle: GoogleFonts.montserrat(color: onSurface, fontSize: 13),
+                weekendTextStyle:
+                    GoogleFonts.montserrat(color: onSurface.withValues(alpha: 0.4), fontSize: 13),
+                disabledTextStyle:
+                    GoogleFonts.montserrat(color: onSurface.withValues(alpha: 0.18), fontSize: 13),
+                todayDecoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: GoogleFonts.montserrat(
+                    color: primary, fontWeight: FontWeight.bold, fontSize: 13),
+                selectedDecoration: BoxDecoration(color: primary, shape: BoxShape.circle),
+                selectedTextStyle: GoogleFonts.montserrat(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13),
+              ),
+              calendarBuilders: CalendarBuilders(
+                // Dot sotto i giorni disponibili per indicare presenza di slot
+                markerBuilder: (ctx, day, events) {
+                  if (isDayUnavailable(day)) return const SizedBox.shrink();
+                  // Mostra un pallino verde sotto il giorno selezionato se ha slot
+                  if (isSameDay(day, _selectedDate) && shopSettings != null) {
+                    final slots = slotSvc.getAvailableSlots(
+                      barber: barber,
+                      date: day,
+                      serviceDurationMinutes: _selectedService!.durationMinutes,
+                      existingAppointments: selectedDayAppointments,
+                      shopSettings: shopSettings,
+                    );
+                    if (slots.isEmpty) {
+                      return Positioned(
+                        bottom: 4,
+                        child: Container(
+                          width: 5, height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.7),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      );
+                    }
+                    return Positioned(
+                      bottom: 4,
+                      child: Container(
+                        width: 5, height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.8),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ),
           ),
           const SizedBox(height: 32),
           Row(
             children: [
-              Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurface, size: 20),
+              Icon(Icons.access_time, color: onSurface, size: 20),
               const SizedBox(width: 8),
-              Text(
-                'ORARI DISPONIBILI',
-                style: GoogleFonts.cinzel(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-              ),
+              Text('ORARI DISPONIBILI',
+                  style: GoogleFonts.cinzel(
+                      fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
             ],
           ),
           const SizedBox(height: 16),
           SlotsGrid(
-            barber: _selectedBarber!,
+            barber: barber,
             service: _selectedService!,
             date: _selectedDate,
             selectedSlot: _selectedSlot,
             onSlotSelected: (slot) => setState(() => _selectedSlot = slot),
+            onDateChangeRequested: (nextDate) => setState(() {
+              _selectedDate = nextDate;
+              _selectedSlot = null;
+            }),
           ),
         ],
       ),
@@ -995,7 +1110,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
 
   return Container(
     padding: EdgeInsets.only(
-      bottom: MediaQuery.of(context).padding.bottom > 0 ? 0 : 16,
+      bottom: MediaQuery.of(context).padding.bottom,
     ),
     decoration: BoxDecoration(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -1015,7 +1130,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
             Expanded(
               flex: 1,
               child: OutlinedButton(
-                onPressed: () => setState(() => _currentStep--),
+                onPressed: () => setState(() {
+                  _currentStep--;
+                  _resetFromStep(_currentStep, isPrivileged);
+                }),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.15)),
@@ -1049,7 +1167,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 ] : null,
               ),
               child: FilledButton(
-                onPressed: canProceed ? () => _onNext(maxSteps) : null,
+                onPressed: canProceed && !_isBooking ? () => _onNext(maxSteps) : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1059,14 +1177,23 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                child: Text(
-                  _currentStep == maxSteps ? 'CONFERMA' : 'AVANTI',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 2,
-                  ),
-                ),
+                child: _isBooking
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      )
+                    : Text(
+                        _currentStep == maxSteps ? 'CONFERMA' : 'AVANTI',
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          letterSpacing: 2,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -1075,6 +1202,34 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     ),
   );
 }
+
+  // Resetta le selezioni a cascata quando si torna indietro.
+  // stepNow = step su cui si è appena arrivati (dopo il --)
+  void _resetFromStep(int stepNow, bool isPrivileged) {
+    // Indici degli step per i non-privileged: 0=Barbiere 1=Servizio 2=Orario 3=Conferma
+    // Per i privileged:                       0=Cliente  1=Barbiere 2=Servizio 3=Orario 4=Conferma
+    final barberStep = isPrivileged ? 1 : 0;
+    final serviceStep = isPrivileged ? 2 : 1;
+
+    if (stepNow <= barberStep) {
+      // Torno al barbiere → azzero servizio e slot
+      _selectedService = null;
+      _selectedSlot = null;
+    } else if (stepNow <= serviceStep) {
+      // Torno al servizio → azzero solo lo slot
+      _selectedSlot = null;
+    }
+  }
+
+  String _stepTitle(bool isPrivileged) {
+    if (!isPrivileged) {
+      const titles = ['SCEGLI BARBIERE', 'SCEGLI SERVIZIO', 'SCEGLI ORARIO', 'RIEPILOGO'];
+      return _currentStep < titles.length ? titles[_currentStep] : 'PRENOTA';
+    } else {
+      const titles = ['SELEZIONA CLIENTE', 'SCEGLI BARBIERE', 'SCEGLI SERVIZIO', 'SCEGLI ORARIO', 'RIEPILOGO'];
+      return _currentStep < titles.length ? titles[_currentStep] : 'PRENOTA';
+    }
+  }
 
   bool _canProceed(bool isPrivileged) {
     if (isPrivileged) {
@@ -1131,7 +1286,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     // futures are resolving.  check `mounted` after every `await` and
     // never call `ScaffoldMessenger.of(context)` on a deactivated state.
 
+    if (_isBooking) return;
     if (!mounted) return;
+    setState(() => _isBooking = true);
     final messenger = ScaffoldMessenger.of(context); // resolve once while mounted
 
     final currentUser = ref.read(currentUserProfileProvider).value;
@@ -1157,25 +1314,27 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       customerPhone = targetUser.phoneNumber;
     }
 
-    // --- CHECK WEEKLY LIMIT (applies to all registered users) ---
+    // --- CHECK WEEKLY LIMIT (only for clients booking for themselves) ---
     bool canCreateAppointment = true; // Flag to prevent booking if limit reached
 
-    // Conta sempre il limite per clienti registrati, indipendentemente da chi sta facendo la prenotazione
-    // Il limite si applica sia che il cliente prenoti da solo, sia che lo faccia un admin/barbiere per lui
-    if (!_isGuestBooking) {
+    final isPrivileged = currentUser.role == UserRole.admin || currentUser.role == UserRole.barber;
+    if (!_isGuestBooking && !isPrivileged) {
       try {
         // Fetch all appointments for this user and filter locally to avoid index requirement
-        final allUserAppointments = await ref.read(firestoreServiceProvider).getAllAppointmentsForCustomer(customerId).first;
+        final allUserAppointments = await ref.read(firestoreServiceProvider).getAllAppointmentsForCustomer(customerId).first.timeout(const Duration(seconds: 10));
 
         // Calculate week boundaries
         final int daysToSubtract = _selectedSlot!.weekday - 1;
         final DateTime startOfWeek = DateTime(_selectedSlot!.year, _selectedSlot!.month, _selectedSlot!.day).subtract(Duration(days: daysToSubtract));
         final DateTime endOfWeek = startOfWeek.add(const Duration(days: 7));
 
-        // Count non-cancelled appointments in this week
+        // Count non-cancelled appointments in this week (past or future).
+        // One slot per week regardless of whether it already happened.
         int weeklyCount = 0;
         for (var apt in allUserAppointments) {
-          if (apt.status != AppointmentStatus.cancelled && apt.date.isAfter(startOfWeek) && apt.date.isBefore(endOfWeek)) {
+          if (apt.status != AppointmentStatus.cancelled &&
+              apt.date.isAfter(startOfWeek) &&
+              apt.date.isBefore(endOfWeek)) {
             weeklyCount++;
           }
         }
@@ -1183,7 +1342,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         if (!mounted) return;
         if (weeklyCount >= 1) {
           canCreateAppointment = false;
-          setState(() => _bookingBlocked = true);
+          setState(() {
+            _bookingBlocked = true;
+            _isBooking = false;
+          });
           return;
         }
       } catch (_) {
@@ -1220,7 +1382,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       ref.read(notificationServiceProvider).showImmediateNotification(
         title: 'Prenotazione Confermata',
         body: 'Il tuo appuntamento per ${_selectedService!.name} è stato registrato per il ${DateFormat('dd/MM HH:mm').format(_selectedSlot!)}',
-        payload: '/calendar',
+        payload: isPrivileged ? '/calendar' : '/profile',
       );
 
       if (!mounted) return;
@@ -1231,6 +1393,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       messenger.showSnackBar(
         SnackBar(content: Text('Errore durante la prenotazione: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
     }
   }
 }

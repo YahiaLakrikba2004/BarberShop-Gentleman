@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
 import 'widgets/video_header.dart';
 import 'dart:async';
 import '../../services/firestore_service.dart';
@@ -51,6 +52,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
+
+    // Deliver any pending notifications queued by admin (confirmation, announcements, etc.)
+    ref.listen<AsyncValue<UserModel?>>(currentUserProfileProvider, (previous, next) {
+      final prevUser = previous?.value;
+      final nextUser = next.value;
+      if (prevUser == null && nextUser != null) {
+        ref.read(notificationServiceProvider).deliverPendingNotifications(nextUser.id);
+      }
+    });
 
     // [NEW] Notification Sync Listening
     // When we have a user, we listen to their appointments changes to sync notifications
@@ -238,6 +248,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             
             
 
+
+            // Next Appointment Banner (solo per clienti loggati)
+            if (user != null && user.role == UserRole.client)
+              _NextAppointmentBanner(userId: user.id),
 
             // Image Carousel Section
             const _HomeCarousel(),
@@ -814,6 +828,10 @@ class _HomeCarouselState extends ConsumerState<_HomeCarousel> {
     if (imagePath.startsWith('assets/')) {
       return Image.asset(imagePath, fit: BoxFit.cover, alignment: Alignment.center, errorBuilder: (_, __, ___) => const _GalleryFallback());
     }
+    if (imagePath.startsWith('https://')) {
+      return Image.network(imagePath, fit: BoxFit.cover, alignment: Alignment.center, gaplessPlayback: true, errorBuilder: (_, __, ___) => const _GalleryFallback());
+    }
+    // Retrocompatibilità: immagini vecchie salvate come base64
     try {
       return Image.memory(base64Decode(imagePath), fit: BoxFit.cover, alignment: Alignment.center, gaplessPlayback: true, errorBuilder: (_, __, ___) => const _GalleryFallback());
     } catch (_) {
@@ -1655,6 +1673,130 @@ class _PremiumServiceCardState extends State<_PremiumServiceCard> with SingleTic
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Banner prossimo appuntamento ─────────────────────────────────────────────
+
+class _NextAppointmentBanner extends ConsumerWidget {
+  final String userId;
+  const _NextAppointmentBanner({required this.userId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final aptsAsync = ref.watch(userAppointmentsProvider(userId));
+    return aptsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (appointments) {
+        final now = DateTime.now();
+        final upcoming = appointments
+            .where((a) =>
+                a.status != AppointmentStatus.cancelled &&
+                a.date.isAfter(now))
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+
+        if (upcoming.isEmpty) return const SizedBox.shrink();
+        final next = upcoming.first;
+
+        final today = DateTime(now.year, now.month, now.day);
+        final tomorrow = today.add(const Duration(days: 1));
+        final aptDay = DateTime(next.date.year, next.date.month, next.date.day);
+        final String dayLabel;
+        if (aptDay == today) {
+          dayLabel = 'OGGI';
+        } else if (aptDay == tomorrow) {
+          dayLabel = 'DOMANI';
+        } else {
+          dayLabel = DateFormat('EEE d MMM', 'it').format(next.date).toUpperCase();
+        }
+
+        return FadeInUp(
+          duration: const Duration(milliseconds: 500),
+          child: GestureDetector(
+            onTap: () => context.go('/profile'),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111111),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.content_cut,
+                        color: Theme.of(context).colorScheme.primary, size: 18),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PROSSIMO APPUNTAMENTO',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${next.barberName}  ·  ${next.serviceName}',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        dayLabel,
+                        style: GoogleFonts.cinzel(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm').format(next.date),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.chevron_right,
+                      color: Colors.white.withValues(alpha: 0.3), size: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models/barber_model.dart';
+import '../../../models/shop_settings_model.dart';
 import '../../../services/firestore_service.dart';
 import '../booking_widgets.dart';
 
@@ -26,11 +27,7 @@ class BarberSelectionStep extends ConsumerWidget {
           orElse: () => <BarberModel>[],
         );
 
-    final bookable = barbers.where((b) {
-      final isShop = b.name.toUpperCase() == 'NEGOZIO' ||
-          b.name.toUpperCase().contains('GENTLEMAN SHOP');
-      return b.isBookable && !isShop;
-    }).toList();
+    final bookable = barbers.where((b) => b.isBookable).toList();
 
     if (bookable.isEmpty) {
       return Center(
@@ -57,9 +54,24 @@ class BarberSelectionStep extends ConsumerWidget {
           isSelected: selectedBarber?.id == bookable[i].id,
           onTap: () {
             final barber = bookable[i];
-            DateTime date = DateTime.now();
+            final shopSettings = ref.read(shopSettingsProvider).valueOrNull;
+            DateTime date = DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            );
             int tries = 0;
-            while (barber.daysOff.contains(date.weekday) && tries < 30) {
+            while (tries < 60) {
+              final isWeekend = date.weekday == DateTime.sunday;
+              final isBarberDayOff = barber.daysOff.contains(date.weekday);
+              final isShopClosed = shopSettings != null &&
+                  (shopSettings.isShopClosedManually ||
+                      shopSettings.closures.any((c) =>
+                          c.year == date.year &&
+                          c.month == date.month &&
+                          c.day == date.day) ||
+                      (shopSettings.weeklySchedule[date.weekday]?.isClosed ?? false));
+              if (!isWeekend && !isBarberDayOff && !isShopClosed) break;
               date = date.add(const Duration(days: 1));
               tries++;
             }
@@ -115,7 +127,7 @@ class _BarberCard extends StatelessWidget {
               _GlassOverlay(),
               if (isSelected) _SelectionBorder(context: context),
               if (!isAvailable) _UnavailableOverlay(barber: barber),
-              _BarberInfo(barber: barber, context: context),
+              _BarberInfo(barber: barber, outerContext: context),
               if (!isAvailable) _StatusBadge(barber: barber),
               if (isSelected) _SelectionBadge(context: context),
             ],
@@ -286,16 +298,38 @@ class _UnavailableOverlay extends StatelessWidget {
   }
 }
 
-class _BarberInfo extends StatelessWidget {
+class _BarberInfo extends ConsumerWidget {
   final BarberModel barber;
-  final BuildContext context;
-  const _BarberInfo({required this.barber, required this.context});
+  final BuildContext outerContext;
+  const _BarberInfo({required this.barber, required this.outerContext});
+
+  String _effectiveHours(ShopDaySchedule? shopDay) {
+    final today = DateTime.now().weekday;
+    final dayStart = barber.startHourFor(today);
+    final dayEnd   = barber.endHourFor(today);
+    final effStart = shopDay != null && !shopDay.isClosed
+        ? dayStart.clamp(shopDay.openHour, shopDay.closeHour)
+        : dayStart;
+    final effEnd = shopDay != null && !shopDay.isClosed
+        ? dayEnd.clamp(shopDay.openHour, shopDay.closeHour)
+        : dayEnd;
+
+    String h(int v) => '${v.toString().padLeft(2, '0')}:00';
+
+    if (barber.hasBreakOn(today)) {
+      return '${h(effStart)}–${h(barber.breakStartHour)} | ${h(barber.breakEndHour)}–${h(effEnd)}';
+    }
+    return '${h(effStart)} – ${h(effEnd)}';
+  }
 
   @override
-  Widget build(BuildContext _) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(outerContext).brightness == Brightness.dark;
     final timeColor = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.7);
     final timeBg = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1);
+
+    final shopSettings = ref.watch(shopSettingsProvider).valueOrNull;
+    final todaySchedule = shopSettings?.weeklySchedule[DateTime.now().weekday];
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -315,7 +349,7 @@ class _BarberInfo extends StatelessWidget {
                 ? barber.specialties.join(' • ').toUpperCase()
                 : 'SPECIALISTA TAGLIO & BARBA',
             style: GoogleFonts.montserrat(
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme.of(outerContext).colorScheme.primary,
                 fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5),
             maxLines: 1, overflow: TextOverflow.ellipsis,
           ),
@@ -329,9 +363,7 @@ class _BarberInfo extends StatelessWidget {
                 Icon(Icons.access_time, color: timeColor, size: 10),
                 const SizedBox(width: 4),
                 Text(
-                  barber.hasDoubleShift
-                      ? '${barber.startHour}:00–${barber.breakStartHour}:00 | ${barber.breakEndHour}:00–${barber.endHour}:00'
-                      : '${barber.startHour}:00 – ${barber.endHour}:00',
+                  _effectiveHours(todaySchedule),
                   style: GoogleFonts.montserrat(
                       color: timeColor, fontSize: 10, fontWeight: FontWeight.w500),
                 ),

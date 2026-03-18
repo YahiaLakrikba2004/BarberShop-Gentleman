@@ -442,6 +442,7 @@
     .chip-conf { background: #d4edda; color: #155724; }
     .chip-comp { background: #d1ecf1; color: #0c5460; }
     .chip-canc { background: #f8d7da; color: #721c24; }
+    .chip-noshow { background: #f0d6f5; color: #6a1b9a; }
 
     /* ════════════════════════════════
        TECH GRID
@@ -784,10 +785,11 @@
   <table>
     <thead><tr><th>Stato</th><th>Significato</th><th>Chi lo imposta</th></tr></thead>
     <tbody>
-      <tr><td><span class="chip chip-pend">IN ATTESA</span></td><td>Appena prenotato</td><td>Sistema (automatico)</td></tr>
+      <tr><td><span class="chip chip-pend">IN ATTESA</span></td><td>Appena prenotato, in attesa di conferma</td><td>Sistema (automatico)</td></tr>
       <tr><td><span class="chip chip-conf">CONFERMATO</span></td><td>Il negozio ha preso atto</td><td>Amministratore</td></tr>
       <tr><td><span class="chip chip-comp">COMPLETATO</span></td><td>Servizio erogato</td><td>Amministratore</td></tr>
-      <tr><td><span class="chip chip-canc">ANNULLATO</span></td><td>Disdetta o cliente assente</td><td>Cliente o Amministratore</td></tr>
+      <tr><td><span class="chip chip-canc">ANNULLATO</span></td><td>Disdetta volontaria da parte del cliente o dell'admin</td><td>Cliente o Amministratore</td></tr>
+      <tr><td><span class="chip chip-noshow">NON PRESENTATO</span></td><td>Cliente non si è presentato all'appuntamento. Lo slot viene liberato, ma il record rimane nello storico</td><td>Barbiere o Amministratore (dall'Agenda Team)</td></tr>
     </tbody>
   </table>
 </div>
@@ -1041,15 +1043,32 @@
   </div>
 
   <table>
-    <thead><tr><th>Evento</th><th>Chi riceve</th><th>Contenuto</th></tr></thead>
+    <thead><tr><th>Evento</th><th>Chi riceve</th><th>Contenuto</th><th>Meccanismo</th></tr></thead>
     <tbody>
-      <tr><td>Nuova prenotazione</td><td>Amministratore</td><td>Nome cliente, barbiere, servizio e orario</td></tr>
-      <tr><td>Prenotazione annullata</td><td>Amministratore</td><td>Avviso disdetta con dettagli appuntamento</td></tr>
-      <tr><td>Promemoria appuntamento</td><td>Cliente</td><td>"Hai un appuntamento tra 1 ora!"</td></tr>
+      <tr><td>Nuova prenotazione</td><td>Amministratore</td><td>Nome cliente, barbiere, servizio e orario</td><td>FCM (push remoto)</td></tr>
+      <tr><td>Prenotazione annullata</td><td>Amministratore</td><td>Avviso disdetta con dettagli appuntamento</td><td>FCM (push remoto)</td></tr>
+      <tr><td>Promemoria 1 ora prima</td><td>Cliente</td><td>"Non dimenticare il tuo appuntamento alle HH:mm!"</td><td>Notifica locale schedulata</td></tr>
+      <tr><td>Promemoria 24 ore prima</td><td>Cliente</td><td>"Domani hai appuntamento alle HH:mm — ti aspettiamo!"</td><td>Notifica locale schedulata</td></tr>
+      <tr><td>Appuntamento confermato</td><td>Cliente</td><td>"Il tuo appuntamento per [servizio] del [data] è stato confermato!"</td><td>Coda Firestore → locale</td></tr>
+      <tr><td>Annuncio globale</td><td>Tutti i clienti</td><td>Testo annuncio inserito dall'admin nella gestione salone</td><td>Coda Firestore → locale</td></tr>
+      <tr><td>Re-engagement (21 giorni)</td><td>Cliente inattivo</td><td>"Ci manchi! Prenota il tuo prossimo appuntamento."</td><td>Notifica locale schedulata</td></tr>
+      <tr><td>Orario modificato dall'admin</td><td>Cliente</td><td>"Il tuo appuntamento per [servizio] è stato spostato al [data]"</td><td>In-app (listener real-time)</td></tr>
+      <tr><td>Appuntamento annullato dall'admin</td><td>Cliente</td><td>"Il tuo appuntamento per [servizio] del [data] è stato annullato"</td><td>In-app (listener real-time)</td></tr>
     </tbody>
   </table>
 
-  <div class="box-blue">💡 Il promemoria viene programmato automaticamente alla prenotazione. Se l'appuntamento è tra meno di un'ora, il promemoria non viene inviato.<br><br>📱 Le notifiche push funzionano su Android e iOS. Su web e Windows, le notifiche in-app sono visibili nella Dashboard admin.</div>
+  <h4>Meccanismi di consegna</h4>
+  <table>
+    <thead><tr><th>Meccanismo</th><th>Descrizione</th><th>Funziona offline?</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Notifica locale schedulata</strong></td><td>Programmata sul dispositivo al momento della prenotazione tramite <code>flutter_local_notifications</code>. Non richiede connessione né server.</td><td>✅ Sì</td></tr>
+      <tr><td><strong>FCM (push remoto)</strong></td><td>Inviata dal server Firebase Cloud Messaging verso il dispositivo. I messaggi vengono accodati sui server Google e recapitati automaticamente non appena il dispositivo torna online, senza riaprire l'app.</td><td>⚠️ Accodata da Google, recapitata al reconnect</td></tr>
+      <tr><td><strong>Coda Firestore → locale</strong></td><td>Il barbiere/admin scrive una notifica nella subcollection <code>users/{uid}/pendingNotifications</code>. Il documento è persistito su Firestore e non va perso; il cliente lo legge e lo mostra alla prossima apertura dell'app con connessione attiva.</td><td>⚠️ Alla riapertura app con connessione</td></tr>
+      <tr><td><strong>In-app (listener real-time)</strong></td><td>Rilevato dal listener Firestore attivo nella Home Screen. Mostra immediatamente una notifica locale se l'app è aperta in foreground.</td><td>❌ Solo con app aperta</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box-blue">💡 I promemoria (1h e 24h) vengono riprogrammati ogni volta che la lista appuntamenti cambia, garantendo sempre la correttezza anche dopo modifiche. Se l'appuntamento è già passato o troppo vicino, il promemoria non viene schedulato.<br><br>🔁 La notifica di re-engagement viene annullata automaticamente se il cliente prenota un nuovo appuntamento entro i 21 giorni.<br><br>📱 Le notifiche push funzionano su Android e iOS. Su web e Windows, le notifiche in-app sono visibili nella Dashboard admin.</div>
 
   <div class="divider"><span>11</span></div>
   <div class="sec-head">
@@ -1072,8 +1091,8 @@
     <tbody>
       <tr><td>Nome, email, telefono</td><td>Firebase Firestore (Google Cloud)</td><td>Utente stesso + Admin</td></tr>
       <tr><td>Appuntamenti</td><td>Firebase Firestore</td><td>Cliente, barbiere interessato, Admin</td></tr>
-      <tr><td>Foto profilo</td><td>Firebase Firestore</td><td>Utente stesso + Admin</td></tr>
-      <tr><td>Galleria negozio</td><td>Firebase Firestore</td><td>Tutti (solo lettura)</td></tr>
+      <tr><td>Foto profilo</td><td>Firebase Storage (Google Cloud)</td><td>Utente stesso + Admin</td></tr>
+      <tr><td>Galleria negozio</td><td>Firebase Storage (Google Cloud)</td><td>Tutti (solo lettura) — caricamento solo Admin/Barbiere</td></tr>
     </tbody>
   </table>
 

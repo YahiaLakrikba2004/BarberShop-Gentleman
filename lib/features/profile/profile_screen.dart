@@ -39,7 +39,7 @@ class ProfileScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(
             'IL MIO PROFILO',
@@ -73,13 +73,13 @@ class ProfileScreen extends ConsumerWidget {
                 padding:
                     EdgeInsets.symmetric(vertical: 32, horizontal: isDesktop ? 48 : 24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A0A0A),
-                  gradient: const LinearGradient(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFF1A1A1A),
-                      Color(0xFF0A0A0A),
+                      Theme.of(context).colorScheme.surface,
+                      Theme.of(context).scaffoldBackgroundColor,
                     ],
                   ),
                   border: Border(
@@ -232,7 +232,7 @@ class ProfileScreen extends ConsumerWidget {
 
             // Tab Bar
             Container(
-              color: const Color(0xFF0A0A0A),
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: const TabBar(
                 indicatorColor: Color(0xFFFFFFFF),
                 indicatorSize: TabBarIndicatorSize.label,
@@ -1226,9 +1226,12 @@ class _AppointmentsList extends ConsumerWidget {
         final filteredAppointments = appointments.where((app) {
           final appDateTime = app.date;
           if (isHistory) {
-            return appDateTime.isBefore(now);
+            return appDateTime.isBefore(now) ||
+                app.status == AppointmentStatus.cancelled;
           } else {
-            return appDateTime.isAfter(now);
+            return appDateTime.isAfter(now) &&
+                app.status != AppointmentStatus.cancelled &&
+                app.status != AppointmentStatus.noShow;
           }
         }).toList();
 
@@ -1261,6 +1264,24 @@ class _AppointmentsList extends ConsumerWidget {
                     letterSpacing: 1,
                   ),
                 ),
+                if (!isHistory) ...[
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/booking'),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: Text(
+                      'PRENOTA ORA',
+                      style: GoogleFonts.montserrat(
+                          fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFD4AF37),
+                      side: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -1311,11 +1332,11 @@ class _AppointmentsList extends ConsumerWidget {
               try {
                 await ref
                     .read(firestoreServiceProvider)
-                    .deleteAppointment(apt.id);
+                    .updateAppointmentStatus(apt.id, AppointmentStatus.cancelled);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Appuntamento eliminato con successo')),
+                        content: Text('Appuntamento annullato con successo')),
                   );
                 }
               } catch (e) {
@@ -1377,170 +1398,223 @@ class _AppointmentsList extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // --- Header with Silver Gradient ---
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(26),
-                          topRight: Radius.circular(26),
+                    // --- Header con watermark ---
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(26),
+                        topRight: Radius.circular(26),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFF1C1C1C), Color(0xFF111111)],
+                          ),
                         ),
-                        border: Border(
-                          bottom: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.05)),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Watermark logo sfocato
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: 0.04,
+                                child: Image.asset(
+                                  'assets/images/icon_premium_v2.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                            Column(
+                              children: [
+                                Container(
+                                  width: 78,
+                                  height: 78,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.4),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      'assets/images/icon_premium_v2.png',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  'THE GENTLEMEN',
+                                  style: GoogleFonts.cinzel(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'B A R B E R S T Y L E',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    letterSpacing: 4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          // Luxury Icon Container
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                   Colors.white.withValues(alpha: 0.05),
-                                   Colors.transparent,
-                                ],
-                              ),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  blurRadius: 20,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                            child: ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [
-                                  Color(0xFFE0E0E0), // Silver
-                                  Color(0xFFFFFFFF), // White
-                                  Color(0xFFBDBDBD), // Grey
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: const Icon(
-                                FontAwesomeIcons.scissors,
-                                size: 32,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'THE GENTLEMEN',
-                            style: GoogleFonts.cinzel(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white, // Pure White
-                              letterSpacing: 4,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  blurRadius: 15,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'BARBERSTYLE',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.4),
-                              letterSpacing: 4,
-                            ),
-                          ),
-                        ],
+                    ),
+
+                    // Sottile linea separatrice
+                    Container(
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withValues(alpha: 0.1),
+                            Colors.transparent,
+                          ],
+                        ),
                       ),
                     ),
 
                     // --- Content Body ---
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+                      padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
                       child: Column(
                         children: [
-                          Text(
-                            '"L\'Eccellenza è uno stile di vita."',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.playfairDisplay(
-                              fontSize: 18,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Non offriamo solo tagli, ma un\'atmosfera dove la tradizione incontra il lusso moderno.\n\nOgni dettaglio è stato pensato per offrirti un momento di puro relax ed eleganza.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.montserrat(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.6),
-                              height: 1.6,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Instagram Button - Clean White
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                              color: Colors.white, // Solid White
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 4),
+                          // Quote con bordo laterale sinistro
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  width: 2,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.5),
+                                        Colors.white.withValues(alpha: 0.1),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
-                              ],
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () async {
-                                  final uri = Uri.parse(
-                                      'https://www.instagram.com/the_gentlemen_barberstyle/');
-                                  try {
-                                    await launchUrl(uri,
-                                        mode: LaunchMode.externalApplication);
-                                  } catch (e) {
-                                    debugPrint(
-                                        'Could not launch Instagram: \$e');
-                                  }
-                                },
-                                borderRadius: BorderRadius.circular(30),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 14),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(FontAwesomeIcons.instagram,
-                                          color: Colors.black, size: 20),
-                                      const SizedBox(width: 12),
                                       Text(
-                                        'SEGUICI SU INSTAGRAM',
+                                        'L\'Eccellenza è uno stile di vita.',
+                                        style: GoogleFonts.playfairDisplay(
+                                          fontSize: 16,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '— The Gentlemen',
                                         style: GoogleFonts.montserrat(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                          fontSize: 13,
-                                          letterSpacing: 1.0,
+                                          fontSize: 11,
+                                          color: Colors.white.withValues(alpha: 0.35),
+                                          letterSpacing: 1,
                                         ),
                                       ),
                                     ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Non offriamo solo tagli, ma un\'atmosfera dove la tradizione incontra il lusso moderno. Ogni dettaglio è stato pensato per offrirti un momento di puro relax ed eleganza.',
+                            textAlign: TextAlign.left,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              height: 1.75,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          // Instagram Button — gradient ufficiale
+                          SizedBox(
+                            width: double.infinity,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF833AB4),
+                                    Color(0xFFE1306C),
+                                    Color(0xFFFCAF45),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFE1306C).withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () async {
+                                    final uri = Uri.parse(
+                                        'https://www.instagram.com/the_gentlemen_barberstyle/');
+                                    try {
+                                      await launchUrl(uri,
+                                          mode: LaunchMode.externalApplication);
+                                    } catch (e) {
+                                      debugPrint('Could not launch Instagram: \$e');
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 15),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(FontAwesomeIcons.instagram,
+                                            color: Colors.white, size: 18),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          'SEGUICI SU INSTAGRAM',
+                                          style: GoogleFonts.montserrat(
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1550,33 +1624,33 @@ class _AppointmentsList extends ConsumerWidget {
                       ),
                     ),
 
-                    // --- Footer Action ---
-                     Container(
+                    // --- Footer ---
+                    Container(
                       decoration: BoxDecoration(
-                         border: Border(
+                        border: Border(
                           top: BorderSide(
                               color: Colors.white.withValues(alpha: 0.05)),
                         ),
                       ),
                       width: double.infinity,
-                       child: TextButton(
+                      child: TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                           shape: const RoundedRectangleBorder(
-                             borderRadius: BorderRadius.only(
-                               bottomLeft: Radius.circular(26),
-                               bottomRight: Radius.circular(26)
-                             )
-                           )
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(26),
+                              bottomRight: Radius.circular(26),
+                            ),
+                          ),
                         ),
                         child: Text(
                           'CHIUDI',
                           style: GoogleFonts.montserrat(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: Colors.white.withValues(alpha: 0.25),
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 2.0,
-                            fontSize: 12,
+                            letterSpacing: 3,
+                            fontSize: 11,
                           ),
                         ),
                       ),

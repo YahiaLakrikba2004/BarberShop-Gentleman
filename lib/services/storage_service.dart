@@ -12,6 +12,21 @@ class StorageService {
 
   StorageService(this._storage);
 
+  Future<String> uploadGalleryImage(String filename, Uint8List bytes) async {
+    final ref = _storage.ref().child('gallery').child(filename);
+    final metadata = SettableMetadata(contentType: 'image/jpeg');
+    await ref.putData(bytes, metadata);
+    return ref.getDownloadURL();
+  }
+
+  Future<void> deleteGalleryImage(String url) async {
+    try {
+      await _storage.refFromURL(url).delete();
+    } catch (e) {
+      debugPrint('Could not delete gallery image from Storage: $e');
+    }
+  }
+
   Future<String> uploadProfileImage(String userId, File imageFile) async {
     try {
       final ref = _storage.ref().child('profile_images').child('$userId.jpg');

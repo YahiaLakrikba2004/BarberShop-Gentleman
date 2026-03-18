@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../core/firebase_error_handler.dart';
@@ -154,7 +155,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
     // Utenti vecchi con email fake: non possono fare reset autonomamente
     if (_existingEmail!.endsWith('@gentleman.app')) {
-      _showError("Contatta il negozio per reimpostare il PIN");
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Reimposta PIN',
+            style: GoogleFonts.cinzel(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Il tuo account è stato creato con il vecchio sistema e non supporta il reset autonomo del PIN.\n\nContatta il negozio direttamente per ricevere un nuovo PIN.',
+            style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13, height: 1.6),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Chiudi', style: GoogleFonts.montserrat(color: Colors.white38)),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                const shopWhatsApp = '393514823048';
+                final uri = Uri.parse('https://wa.me/$shopWhatsApp?text=Ciao%2C+ho+bisogno+di+reimpostare+il+mio+PIN');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.chat_bubble_outline, size: 16),
+              label: Text('WhatsApp', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
       return;
     }
 
@@ -264,20 +298,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.2,
-            colors: [Color(0xFF161616), Color(0xFF000000)],
-            stops: [0.0, 1.0],
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.center,
+              radius: 1.2,
+              colors: [Color(0xFF161616), Color(0xFF000000)],
+              stops: [0.0, 1.0],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: isDesktop
-              ? _buildDesktopLayout(inputFill)
-              : _buildMobileLayout(inputFill),
+          child: SafeArea(
+            child: isDesktop
+                ? _buildDesktopLayout(inputFill)
+                : _buildMobileLayout(inputFill),
+          ),
         ),
       ),
     );
@@ -359,11 +397,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 
   Widget _buildMobileLayout(Color inputFill) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height
+              - MediaQuery.of(context).padding.top
+              - MediaQuery.of(context).padding.bottom
+              - 48,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             FadeInDown(
               child: Container(
@@ -525,7 +570,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         TextButton(
           onPressed: _isLoading ? null : _forgotPin,
           child: Text(
-            isFakeEmail ? "PIN dimenticato? Contatta il negozio" : "PIN dimenticato?",
+            isFakeEmail ? "Non ricordi il PIN? Scopri come reimpostarlo" : "PIN dimenticato?",
             style: const TextStyle(color: Colors.white38, fontSize: 12),
           ),
         ),

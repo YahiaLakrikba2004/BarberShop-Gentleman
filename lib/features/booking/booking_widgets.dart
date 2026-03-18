@@ -314,6 +314,7 @@ class SlotsGrid extends ConsumerWidget {
   final DateTime date;
   final DateTime? selectedSlot;
   final void Function(DateTime) onSlotSelected;
+  final void Function(DateTime)? onDateChangeRequested;
 
   const SlotsGrid({
     super.key,
@@ -322,14 +323,12 @@ class SlotsGrid extends ConsumerWidget {
     required this.date,
     required this.selectedSlot,
     required this.onSlotSelected,
+    this.onDateChangeRequested,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appointmentsAsync =
-        ref.watch(barberAppointmentsProvider((barberId: barber.id, date: date)));
-    final settingsAsync = ref.watch(shopSettingsProvider);
-
+    // La domenica le prenotazioni online sono sospese
     if (date.weekday == DateTime.sunday) {
       return Center(
         child: Padding(
@@ -356,6 +355,10 @@ class SlotsGrid extends ConsumerWidget {
       );
     }
 
+    final appointmentsAsync =
+        ref.watch(barberAppointmentsProvider((barberId: barber.id, date: date)));
+    final settingsAsync = ref.watch(shopSettingsProvider);
+
     return settingsAsync.when(
       data: (settings) => appointmentsAsync.when(
         data: (appointments) {
@@ -368,7 +371,7 @@ class SlotsGrid extends ConsumerWidget {
           );
 
           if (slots.isEmpty) {
-            return _buildEmptySlots(context, settings);
+            return _buildEmptySlots(context, settings, ref);
           }
 
           return Wrap(
@@ -417,14 +420,51 @@ class SlotsGrid extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptySlots(BuildContext context, dynamic settings) {
+  DateTime? _findNextAvailableDate(dynamic settings) {
+    DateTime candidate = DateTime(date.year, date.month, date.day).add(const Duration(days: 1));
+    final limit = candidate.add(const Duration(days: 30));
+    while (!candidate.isAfter(limit)) {
+      if (!_isStaticUnavailable(candidate, settings)) return candidate;
+      candidate = candidate.add(const Duration(days: 1));
+    }
+    return null;
+  }
+
+  bool _isStaticUnavailable(DateTime day, dynamic settings) {
+    if (day.weekday == DateTime.sunday) return true;
+    if (barber.availabilityStatus != BarberAvailability.available) return true;
+    if (barber.daysOff.contains(day.weekday)) return true;
+    if (barber.unavailableDates.any(
+        (u) => u.year == day.year && u.month == day.month && u.day == day.day)) {
+      return true;
+    }
+    if (settings != null) {
+      if (settings.isShopClosedManually) return true;
+      if (settings.closures.any(
+          (c) => c.year == day.year && c.month == day.month && c.day == day.day)) {
+        return true;
+      }
+      final shopDay = settings.weeklySchedule[day.weekday];
+      if (shopDay != null && shopDay.isClosed) return true;
+    }
+    return false;
+  }
+
+  Widget _buildEmptySlots(BuildContext context, dynamic settings, WidgetRef ref) {
     String title = 'NESSUNO SLOT';
     String message = "Prova a selezionare un'altra data";
     IconData icon = Icons.event_busy;
 
+    final shopDay = settings.weeklySchedule[date.weekday];
+    final dayNames = ['', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+
     if (settings.isShopClosedManually) {
       title = 'CHIUSO'; message = 'Il salone è temporaneamente chiuso.';
       icon = Icons.door_front_door_outlined;
+    } else if (shopDay != null && shopDay.isClosed) {
+      title = dayNames[date.weekday].toUpperCase();
+      message = 'Il salone è chiuso il ${dayNames[date.weekday].toLowerCase()}.';
+      icon = Icons.storefront_outlined;
     } else if (settings.closures.any(
         (c) => c.year == date.year && c.month == date.month && c.day == date.day)) {
       title = 'GIORNO FESTIVO'; message = 'Il salone è chiuso per festività in questa data.';
@@ -473,6 +513,29 @@ class SlotsGrid extends ConsumerWidget {
                   style: GoogleFonts.montserrat(fontSize: 14,
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                   textAlign: TextAlign.center),
+              if (onDateChangeRequested != null) ...[
+                const SizedBox(height: 20),
+                Builder(builder: (context) {
+                  final nextDate = _findNextAvailableDate(settings);
+                  if (nextDate == null) return const SizedBox.shrink();
+                  return OutlinedButton.icon(
+                    onPressed: () => onDateChangeRequested!(nextDate),
+                    icon: const Icon(Icons.arrow_forward, size: 16),
+                    label: Text(
+                      'PROSSIMA DATA DISPONIBILE',
+                      style: GoogleFonts.montserrat(
+                          fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      side: BorderSide(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }),
+              ],
             ],
           ),
         ),

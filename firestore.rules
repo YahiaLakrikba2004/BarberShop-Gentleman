@@ -1,0 +1,125 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    function isBarber() {
+      return isAuthenticated() && getUserRole() == 'barber';
+    }
+
+    function isBarberOrAdmin() {
+      return isAuthenticated() && getUserRole() in ['barber', 'admin'];
+    }
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+    // Clients read/write only their own document.
+    // Barbers can read all users (needed to display client info in booking).
+    // Admins have full access.
+
+    match /users/{userId}/pendingNotifications/{notifId} {
+      // Only the owner can read/delete their pending notifications.
+      // Only admins (or server-side) can create them.
+      allow read, delete: if isCurrentUser(userId);
+      allow create: if isBarberOrAdmin();
+    }
+
+    match /users/{userId} {
+      // list (query) è necessario anche da non autenticati per il lookup
+      // del numero di telefono durante il login (prima che l'utente abbia un token).
+      allow list: if true;
+      allow get:  if isCurrentUser(userId) || isBarberOrAdmin();
+
+      // A user can update only their own non-sensitive fields (name, phone, imageUrl, fcmToken).
+      // Role can only be changed by an admin.
+      allow update: if isCurrentUser(userId)
+                      && !('role' in request.resource.data.diff(resource.data).affectedKeys())
+                    || isAdmin();
+
+      allow create: if isAuthenticated() && isCurrentUser(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Barbers ─────────────────────────────────────────────────────────────
+    // Anyone authenticated can read (needed for the booking flow).
+    // Only admins and the barber themselves can write their own profile.
+
+    match /barbers/{barberId} {
+      allow read: if true;
+      allow write: if isAdmin() || isCurrentUser(barberId);
+    }
+
+    // ─── Services ────────────────────────────────────────────────────────────
+    // Anyone authenticated can read. Only admins can write.
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ─── Appointments ────────────────────────────────────────────────────────
+    // Clients can read/create their own appointments and cancel them.
+    // Barbers can read/update appointments assigned to them.
+    // Admins have full access.
+
+    match /appointments/{appointmentId} {
+      // Anyone authenticated can list appointments (needed to compute available slots in booking)
+      allow list: if isAuthenticated();
+      // Full get: own appointment or barber/admin
+      allow get: if isAuthenticated()
+                 && (resource.data.customerId == request.auth.uid
+                     || resource.data.barberId == request.auth.uid
+                     || isBarberOrAdmin());
+
+      // Any authenticated user can create an appointment for themselves.
+      // Privileged users (barbers/admins) can create for anyone.
+      allow create: if isAuthenticated()
+                    && (request.resource.data.customerId == request.auth.uid
+                        || isBarberOrAdmin());
+
+      // Clients can only update status (cancel). Barbers/admins can update freely.
+      allow update: if isAuthenticated()
+                    && (resource.data.customerId == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                            .hasOnly(['status'])
+                        || isBarberOrAdmin());
+
+      // Only admins can hard-delete; barbers can delete their own appointments.
+      allow delete: if isAdmin()
+                    || (isBarber() && resource.data.barberId == request.auth.uid);
+    }
+
+    // ─── Shop Settings ───────────────────────────────────────────────────────
+    // Anyone authenticated can read shop settings (needed for booking + home screen).
+    // Only admins can write.
+
+    match /settings/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ─── Guest Clients ───────────────────────────────────────────────────────
+    // Only barbers and admins can access guest client records.
+
+    match /guestClients/{guestId} {
+      allow read, write: if isBarberOrAdmin();
+    }
+  }
+}

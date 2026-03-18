@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Profile images ───────────────────────────────────────────────────────
+    // Each user can read and overwrite only their own profile image.
+    // Filename is stored as {uid}.jpg — we verify ownership via the filename.
+    match /profile_images/{imageFile} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && imageFile == request.auth.uid + '.jpg';
+    }
+
+    // ─── Gallery images ───────────────────────────────────────────────────────
+    // Anyone authenticated can read gallery images (shown in home screen).
+    // Only admins and barbers can upload or delete gallery images.
+    match /gallery/{filename} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+                      in ['admin', 'barber'];
+    }
+  }
+}

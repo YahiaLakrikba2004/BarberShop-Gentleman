@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum AppointmentStatus { pending, confirmed, completed, cancelled }
+enum AppointmentStatus { pending, confirmed, completed, cancelled, noShow }
 
 class AppointmentModel extends Equatable {
   final String id;

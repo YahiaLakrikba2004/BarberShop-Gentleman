@@ -177,142 +177,143 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
                       ),
                     ],
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => widget.onAppointmentTap(apt),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Time Column (Left Side)
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  DateFormat('HH:mm').format(apt.date),
-                                  style: GoogleFonts.cinzel(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${apt.durationMinutes} min',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-
-                            // Divider
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                            const SizedBox(width: 16),
-
-                            // 2. Main Info (Center)
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Status accent bar
+                          Container(
+                            width: 4,
+                            color: _statusColor(apt.status),
+                          ),
+                          // Card content
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => widget.onAppointmentTap(apt),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        widget.showBarber
-                                            ? Icons.content_cut
-                                            : Icons.person_outline,
-                                        size: 14,
-                                        color:
-                                            Colors.white.withValues(alpha: 0.6),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          widget.showBarber
-                                              ? apt.barberName
-                                              : apt.customerName,
-                                          style: GoogleFonts.cinzel(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                      // Time
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            DateFormat('HH:mm').format(apt.date),
+                                            style: GoogleFonts.cinzel(
+                                              color: Colors.white,
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${apt.durationMinutes} min',
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.white.withValues(alpha: 0.4),
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.08)),
+                                      const SizedBox(width: 14),
+                                      // Info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  widget.showBarber ? Icons.content_cut : Icons.person_outline,
+                                                  size: 12,
+                                                  color: _statusColor(apt.status).withValues(alpha: 0.8),
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Expanded(
+                                                  child: Text(
+                                                    widget.showBarber ? apt.barberName : apt.customerName,
+                                                    style: GoogleFonts.cinzel(
+                                                      color: Colors.white,
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    apt.serviceName,
+                                                    style: GoogleFonts.montserrat(
+                                                      color: Colors.white.withValues(alpha: 0.55),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                _StatusBadge(apt.status),
+                                              ],
+                                            ),
+                                            if (apt.customerPhoneNumber != null) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.phone_android, size: 11, color: Colors.white.withValues(alpha: 0.3)),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    apt.customerPhoneNumber!,
+                                                    style: GoogleFonts.montserrat(
+                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
+                                      // Cancel button
+                                      if (widget.onAppointmentCancel != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 8),
+                                          child: InkWell(
+                                            onTap: () => widget.onAppointmentCancel!(apt),
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.redAccent.withValues(alpha: 0.1),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(Icons.close, color: Colors.redAccent.withValues(alpha: 0.8), size: 16),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    apt.serviceName,
-                                    style: GoogleFonts.montserrat(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.7),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (apt.customerPhoneNumber != null) ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.phone_android,
-                                            size: 12,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.4)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          apt.customerPhoneNumber!,
-                                          style: GoogleFonts.montserrat(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.4),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-
-                            // 3. Actions (Right Side)
-                            if (widget.onAppointmentCancel != null)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: InkWell(
-                                  onTap: () =>
-                                      widget.onAppointmentCancel!(apt),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent
-                                          .withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.close,
-                                      color: Colors.redAccent
-                                          .withValues(alpha: 0.8),
-                                      size: 18,
-                                    ),
-                                  ),
                                 ),
                               ),
-                          ],
-                        ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -322,6 +323,48 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
           ),
         );
       },
+    );
+  }
+}
+
+
+Color _statusColor(AppointmentStatus status) => switch (status) {
+  AppointmentStatus.pending   => const Color(0xFFFFB300),
+  AppointmentStatus.confirmed => const Color(0xFF4CAF50),
+  AppointmentStatus.completed => const Color(0xFF9E9E9E),
+  AppointmentStatus.cancelled => const Color(0xFFDC143C),
+  AppointmentStatus.noShow    => Colors.purpleAccent,
+};
+
+class _StatusBadge extends StatelessWidget {
+  final AppointmentStatus status;
+  const _StatusBadge(this.status);
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg, fg) = switch (status) {
+      AppointmentStatus.pending    => ('IN ATTESA',       const Color(0xFF2A1F00), const Color(0xFFFFB300)),
+      AppointmentStatus.confirmed  => ('CONFERMATO',      const Color(0xFF0A2A1A), const Color(0xFF4CAF50)),
+      AppointmentStatus.completed  => ('COMPLETATO',      const Color(0xFF1A1A1A), const Color(0xFF9E9E9E)),
+      AppointmentStatus.cancelled  => ('ANNULLATO',       const Color(0xFF2A0A0A), const Color(0xFFDC143C)),
+      AppointmentStatus.noShow     => ('NON PRESENTATO',  const Color(0xFF1A0A2A), Colors.purpleAccent),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: fg.withValues(alpha: 0.4), width: 0.5),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.montserrat(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: fg.withValues(alpha: 0.9),
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }

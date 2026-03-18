@@ -15,6 +15,8 @@ import '../appointments/grouped_appointments_list.dart';
 import 'shop_management_screen.dart';
 import 'team_agenda_screen.dart';
 import '../../services/notification_service.dart';
+import '../../models/user_model.dart';
+import 'package:go_router/go_router.dart';
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -24,6 +26,14 @@ class AdminDashboard extends ConsumerWidget {
     final appointmentsAsync = ref.watch(allAppointmentsProvider);
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
+
+    // Route guard: only admins can access this screen
+    if (userAsync.hasValue && (user == null || user.role != UserRole.admin)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/');
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
 
     // Listen for new or cancelled appointments to show admin notifications
     ref.listen(allAppointmentsProvider, (previous, next) {
@@ -85,6 +95,11 @@ class AdminDashboard extends ConsumerWidget {
       body: appointmentsAsync.when(
         data: (appointments) {
           final stats = _calculateStats(appointments);
+          final upcomingAppointments = appointments
+              .where((a) => a.date.isAfter(
+                  DateTime.now().subtract(const Duration(hours: 1))))
+              .toList()
+            ..sort((a, b) => a.date.compareTo(b.date));
 
           return SingleChildScrollView(
             child: Center(
@@ -249,7 +264,7 @@ class AdminDashboard extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      if (appointments.isEmpty)
+                      if (upcomingAppointments.isEmpty)
                         Container(
                           padding: const EdgeInsets.all(32),
                           width: double.infinity,
@@ -260,12 +275,12 @@ class AdminDashboard extends ConsumerWidget {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.event_busy,
+                              Icon(Icons.event_available,
                                   size: 48,
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
                               const SizedBox(height: 16),
                               Text(
-                                'Nessun appuntamento trovato',
+                                'Nessun appuntamento in programma',
                                 style: TextStyle(
                                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                               ),
@@ -274,12 +289,10 @@ class AdminDashboard extends ConsumerWidget {
                         )
                       else
                         SizedBox(
-                          height: 400, // Fixed height for the list
+                          height: 400,
                           child: GroupedAppointmentsList(
-                            appointments: appointments,
-                            onAppointmentTap: (apt) {
-                              // Show details or navigate
-                            },
+                            appointments: upcomingAppointments,
+                            onAppointmentTap: (apt) {},
                           ),
                         ),
                     ],

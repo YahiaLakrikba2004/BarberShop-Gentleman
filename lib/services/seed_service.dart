@@ -144,30 +144,33 @@ class SeedService {
     }
   }
 
+  /// Aggiorna i barbieri esistenti su Firestore con i campi mancanti
+  /// (daysOff, doubleShiftDays). Da chiamare una volta dopo un aggiornamento
+  /// del modello che aggiunge nuovi campi.
   Future<void> fixBarberSchedules() async {
-    final barbers = [
-      {'name': 'Armin', 'daysOff': [3, 7]},
-      {'name': 'Andrei', 'daysOff': [1, 7]},
-      {'name': 'Hamza', 'daysOff': [1, 2]},
-    ];
-
     final currentBarbers = await _firestoreService.getBarbers().first;
 
-    for (var barberData in barbers) {
-      final name = barberData['name'] as String;
-      final daysOff = barberData['daysOff'] as List<int>;
+    for (final barber in currentBarbers) {
+      final updates = <String, dynamic>{};
 
-      try {
-        final barber = currentBarbers.firstWhere(
-          (b) => b.name.toLowerCase().contains(name.toLowerCase()),
-        );
-        
-        await _firestoreService.updateBarberAvailability(barber.id, {
-          'daysOff': daysOff,
-        });
-        debugPrint('Updated schedule for $name');
-      } catch (e) {
-        debugPrint('Barber $name not found or error updating: $e');
+      // Nasconde "NEGOZIO" dalla selezione barbieri
+      final nameUp = barber.name.toUpperCase();
+      if ((nameUp == 'NEGOZIO' || nameUp.contains('GENTLEMAN SHOP')) && barber.isBookable) {
+        updates['isBookable'] = false;
+      }
+
+      // Aggiunge doubleShiftDays se mancante (retrocompatibilità)
+      if (barber.hasDoubleShift && barber.doubleShiftDays.isEmpty) {
+        updates['doubleShiftDays'] = [1, 2, 3, 4, 5];
+      }
+
+      if (updates.isNotEmpty) {
+        try {
+          await _firestoreService.updateBarberAvailability(barber.id, updates);
+          debugPrint('Migrated fields for ${barber.name}');
+        } catch (e) {
+          debugPrint('Error migrating ${barber.name}: $e');
+        }
       }
     }
   }

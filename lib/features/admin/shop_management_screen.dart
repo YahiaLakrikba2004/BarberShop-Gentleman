@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/firestore_service.dart';
+import '../../services/storage_service.dart';
 import '../../models/shop_settings_model.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -25,6 +26,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
   bool _isLoaded = false;
   bool _isUploadingGallery = false;
   DateTime _focusedDay = DateTime.now();
+  Map<int, ShopDaySchedule> _weeklySchedule = {};
 
   @override
   void dispose() {
@@ -48,6 +50,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       _isAnnouncementActive = settings.isAnnouncementActive;
       _isShopClosedManually = settings.isShopClosedManually;
       _closures = List.from(settings.closures);
+      _weeklySchedule = Map.from(settings.weeklySchedule);
       // If no custom images saved yet, show defaults so admin can delete them
       _galleryImages = settings.galleryImages.isNotEmpty
           ? List.from(settings.galleryImages)
@@ -74,10 +77,10 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
     setState(() => _isUploadingGallery = true);
     try {
       final bytes = await picked.readAsBytes();
-      final base64Str = base64Encode(bytes);
-      final updated = List<String>.from(_galleryImages)..add(base64Str);
-      final settingsAsync = ref.read(shopSettingsProvider);
-      final currentSettings = settingsAsync.value ?? const ShopSettingsModel();
+      final filename = 'gallery_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final url = await ref.read(storageServiceProvider).uploadGalleryImage(filename, bytes);
+      final updated = List<String>.from(_galleryImages)..add(url);
+      final currentSettings = ref.read(shopSettingsProvider).value ?? ShopSettingsModel();
       await ref.read(firestoreServiceProvider).updateShopSettings(
         currentSettings.copyWith(galleryImages: updated),
       );
@@ -94,9 +97,13 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
   }
 
   Future<void> _removeGalleryImage(int index) async {
+    final imgStr = _galleryImages[index];
+    // Se è un URL di Firebase Storage, elimina anche il file
+    if (imgStr.startsWith('https://')) {
+      ref.read(storageServiceProvider).deleteGalleryImage(imgStr);
+    }
     final updated = List<String>.from(_galleryImages)..removeAt(index);
-    final settingsAsync = ref.read(shopSettingsProvider);
-    final currentSettings = settingsAsync.value ?? const ShopSettingsModel();
+    final currentSettings = ref.read(shopSettingsProvider).value ?? ShopSettingsModel();
     await ref.read(firestoreServiceProvider).updateShopSettings(
       currentSettings.copyWith(galleryImages: updated),
     );
@@ -110,10 +117,17 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       isShopClosedManually: _isShopClosedManually,
       closures: _closures,
       galleryImages: _galleryImages,
+      weeklySchedule: _weeklySchedule,
     );
 
     try {
       await ref.read(firestoreServiceProvider).updateShopSettings(newSettings);
+      // If announcement is active, queue push notification to all clients
+      if (_isAnnouncementActive && _announcementController.text.trim().isNotEmpty) {
+        await ref.read(firestoreServiceProvider).queueAnnouncementToAllClients(
+          _announcementController.text.trim(),
+        );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Impostazioni salvate con successo!')),
@@ -401,7 +415,9 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                               final imgStr = _galleryImages[index];
                               final ImageProvider imgProvider = imgStr.startsWith('assets/')
                                   ? AssetImage(imgStr) as ImageProvider
-                                  : MemoryImage(base64Decode(imgStr));
+                                  : imgStr.startsWith('https://')
+                                      ? NetworkImage(imgStr)
+                                      : MemoryImage(base64Decode(imgStr));
                               return Stack(
                                 children: [
                                   Container(
@@ -451,6 +467,17 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                FadeInDown(
+                  delay: const Duration(milliseconds: 350),
+                  child: _buildPremiumSection(
+                    context,
+                    title: 'ORARI SETTIMANALI',
+                    icon: Icons.schedule_outlined,
+                    description: 'Gli slot di prenotazione non potranno mai iniziare prima dell\'apertura o finire dopo la chiusura.',
+                    child: _buildWeeklyScheduleWidget(context),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -512,6 +539,153 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  static const List<String> _dayNames = ['', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+  Widget _buildWeeklyScheduleWidget(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      children: List.generate(7, (i) {
+        final weekday = i + 1;
+        final day = _weeklySchedule[weekday] ?? const ShopDaySchedule(openHour: 9, closeHour: 19);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: day.isClosed
+                    ? Colors.redAccent.withValues(alpha: 0.3)
+                    : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    _dayNames[weekday],
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: day.isClosed
+                          ? Colors.redAccent.withValues(alpha: 0.6)
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Chiuso toggle
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _weeklySchedule[weekday] = day.copyWith(isClosed: !day.isClosed);
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: day.isClosed
+                          ? Colors.redAccent.withValues(alpha: 0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: day.isClosed
+                            ? Colors.redAccent.withValues(alpha: 0.4)
+                            : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      day.isClosed ? 'Chiuso' : 'Aperto',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: day.isClosed
+                            ? Colors.redAccent
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (!day.isClosed) ...[
+                  _buildHourPicker(
+                    context,
+                    label: 'Apertura',
+                    hour: day.openHour,
+                    onChanged: (h) => setState(() {
+                      _weeklySchedule[weekday] = day.copyWith(openHour: h);
+                    }),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('–',
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.3))),
+                  ),
+                  _buildHourPicker(
+                    context,
+                    label: 'Chiusura',
+                    hour: day.closeHour,
+                    onChanged: (h) => setState(() {
+                      _weeklySchedule[weekday] = day.copyWith(closeHour: h);
+                    }),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildHourPicker(BuildContext context, {required String label, required int hour, required ValueChanged<int> onChanged}) {
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay(hour: hour, minute: 0),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          ),
+        );
+        if (picked != null) onChanged(picked.hour);
+      },
+      child: Column(
+        children: [
+          Text(label,
+              style: GoogleFonts.montserrat(
+                fontSize: 9,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                letterSpacing: 0.5,
+              )),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+            ),
+            child: Text(
+              '${hour.toString().padLeft(2, '0')}:00',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

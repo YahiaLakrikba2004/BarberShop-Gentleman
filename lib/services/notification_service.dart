@@ -256,6 +256,7 @@ class NotificationService {
   }
 
   Future<void> _showForegroundNotification(RemoteNotification notification) async {
+    if (kIsWeb) return;
     final details = await _getPremiumNotificationDetails(
       title: notification.title,
       body: notification.body,
@@ -276,6 +277,7 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
+    if (kIsWeb) return;
     try {
       if (kDebugMode) debugPrint("Attempting to schedule notification: $title at $scheduledDate");
 
@@ -301,6 +303,7 @@ class NotificationService {
   }
 
   Future<void> cancelNotification(int id) async {
+    if (kIsWeb) return;
     await _localNotifications.cancel(id);
     if (kDebugMode) debugPrint("Notification cancelled: $id");
   }
@@ -398,6 +401,7 @@ class NotificationService {
     String? payload,
     String? imagePath,
   }) async {
+    if (kIsWeb) return;
     final details = await _getPremiumNotificationDetails(
       title: title,
       body: body,
@@ -414,7 +418,31 @@ class NotificationService {
     if (kDebugMode) debugPrint("Immediate notification shown: $title");
   }
 
+  /// Legge le notifiche pendenti da Firestore, le mostra e le cancella.
+  Future<void> deliverPendingNotifications(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pendingNotifications')
+          .orderBy('createdAt')
+          .get();
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final title = data['title'] as String? ?? 'The Gentlemen';
+        final body = data['body'] as String? ?? '';
+        final path = data['path'] as String?;
+        await showImmediateNotification(title: title, body: body, payload: path);
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error delivering pending notifications: $e');
+    }
+  }
+
   Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {
+    if (kIsWeb) return;
     if (kDebugMode) debugPrint("Rescheduling all ${appointments.length} appointments...");
     
     // Optional: Cancel all existing to ensure clean slate? 

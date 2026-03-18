@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../models/barber_model.dart';
@@ -179,14 +181,41 @@ class FirestoreService {
         .set(appointment.toMap());
 
     try {
-      // Schedule reminder 1 hour before
-      final reminderTime = appointment.date.subtract(const Duration(hours: 1));
-      if (reminderTime.isAfter(DateTime.now())) {
+      final now = DateTime.now();
+      final dateLabel = DateFormat('dd/MM alle HH:mm').format(appointment.date);
+
+      // 1h reminder
+      final reminder1h = appointment.date.subtract(const Duration(hours: 1));
+      if (reminder1h.isAfter(now)) {
         await _notificationService.scheduleNotification(
-          id: appointment.date.hashCode,
-          title: 'Appuntamento In Arrivo',
-          body: 'Hai un appuntamento tra 1 ora!',
-          scheduledDate: reminderTime,
+          id: appointment.id.hashCode,
+          title: 'Appuntamento In Arrivo ✂️',
+          body: 'Tra 1 ora hai ${appointment.serviceName} da ${appointment.barberName}!',
+          scheduledDate: reminder1h,
+        );
+      }
+
+      // 24h reminder
+      final reminder24h = appointment.date.subtract(const Duration(hours: 24));
+      if (reminder24h.isAfter(now)) {
+        await _notificationService.scheduleNotification(
+          id: (appointment.id + '_24h').hashCode,
+          title: 'Appuntamento Domani 📅',
+          body: 'Domani $dateLabel hai ${appointment.serviceName} con ${appointment.barberName}.',
+          scheduledDate: reminder24h,
+        );
+      }
+
+      // Re-engagement: cancel previous, schedule new one 21 days after
+      final reengageId = appointment.customerId.hashCode.abs() % 1000000 + 2000000;
+      await _notificationService.cancelNotification(reengageId);
+      final reengageTime = appointment.date.add(const Duration(days: 21));
+      if (reengageTime.isAfter(now)) {
+        await _notificationService.scheduleNotification(
+          id: reengageId,
+          title: 'È ora di tornare! 💈',
+          body: 'Sono passate 3 settimane. Prenota il prossimo appuntamento da The Gentlemen.',
+          scheduledDate: reengageTime,
         );
       }
     } catch (e) {
@@ -198,6 +227,69 @@ class FirestoreService {
     await _firestore.collection('appointments').doc(appointmentId).update({
       'status': status.name,
     });
+
+    // Notify client when admin confirms their appointment
+    if (status == AppointmentStatus.confirmed) {
+      try {
+        final doc = await _firestore.collection('appointments').doc(appointmentId).get();
+        if (doc.exists) {
+          final data = doc.data()!;
+          final customerId = data['customerId'] as String?;
+          final serviceName = data['serviceName'] as String?;
+          final date = (data['date'] as Timestamp).toDate();
+          if (customerId != null) {
+            await queueNotificationForUser(
+              customerId,
+              'Appuntamento Confermato ✓',
+              'Il tuo ${serviceName ?? 'appuntamento'} del ${DateFormat('dd/MM alle HH:mm').format(date)} è confermato!',
+              path: '/profile',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint("Error queuing confirmation notification: $e");
+      }
+    }
+  }
+
+  Future<void> queueNotificationForUser(
+    String userId,
+    String title,
+    String body, {
+    String? path,
+  }) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pendingNotifications')
+        .add({
+      'title': title,
+      'body': body,
+      'path': path,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> queueAnnouncementToAllClients(String announcementText) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'client')
+        .get();
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      final notifRef = _firestore
+          .collection('users')
+          .doc(doc.id)
+          .collection('pendingNotifications')
+          .doc();
+      batch.set(notifRef, {
+        'title': '📢 The Gentlemen',
+        'body': announcementText,
+        'path': '/',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 
   Future<void> deleteAppointment(String appointmentId) async {
@@ -232,7 +324,8 @@ class FirestoreService {
     int count = 0;
     for (var doc in snapshot.docs) {
       final status = doc.data()['status'] as String?;
-      if (status != AppointmentStatus.cancelled.name) {
+      if (status != AppointmentStatus.cancelled.name &&
+          status != AppointmentStatus.noShow.name) {
         count++;
       }
     }
@@ -303,7 +396,7 @@ class FirestoreService {
       if (snapshot.exists) {
         return ShopSettingsModel.fromMap(snapshot.data()!);
       }
-      return const ShopSettingsModel();
+      return ShopSettingsModel();
     });
   }
 
@@ -410,11 +503,16 @@ class FirestoreService {
 }
 
 final barberListProvider = StreamProvider<List<BarberModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).getBarbers();
+  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+    if (user == null) return const Stream.empty();
+    return ref.read(firestoreServiceProvider).getBarbers();
+  });
 });
 
 final serviceListProvider = StreamProvider<List<ServiceModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).getServices();
+  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+    return ref.read(firestoreServiceProvider).getServices();
+  });
 });
 
 final barberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, ({String barberId, DateTime date})>((ref, params) {
@@ -430,7 +528,10 @@ final userAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, S
 });
 
 final allAppointmentsProvider = StreamProvider<List<AppointmentModel>>((ref) {
-  return ref.watch(firestoreServiceProvider).getAllAppointments();
+  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+    if (user == null) return const Stream.empty();
+    return ref.read(firestoreServiceProvider).getAllAppointments();
+  });
 });
 
 final allUsersProvider = StreamProvider<List<UserModel>>((ref) {

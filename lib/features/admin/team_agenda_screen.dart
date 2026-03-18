@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/firestore_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/appointment_model.dart';
+import '../../models/user_model.dart';
 import 'widgets/barber_daily_column.dart';
 
 class TeamAgendaScreen extends ConsumerStatefulWidget {
@@ -53,10 +56,19 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(currentUserProfileProvider);
+    final user = userAsync.value;
     final barbersAsync = ref.watch(barberListProvider);
     final allAppointmentsAsync = ref.watch(allAppointmentsProvider);
-    final isSunday = _selectedDate.weekday == DateTime.sunday;
     final isDesktop = MediaQuery.of(context).size.width > 800;
+
+    // Route guard: only barbers and admins can access this screen
+    if (userAsync.hasValue && (user == null || user.role == UserRole.client)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/');
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -154,7 +166,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                               fontWeight: FontWeight.w800,
                               letterSpacing: 2,
                               fontSize: 13,
-                              color: isSunday ? Colors.white38 : Colors.white,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -173,57 +185,11 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
             ),
           ),
 
-          // Sunday message
-          if (isSunday) ...[
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.storefront_outlined,
-                        size: 56,
-                        color: Colors.white.withValues(alpha: 0.15),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'DOMENICA',
-                        style: GoogleFonts.cinzel(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white.withValues(alpha: 0.5),
-                          letterSpacing: 4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Il negozio è aperto,\nma la domenica non si prenota online.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.35),
-                          height: 1.6,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ] else ...[
-
           // Main Agenda View
           Expanded(
             child: barbersAsync.when(
               data: (barbersList) {
-                final barbers = barbersList.where((b) {
-                  final isShopByName = b.name.toUpperCase() == 'NEGOZIO' ||
-                      b.name.toUpperCase().contains('GENTLEMAN SHOP');
-                  return b.isBookable && !isShopByName;
-                }).toList();
+                final barbers = barbersList.where((b) => b.isBookable).toList();
 
                 if (barbers.isEmpty) {
                   return Center(
@@ -341,7 +307,6 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
             ),
           ),
 
-          ], // end else (not sunday)
         ],
       ),
     );
@@ -384,7 +349,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
             _buildDetailRow(Icons.euro, 'Prezzo', '€${apt.price.toStringAsFixed(0)}'),
             const SizedBox(height: 24),
 
-            if (apt.status != AppointmentStatus.cancelled)
+            if (apt.status == AppointmentStatus.pending || apt.status == AppointmentStatus.confirmed)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -392,7 +357,34 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                     Navigator.pop(modalContext);
                     await ref
                         .read(firestoreServiceProvider)
-                        .updateAppointmentStatus(apt.id, AppointmentStatus.cancelled);
+                        .updateAppointmentStatus(apt.id, AppointmentStatus.completed);
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text('SERVIZIO COMPLETATO'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A2A1A),
+                    foregroundColor: const Color(0xFF4CAF50),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: const Color(0xFF4CAF50).withValues(alpha: 0.4)),
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            if (apt.status != AppointmentStatus.cancelled && apt.status != AppointmentStatus.completed)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(modalContext);
+                    await ref
+                        .read(firestoreServiceProvider)
+                        .updateAppointmentStatus(apt.id, AppointmentStatus.noShow);
                   },
                   icon: const Icon(Icons.person_off_outlined, size: 18),
                   label: const Text('CLIENTE NON PRESENTATO'),
