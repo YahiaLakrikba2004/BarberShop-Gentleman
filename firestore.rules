@@ -80,8 +80,10 @@ service cloud.firestore {
     // Admins have full access.
 
     match /appointments/{appointmentId} {
-      // Anyone authenticated can list appointments (needed to compute available slots in booking)
-      allow list: if isAuthenticated();
+      // List è pubblico: serve per calcolare gli slot disponibili nel booking
+      // e per query filtrate per customerId nel profilo. I singoli documenti
+      // restano protetti da allow get.
+      allow list: if true;
       // Full get: own appointment or barber/admin
       allow get: if isAuthenticated()
                  && (resource.data.customerId == request.auth.uid

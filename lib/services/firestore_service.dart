@@ -502,36 +502,45 @@ class FirestoreService {
   }
 }
 
+// Nota: i provider che richiedono auth usano ref.watch su FirebaseAuth.instance.authStateChanges()
+// tramite uno StreamProvider intermedio per sincronizzarsi con lo stato auth di Riverpod.
+
+final _firebaseAuthProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.idTokenChanges();
+});
+
 final barberListProvider = StreamProvider<List<BarberModel>>((ref) {
-  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
-    if (user == null) return const Stream.empty();
-    return ref.read(firestoreServiceProvider).getBarbers();
-  });
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).getBarbers();
 });
 
 final serviceListProvider = StreamProvider<List<ServiceModel>>((ref) {
-  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
-    return ref.read(firestoreServiceProvider).getServices();
-  });
+  return ref.read(firestoreServiceProvider).getServices();
 });
 
 final barberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, ({String barberId, DateTime date})>((ref, params) {
-  return ref.watch(firestoreServiceProvider).getAppointmentsForBarber(params.barberId, params.date);
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).getAppointmentsForBarber(params.barberId, params.date);
 });
 
 final allBarberAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, String>((ref, barberId) {
-  return ref.watch(firestoreServiceProvider).getAllAppointmentsForBarber(barberId);
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).getAllAppointmentsForBarber(barberId);
 });
 
 final userAppointmentsProvider = StreamProvider.family<List<AppointmentModel>, String>((ref, userId) {
-  return ref.watch(firestoreServiceProvider).getAppointmentsForUser(userId);
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).getAppointmentsForUser(userId);
 });
 
 final allAppointmentsProvider = StreamProvider<List<AppointmentModel>>((ref) {
-  return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
-    if (user == null) return const Stream.empty();
-    return ref.read(firestoreServiceProvider).getAllAppointments();
-  });
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).getAllAppointments();
 });
 
 final allUsersProvider = StreamProvider<List<UserModel>>((ref) {
@@ -543,5 +552,7 @@ final shopSettingsProvider = StreamProvider<ShopSettingsModel>((ref) {
 });
 
 final guestClientsProvider = StreamProvider<List<Map<String, String>>>((ref) {
-  return ref.watch(firestoreServiceProvider).streamGuestClients();
+  final user = ref.watch(_firebaseAuthProvider).value;
+  if (user == null) return const Stream.empty();
+  return ref.read(firestoreServiceProvider).streamGuestClients();
 });

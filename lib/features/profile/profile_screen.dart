@@ -1007,38 +1007,47 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
     }
   }
 
-  // Stable PIN row — no dependency on _errorNotifier, no setState on keypress
+  // Stable PIN row — single unified bar with dividers
   Widget _pinRow(List<TextEditingController> ctrls, List<FocusNode> fNodes, void Function() onComplete) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(6, (i) => Container(
-        width: 42,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
         height: 52,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: TextField(
-          controller: ctrls[i],
-          focusNode: fNodes[i],
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          maxLength: 1,
-          obscureText: true,
-          style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-          decoration: const InputDecoration(counterText: '', border: InputBorder.none, contentPadding: EdgeInsets.zero),
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onChanged: (val) {
-            // Clear error without setState to avoid keyboard flicker
-            if (_errorNotifier.value != null) _errorNotifier.value = null;
-            if (val.isNotEmpty && i < 5) fNodes[i + 1].requestFocus();
-            if (val.isEmpty && i > 0) fNodes[i - 1].requestFocus();
-            if (ctrls.every((c) => c.text.isNotEmpty)) onComplete();
-          },
+        child: Row(
+          children: List.generate(6, (i) => Expanded(
+            child: Row(
+              children: [
+                if (i > 0)
+                  Container(width: 1, height: 52, color: Colors.white.withValues(alpha: 0.08)),
+                Expanded(
+                  child: TextField(
+                    controller: ctrls[i],
+                    focusNode: fNodes[i],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    obscureText: true,
+                    style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    decoration: const InputDecoration(counterText: '', border: InputBorder.none, contentPadding: EdgeInsets.zero),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (val) {
+                      if (_errorNotifier.value != null) _errorNotifier.value = null;
+                      if (val.isNotEmpty && i < 5) fNodes[i + 1].requestFocus();
+                      if (val.isEmpty && i > 0) fNodes[i - 1].requestFocus();
+                      if (ctrls.every((c) => c.text.isNotEmpty)) onComplete();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          )),
         ),
-      )),
+      ),
     );
   }
 

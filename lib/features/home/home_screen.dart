@@ -27,7 +27,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _logoController;
-
+  bool _pendingNotificationsDelivered = false; // ignore: prefer_final_fields
 
   @override
   void initState() {
@@ -54,11 +54,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final user = userAsync.value;
 
     // Deliver any pending notifications queued by admin (confirmation, announcements, etc.)
+    // Covers both: app already logged in on open, and fresh login transition
+    if (user != null && !_pendingNotificationsDelivered) {
+      _pendingNotificationsDelivered = true;
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) ref.read(notificationServiceProvider).deliverPendingNotifications(user.id);
+      });
+    }
     ref.listen<AsyncValue<UserModel?>>(currentUserProfileProvider, (previous, next) {
       final prevUser = previous?.value;
       final nextUser = next.value;
       if (prevUser == null && nextUser != null) {
-        ref.read(notificationServiceProvider).deliverPendingNotifications(nextUser.id);
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) ref.read(notificationServiceProvider).deliverPendingNotifications(nextUser.id);
+        });
       }
     });
 
@@ -245,13 +254,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ],
               ),
             ),
-            
-            
 
-
-            // Next Appointment Banner (solo per clienti loggati)
+            // Next Appointment Banner sovrapposta alla fine dell'hero
             if (user != null && user.role == UserRole.client)
-              _NextAppointmentBanner(userId: user.id),
+              Transform.translate(
+                offset: const Offset(0, -28),
+                child: _NextAppointmentBanner(userId: user.id),
+              ),
 
             // Image Carousel Section
             const _HomeCarousel(),

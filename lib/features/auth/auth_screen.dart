@@ -22,8 +22,8 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen>
     with TickerProviderStateMixin {
   final _phoneController = TextEditingController();
-  final _pinControllers = List.generate(6, (_) => TextEditingController());
-  final _pinFocusNodes = List.generate(6, (_) => FocusNode());
+  final _pinController = TextEditingController();
+  final _pinFocusNode = FocusNode();
   final _nameController = TextEditingController();
   final _surnameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -69,8 +69,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     _rotationController.dispose();
     _shakeController.dispose();
     _phoneController.dispose();
-    for (final c in _pinControllers) { c.dispose(); }
-    for (final f in _pinFocusNodes) { f.dispose(); }
+    _pinController.dispose();
+    _pinFocusNode.dispose();
     _nameController.dispose();
     _surnameController.dispose();
     _emailController.dispose();
@@ -105,7 +105,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       });
 
       Future.delayed(const Duration(milliseconds: 150), () {
-        if (mounted) _pinFocusNodes[0].requestFocus();
+        if (mounted) _pinFocusNode.requestFocus();
       });
     } catch (e) {
       _showError(FirebaseErrorHandler.generic(e));
@@ -117,7 +117,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
   Future<void> _loginWithPin() async {
     if (_isLoading) return;
-    final pin = _pinControllers.map((c) => c.text).join();
+    final pin = _pinController.text;
     if (pin.length < 6) {
       _showError("Inserisci il PIN a 6 cifre");
       return;
@@ -141,9 +141,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   }
 
   void _shakePin() {
-    for (final c in _pinControllers) { c.clear(); }
+    _pinController.clear();
     Future.delayed(const Duration(milliseconds: 50), () {
-      if (mounted) _pinFocusNodes[0].requestFocus();
+      if (mounted) _pinFocusNode.requestFocus();
     });
     _shakeController.forward(from: 0);
   }
@@ -217,7 +217,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
     final email = _emailController.text.trim();
-    final pin = _pinControllers.map((c) => c.text).join();
+    final pin = _pinController.text;
 
     if (name.isEmpty || surname.isEmpty) {
       _showError("Nome e Cognome sono obbligatori");
@@ -286,7 +286,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       _step = _AuthStep.phone;
       _isLoading = false;
       _existingEmail = null;
-      for (final c in _pinControllers) { c.clear(); }
+      _pinController.clear();
     });
   }
 
@@ -557,9 +557,66 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             offset: Offset(_shakeAnimation.value, 0),
             child: child,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(6, (i) => _pinBox(i)),
+          child: GestureDetector(
+            onTap: () => _pinFocusNode.requestFocus(),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Hidden TextField capturing input
+                SizedBox(
+                  width: 0,
+                  height: 0,
+                  child: TextField(
+                    controller: _pinController,
+                    focusNode: _pinFocusNode,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    autofocus: false,
+                    showCursor: false,
+                    style: const TextStyle(color: Colors.transparent),
+                    decoration: const InputDecoration(border: InputBorder.none, counterText: ''),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (val) {
+                      if (val.length == 6 && _step == _AuthStep.pin) {
+                        _loginWithPin();
+                      }
+                    },
+                  ),
+                ),
+                // Visual dots — iOS style with glow
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _pinController,
+                  builder: (context, value, _) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(6, (i) {
+                        final filled = i < value.text.length;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          width: filled ? 20 : 16,
+                          height: filled ? 20 : 16,
+                          margin: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: filled
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.15),
+                            boxShadow: filled ? [
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ] : null,
+                          ),
+                        );
+                      }),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -579,46 +636,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           child: const Text("Cambia numero", style: TextStyle(color: Colors.white38, fontSize: 12)),
         ),
       ],
-    );
-  }
-
-  Widget _pinBox(int index) {
-    return Container(
-      width: 42,
-      height: 52,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: TextField(
-        controller: _pinControllers[index],
-        focusNode: _pinFocusNodes[index],
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        obscureText: true,
-        style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (val) {
-          if (!mounted) return;
-          if (val.isNotEmpty && index < 5) {
-            _pinFocusNodes[index + 1].requestFocus();
-          } else if (val.isEmpty && index > 0) {
-            _pinFocusNodes[index - 1].requestFocus();
-          }
-          // Auto-submit solo nella schermata di login
-          if (_step == _AuthStep.pin && _pinControllers.every((c) => c.text.isNotEmpty)) {
-            _loginWithPin();
-          }
-        },
-      ),
     );
   }
 
@@ -661,9 +678,60 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 11, letterSpacing: 1.5)),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(6, (i) => _pinBox(i)),
+        GestureDetector(
+          onTap: () => _pinFocusNode.requestFocus(),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 0,
+                height: 0,
+                child: TextField(
+                  controller: _pinController,
+                  focusNode: _pinFocusNode,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofocus: false,
+                  showCursor: false,
+                  style: const TextStyle(color: Colors.transparent),
+                  decoration: const InputDecoration(border: InputBorder.none, counterText: ''),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _pinController,
+                builder: (context, value, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(6, (i) {
+                      final filled = i < value.text.length;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        width: filled ? 20 : 16,
+                        height: filled ? 20 : 16,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: filled
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.15),
+                          boxShadow: filled ? [
+                            BoxShadow(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ] : null,
+                        ),
+                      );
+                    }),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 

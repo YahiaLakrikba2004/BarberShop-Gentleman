@@ -173,8 +173,8 @@ class _PremiumServiceCardState extends State<PremiumServiceCard>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
-    _scale = Tween<double>(begin: 1.0, end: 0.98)
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
+    _scale = Tween<double>(begin: 1.0, end: 0.97)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
@@ -183,6 +183,8 @@ class _PremiumServiceCardState extends State<PremiumServiceCard>
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = widget.isSelected;
+
     return GestureDetector(
       onTapDown: (_) => _ctrl.forward(),
       onTapUp: (_) { _ctrl.reverse(); widget.onTap(); },
@@ -190,84 +192,78 @@ class _PremiumServiceCardState extends State<PremiumServiceCard>
       child: AnimatedBuilder(
         animation: _ctrl,
         builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: 100,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF111111) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF111111),
             border: Border.all(
-              color: widget.isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).dividerColor.withValues(alpha: 0.1),
-              width: 1.5,
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.07),
+              width: isSelected ? 1.5 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
               children: [
-                if (widget.isSelected)
-                  Positioned.fill(
-                    child: Container(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05))),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 60, height: 60,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-                        ),
-                        child: Center(
-                          child: Icon(Icons.content_cut,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                              size: 28),
+                      Text(
+                        widget.service.name.toUpperCase(),
+                        style: GoogleFonts.cinzel(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(widget.service.name.toUpperCase(),
-                                style: GoogleFonts.cinzel(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('${widget.service.durationMinutes} min',
-                                style: GoogleFonts.montserrat(
-                                    color: Theme.of(context)
-                                        .colorScheme.onSurface.withValues(alpha: 0.5),
-                                    fontSize: 12)),
-                          ],
-                        ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.schedule_rounded,
+                              size: 11,
+                              color: Colors.white.withValues(alpha: 0.3)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.service.durationMinutes} min',
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text('€${widget.service.price.toInt()}',
-                          style: GoogleFonts.cinzel(
-                              fontSize: 20, fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface)),
                     ],
                   ),
                 ),
-                if (widget.isSelected)
-                  Positioned(
-                    top: 8, right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          shape: BoxShape.circle),
-                      child: Icon(Icons.check, size: 12,
-                          color: Theme.of(context).colorScheme.onPrimary),
-                    ),
+                if (isSelected)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 14),
+                    child: Icon(Icons.check_circle_rounded,
+                        color: Colors.white, size: 18),
                   ),
+                Text(
+                  '€${widget.service.price % 1 == 0 ? widget.service.price.toInt() : widget.service.price.toStringAsFixed(2)}',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),

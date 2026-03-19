@@ -1096,6 +1096,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
   String? newImageBase64;
   final ImagePicker picker = ImagePicker();
   final nameCtrl = TextEditingController(text: barber.name);
+  final specialtyCtrl = TextEditingController();
 
   // Integer state maps — no TextEditingControllers for hours
   final Map<int, int> dayStart = {
@@ -1114,6 +1115,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
       ? Set.from(barber.doubleShiftDays)
       : (barber.hasDoubleShift ? {1, 2, 3, 4, 5} : <int>{});
   bool isBookable = barber.isBookable;
+  List<String> specialties = List.from(barber.specialties);
 
   await showModalBottomSheet(
     context: context,
@@ -1411,6 +1413,146 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                       ),
                       const SizedBox(height: 12),
 
+                      // ── Specialità ───────────────────────────
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'SPECIALITÀ',
+                              style: GoogleFonts.cinzel(
+                                color: Theme.of(ctx).colorScheme.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Chips esistenti
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ...specialties.map((s) => GestureDetector(
+                                  onTap: () => setS(() => specialties.remove(s)),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          s.toUpperCase(),
+                                          style: GoogleFonts.montserrat(
+                                            color: Theme.of(ctx).colorScheme.primary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(Icons.close,
+                                            size: 12,
+                                            color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.7)),
+                                      ],
+                                    ),
+                                  ),
+                                )),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Campo aggiungi nuova specialità
+                            if (specialties.length >= 2)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.info_outline,
+                                        size: 12,
+                                        color: Colors.white.withValues(alpha: 0.3)),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Limite massimo di 2 specialità raggiunto',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: specialtyCtrl,
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                    textCapitalization: TextCapitalization.words,
+                                    decoration: InputDecoration(
+                                      hintText: 'Aggiungi specialità...',
+                                      hintStyle: GoogleFonts.montserrat(
+                                        color: Colors.white24,
+                                        fontSize: 12,
+                                      ),
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      filled: true,
+                                      fillColor: Colors.white.withValues(alpha: 0.05),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    onSubmitted: (val) {
+                                      final trimmed = val.trim();
+                                      if (trimmed.isNotEmpty && !specialties.contains(trimmed) && specialties.length < 2) {
+                                        setS(() => specialties.add(trimmed));
+                                      }
+                                      specialtyCtrl.clear();
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () {
+                                    final trimmed = specialtyCtrl.text.trim();
+                                    if (trimmed.isNotEmpty && !specialties.contains(trimmed) && specialties.length < 2) {
+                                      setS(() => specialties.add(trimmed));
+                                    }
+                                    specialtyCtrl.clear();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(ctx).colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.add, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
                       // ── Weekly schedule ──────────────────────
                       Container(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -1640,6 +1782,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                             final updatedBarber = barber.copyWith(
                               name: nameCtrl.text.trim(),
                               imageUrl: newImageBase64 ?? barber.imageUrl,
+                              specialties: specialties,
                               hasDoubleShift: hasBreak,
                               breakStartHour: breakStart,
                               breakEndHour: breakEnd,

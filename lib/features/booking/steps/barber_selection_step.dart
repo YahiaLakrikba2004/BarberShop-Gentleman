@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +25,6 @@ class BarberSelectionStep extends ConsumerWidget {
           data: (list) => list,
           orElse: () => <BarberModel>[],
         );
-
     final bookable = barbers.where((b) => b.isBookable).toList();
 
     if (bookable.isEmpty) {
@@ -41,10 +39,10 @@ class BarberSelectionStep extends ConsumerWidget {
       final w = constraints.maxWidth;
       final cols = w > 1100 ? 4 : (w > 700 ? 3 : 2);
       return GridView.builder(
-        padding: EdgeInsets.symmetric(horizontal: w > 700 ? 32 : 16, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: w > 700 ? 40 : 20, vertical: 24),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: cols,
-          childAspectRatio: 0.72,
+          childAspectRatio: 0.66,
           crossAxisSpacing: w > 700 ? 20 : 14,
           mainAxisSpacing: w > 700 ? 20 : 14,
         ),
@@ -83,7 +81,7 @@ class BarberSelectionStep extends ConsumerWidget {
   }
 }
 
-// ─── Barber card ─────────────────────────────────────────────────────────────
+// ─── Barber card ──────────────────────────────────────────────────────────────
 
 class _BarberCard extends StatelessWidget {
   final BarberModel barber;
@@ -96,40 +94,128 @@ class _BarberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAvailable = barber.availabilityStatus == BarberAvailability.available;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
       onTap: isAvailable ? onTap : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                : Theme.of(context).dividerColor.withValues(alpha: 0.1),
-            width: 1.5,
+                ? primary.withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.07),
+            width: isSelected ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isSelected ? 0.4 : 0.2),
-              blurRadius: isSelected ? 20 : 10,
-              offset: const Offset(0, 4),
+              color: isSelected
+                  ? primary.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.4),
+              blurRadius: isSelected ? 28 : 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _BarberImage(barber: barber, isSelected: isSelected),
-              _GradientOverlay(context: context),
-              _GlassOverlay(),
-              if (isSelected) _SelectionBorder(context: context),
-              if (!isAvailable) _UnavailableOverlay(barber: barber),
-              _BarberInfo(barber: barber, outerContext: context),
-              if (!isAvailable) _StatusBadge(barber: barber),
-              if (isSelected) _SelectionBadge(context: context),
+
+              // ── Photo (top 63%) ────────────────────────────────────
+              Expanded(
+                flex: 63,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _BarberPhoto(barber: barber),
+
+                    // Fade into info panel
+                    const Positioned(
+                      bottom: 0, left: 0, right: 0,
+                      height: 48,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0xFF131313),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Unavailable overlay
+                    if (!isAvailable) _UnavailableOverlay(barber: barber),
+
+                    // Selected checkmark
+                    if (isSelected)
+                      Positioned(
+                        top: 10, right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: primary.withValues(alpha: 0.5),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.check,
+                              size: 12,
+                              color: Theme.of(context).colorScheme.onPrimary),
+                        ),
+                      ),
+
+                    // Status badge (not available, not selected)
+                    if (!isAvailable && !isSelected)
+                      Positioned(
+                        top: 10, right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: barberStatusColor(barber.availabilityStatus)
+                                .withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            barberStatusLabel(barber.availabilityStatus),
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // ── Info panel (bottom 37%) ────────────────────────────
+              Expanded(
+                flex: 37,
+                child: _BarberInfoPanel(barber: barber, isSelected: isSelected),
+              ),
+
+              // ── Selection accent line at very bottom ───────────────
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                height: isSelected ? 3 : 0,
+                color: primary,
+              ),
             ],
           ),
         ),
@@ -138,11 +224,12 @@ class _BarberCard extends StatelessWidget {
   }
 }
 
-class _BarberImage extends StatelessWidget {
-  final BarberModel barber;
-  final bool isSelected;
+// ─── Photo widget ─────────────────────────────────────────────────────────────
 
-  const _BarberImage({required this.barber, required this.isSelected});
+class _BarberPhoto extends StatelessWidget {
+  final BarberModel barber;
+
+  const _BarberPhoto({required this.barber});
 
   @override
   Widget build(BuildContext context) {
@@ -155,97 +242,35 @@ class _BarberImage extends StatelessWidget {
       }
     }
 
-    Widget img;
     if (url.isNotEmpty) {
       if (url.startsWith('assets/')) {
-        img = Image.asset(url, fit: BoxFit.cover, gaplessPlayback: true);
+        return Image.asset(url, fit: BoxFit.cover, gaplessPlayback: true);
       } else if (url.startsWith('http')) {
-        img = Image.network(url, fit: BoxFit.cover, gaplessPlayback: true);
+        return Image.network(url, fit: BoxFit.cover, gaplessPlayback: true);
       } else {
         try {
-          img = Image.memory(base64Decode(url), fit: BoxFit.cover, gaplessPlayback: true);
-        } catch (_) {
-          img = Container(color: const Color(0xFF222222));
-        }
+          return Image.memory(
+              base64Decode(url), fit: BoxFit.cover, gaplessPlayback: true);
+        } catch (_) {}
       }
-    } else {
-      img = Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A1A), Color(0xFF2C2C2C), Color(0xFF1A1A1A)],
-          ),
-        ),
-        child: Center(
-          child: Text(
-            barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
-            style: GoogleFonts.cinzel(
-                fontSize: 64, fontWeight: FontWeight.bold,
-                color: Colors.white.withValues(alpha: 0.08), letterSpacing: 4),
-          ),
-        ),
-      );
     }
 
-    return ColorFiltered(
-      colorFilter: ColorFilter.mode(
-        isSelected
-            ? Colors.transparent
-            : (Theme.of(context).brightness == Brightness.dark
-                ? Colors.black.withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.2)),
-        BlendMode.darken,
-      ),
-      child: img,
-    );
-  }
-}
-
-class _GradientOverlay extends StatelessWidget {
-  final BuildContext context;
-  const _GradientOverlay({required this.context});
-
-  @override
-  Widget build(BuildContext _) {
-    final base = Theme.of(context).brightness == Brightness.dark
-        ? Colors.black : Colors.white;
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            base.withValues(alpha: 0.2),
-            base.withValues(alpha: 0.8),
-            base.withValues(alpha: 0.95),
-          ],
-          stops: const [0.4, 0.6, 0.85, 1.0],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1E1E1E), Color(0xFF131313)],
         ),
       ),
-    );
-  }
-}
-
-class _GlassOverlay extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 0, left: 0, right: 0,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            height: 85,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: 0.0),
-                  Colors.white.withValues(alpha: 0.05),
-                ],
-              ),
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
-            ),
+      child: Center(
+        child: Text(
+          barber.name.isNotEmpty ? barber.name[0].toUpperCase() : '?',
+          style: GoogleFonts.cinzel(
+            fontSize: 52,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.07),
+            letterSpacing: 4,
           ),
         ),
       ),
@@ -253,69 +278,25 @@ class _GlassOverlay extends StatelessWidget {
   }
 }
 
-class _SelectionBorder extends StatelessWidget {
-  final BuildContext context;
-  const _SelectionBorder({required this.context});
+// ─── Info panel ───────────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext _) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8), width: 2),
-      ),
-    );
-  }
-}
-
-class _UnavailableOverlay extends StatelessWidget {
+class _BarberInfoPanel extends ConsumerWidget {
   final BarberModel barber;
-  const _UnavailableOverlay({required this.barber});
+  final bool isSelected;
 
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.6),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(barberStatusIcon(barber.availabilityStatus),
-                  color: barberStatusColor(barber.availabilityStatus).withValues(alpha: 0.8),
-                  size: 32),
-              const SizedBox(height: 8),
-              Text(barberStatusLabel(barber.availabilityStatus),
-                  style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BarberInfo extends ConsumerWidget {
-  final BarberModel barber;
-  final BuildContext outerContext;
-  const _BarberInfo({required this.barber, required this.outerContext});
+  const _BarberInfoPanel({required this.barber, required this.isSelected});
 
   String _effectiveHours(ShopDaySchedule? shopDay) {
     final today = DateTime.now().weekday;
     final dayStart = barber.startHourFor(today);
-    final dayEnd   = barber.endHourFor(today);
+    final dayEnd = barber.endHourFor(today);
     final effStart = shopDay != null && !shopDay.isClosed
         ? dayStart.clamp(shopDay.openHour, shopDay.closeHour)
         : dayStart;
     final effEnd = shopDay != null && !shopDay.isClosed
         ? dayEnd.clamp(shopDay.openHour, shopDay.closeHour)
         : dayEnd;
-
     String h(int v) => '${v.toString().padLeft(2, '0')}:00';
-
     if (barber.hasBreakOn(today)) {
       return '${h(effStart)}–${h(barber.breakStartHour)} | ${h(barber.breakEndHour)}–${h(effEnd)}';
     }
@@ -324,51 +305,64 @@ class _BarberInfo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(outerContext).brightness == Brightness.dark;
-    final timeColor = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.7);
-    final timeBg = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1);
-
+    final primary = Theme.of(context).colorScheme.primary;
     final shopSettings = ref.watch(shopSettingsProvider).valueOrNull;
     final todaySchedule = shopSettings?.weeklySchedule[DateTime.now().weekday];
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      color: const Color(0xFF131313),
+      padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(barber.name.toUpperCase(),
-              style: GoogleFonts.cinzel(
-                  fontSize: 17, fontWeight: FontWeight.bold,
-                  color: Colors.white, letterSpacing: 1.2,
-                  shadows: [Shadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 10)]),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
+          // Name
           Text(
-            barber.specialties.isNotEmpty
-                ? barber.specialties.join(' • ').toUpperCase()
-                : 'SPECIALISTA TAGLIO & BARBA',
-            style: GoogleFonts.montserrat(
-                color: Theme.of(outerContext).colorScheme.primary,
-                fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-            maxLines: 1, overflow: TextOverflow.ellipsis,
+            barber.name.toUpperCase(),
+            style: GoogleFonts.cinzel(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.6,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: timeBg, borderRadius: BorderRadius.circular(4)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.access_time, color: timeColor, size: 10),
-                const SizedBox(width: 4),
-                Text(
+
+          // Specialty
+          if (barber.specialties.isNotEmpty)
+          Text(
+            barber.specialties.take(2).join(' · ').toUpperCase(),
+            style: GoogleFonts.montserrat(
+              color: primary.withValues(alpha: 0.9),
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // Hours
+          Row(
+            children: [
+              Icon(Icons.schedule_rounded,
+                  size: 10,
+                  color: Colors.white.withValues(alpha: 0.3)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
                   _effectiveHours(todaySchedule),
                   style: GoogleFonts.montserrat(
-                      color: timeColor, fontSize: 10, fontWeight: FontWeight.w500),
+                    color: Colors.white.withValues(alpha: 0.3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -376,43 +370,40 @@ class _BarberInfo extends ConsumerWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
+// ─── Unavailable overlay ──────────────────────────────────────────────────────
+
+class _UnavailableOverlay extends StatelessWidget {
   final BarberModel barber;
-  const _StatusBadge({required this.barber});
+
+  const _UnavailableOverlay({required this.barber});
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 12, right: 12,
+    return Positioned.fill(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-            color: barberStatusColor(barber.availabilityStatus).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(4)),
-        child: Text(barberStatusLabel(barber.availabilityStatus),
-            style: GoogleFonts.montserrat(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
-      ),
-    );
-  }
-}
-
-class _SelectionBadge extends StatelessWidget {
-  final BuildContext context;
-  const _SelectionBadge({required this.context});
-
-  @override
-  Widget build(BuildContext _) {
-    return Positioned(
-      top: 12, right: 12,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8)],
+        color: Colors.black.withValues(alpha: 0.55),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                barberStatusIcon(barber.availabilityStatus),
+                color: barberStatusColor(barber.availabilityStatus),
+                size: 28,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                barberStatusLabel(barber.availabilityStatus),
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Icon(Icons.check, size: 16, color: Theme.of(context).colorScheme.onPrimary),
       ),
     );
   }
