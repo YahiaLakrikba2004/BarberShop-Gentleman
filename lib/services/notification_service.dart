@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,10 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 import '../firebase_options.dart';
 import '../models/appointment_model.dart';
+import '../config/onesignal_config.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -171,9 +174,129 @@ class NotificationService {
       } catch (e) {
          if (kDebugMode) debugPrint("Error getting initial message: $e");
       }
-      
+
+      // 7. Initialize OneSignal
+      if (!kIsWeb) {
+        try {
+          OneSignal.initialize(OneSignalConfig.appId);
+          OneSignal.Notifications.requestPermission(false);
+          final subId = OneSignal.User.pushSubscription.id;
+          if (subId != null) await _saveOneSignalIdToFirestore(subId);
+          OneSignal.User.pushSubscription.addObserver((state) {
+            final id = state.current.id;
+            if (id != null) _saveOneSignalIdToFirestore(id);
+          });
+          if (kDebugMode) debugPrint('OneSignal initialized, subId: $subId');
+        } catch (e) {
+          if (kDebugMode) debugPrint('OneSignal init error: $e');
+        }
+      }
+
     } catch (e) {
       if (kDebugMode) debugPrint("CRITICAL ERROR initializing NotificationService: $e");
+    }
+  }
+
+  Future<void> _saveOneSignalIdToFirestore(String oneSignalId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).set(
+        {'oneSignalId': oneSignalId},
+        SetOptions(merge: true),
+      );
+      if (kDebugMode) debugPrint('OneSignal ID saved: $oneSignalId');
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error saving OneSignal ID: $e');
+    }
+  }
+
+  /// Invia o schedula una push notification via OneSignal.
+  /// Se [scheduledDate] è null o nel passato/presente → invio immediato (omette send_after).
+  /// Se [scheduledDate] è nel futuro → schedulata per quella data.
+  Future<void> scheduleOneSignalNotification({
+    required String oneSignalId,
+    required String title,
+    required String body,
+    DateTime? scheduledDate,
+    String? externalId,
+  }) async {
+    if (kIsWeb) return;
+    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') {
+      if (kDebugMode) debugPrint('OneSignal REST API key not configured, skipping push.');
+      return;
+    }
+    try {
+      final isFuture = scheduledDate != null &&
+          scheduledDate.isAfter(DateTime.now().add(const Duration(seconds: 30)));
+
+      final payload = <String, dynamic>{
+        'app_id': OneSignalConfig.appId,
+        'include_subscription_ids': [oneSignalId],
+        'headings': {'en': title, 'it': title},
+        'contents': {'en': body, 'it': body},
+        if (isFuture) 'send_after': scheduledDate.toUtc().toIso8601String(),
+        if (externalId != null) 'external_id': externalId,
+      };
+      final response = await http.post(
+        Uri.parse('https://onesignal.com/api/v1/notifications'),
+        headers: {
+          'Authorization': 'Basic ${OneSignalConfig.restApiKey}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (kDebugMode) debugPrint('OneSignal OK (${response.statusCode}): $title');
+      } else {
+        if (kDebugMode) debugPrint('OneSignal ERROR (${response.statusCode}): ${response.body}');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('OneSignal schedule error: $e');
+    }
+  }
+
+  /// Cancella una notifica OneSignal schedulata tramite il suo external_id.
+  Future<void> cancelOneSignalNotification(String externalId) async {
+    if (kIsWeb) return;
+    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
+    try {
+      await http.delete(
+        Uri.parse('https://onesignal.com/api/v1/notifications/$externalId?app_id=${OneSignalConfig.appId}'),
+        headers: {'Authorization': 'Basic ${OneSignalConfig.restApiKey}'},
+      );
+      if (kDebugMode) debugPrint('OneSignal notification cancelled: $externalId');
+    } catch (e) {
+      if (kDebugMode) debugPrint('OneSignal cancel error: $e');
+    }
+  }
+
+  /// Invia una push immediata a più dispositivi in una sola chiamata (es. annunci).
+  Future<void> sendOneSignalToMany({
+    required List<String> oneSignalIds,
+    required String title,
+    required String body,
+  }) async {
+    if (kIsWeb || oneSignalIds.isEmpty) return;
+    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
+    try {
+      final payload = {
+        'app_id': OneSignalConfig.appId,
+        'include_subscription_ids': oneSignalIds,
+        'headings': {'en': title, 'it': title},
+        'contents': {'en': body, 'it': body},
+      };
+      final response = await http.post(
+        Uri.parse('https://onesignal.com/api/v1/notifications'),
+        headers: {
+          'Authorization': 'Basic ${OneSignalConfig.restApiKey}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      if (kDebugMode) debugPrint('OneSignal bulk send: ${response.statusCode} ${response.body}');
+    } catch (e) {
+      if (kDebugMode) debugPrint('OneSignal bulk send error: $e');
     }
   }
 
@@ -441,36 +564,9 @@ class NotificationService {
     }
   }
 
-  Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {
-    if (kIsWeb) return;
-    if (kDebugMode) debugPrint("Rescheduling all ${appointments.length} appointments...");
-    
-    // Optional: Cancel all existing to ensure clean slate? 
-    // For now we just overwrite since we use consistent IDs.
-    await _localNotifications.cancelAll(); 
-
-    int scheduledCount = 0;
-    final now = DateTime.now();
-
-    for (final apt in appointments) {
-      if (apt.date.isAfter(now)) {
-        // Schedule 1 hour before
-        // This logic mimics the BookingScreen scheduling logic
-        // Ideally this logic should be centralized, but duplicating for safety here.
-        final scheduledDate = apt.date.subtract(const Duration(hours: 1));
-        if (scheduledDate.isAfter(now)) {
-             await scheduleNotification(
-               id: apt.id.hashCode,
-               title: 'Gentleman Barber Shop',
-               body: 'Non dimenticare il tuo appuntamento alle ${DateFormat('HH:mm').format(apt.date)}!',
-               scheduledDate: scheduledDate,
-             );
-             scheduledCount++;
-        }
-      }
-    }
-    if (kDebugMode) debugPrint("Rescheduled $scheduledCount notifications.");
-  }
+  /// I reminder 1h e 24h sono ora gestiti da OneSignal (server-side).
+  /// Questo metodo è mantenuto per compatibilità ma non fa nulla.
+  Future<void> rescheduleAllAppointments(List<AppointmentModel> appointments) async {}
 
   Future<ByteArrayAndroidBitmap?> _getAssetBitmap(String assetPath) async {
     try {

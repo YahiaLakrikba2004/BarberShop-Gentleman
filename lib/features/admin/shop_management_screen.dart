@@ -50,12 +50,22 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
       _isAnnouncementActive = settings.isAnnouncementActive;
       _isShopClosedManually = settings.isShopClosedManually;
       _closures = List.from(settings.closures);
-      _weeklySchedule = Map.from(settings.weeklySchedule);
       // If no custom images saved yet, show defaults so admin can delete them
       _galleryImages = settings.galleryImages.isNotEmpty
           ? List.from(settings.galleryImages)
           : List.from(_defaultAssetImages);
-      _isLoaded = true;
+
+      // Detect old Firestore data (no hasBreak / no minute precision for Mon)
+      // and auto-apply + save the correct real-world schedule.
+      final needsMigration = !(settings.weeklySchedule[1]?.hasBreak ?? false);
+      if (needsMigration) {
+        _weeklySchedule = ShopSettingsModel().weeklySchedule;
+        _isLoaded = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _saveSettings());
+      } else {
+        _weeklySchedule = Map.from(settings.weeklySchedule);
+        _isLoaded = true;
+      }
     }
   }
 
@@ -564,79 +574,161 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
                     : Theme.of(context).dividerColor.withValues(alpha: 0.2),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    _dayNames[weekday],
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: day.isClosed
-                          ? Colors.redAccent.withValues(alpha: 0.6)
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Chiuso toggle
-                GestureDetector(
-                  onTap: () => setState(() {
-                    _weeklySchedule[weekday] = day.copyWith(isClosed: !day.isClosed);
-                  }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: day.isClosed
-                          ? Colors.redAccent.withValues(alpha: 0.15)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: day.isClosed
-                            ? Colors.redAccent.withValues(alpha: 0.4)
-                            : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        _dayNames[weekday],
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: day.isClosed
+                              ? Colors.redAccent.withValues(alpha: 0.6)
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      day.isClosed ? 'Chiuso' : 'Aperto',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: day.isClosed
-                            ? Colors.redAccent
-                            : Theme.of(context).colorScheme.primary,
+                    const SizedBox(width: 8),
+                    // Chiuso toggle
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _weeklySchedule[weekday] = day.copyWith(isClosed: !day.isClosed);
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: day.isClosed
+                              ? Colors.redAccent.withValues(alpha: 0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: day.isClosed
+                                ? Colors.redAccent.withValues(alpha: 0.4)
+                                : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          day.isClosed ? 'Chiuso' : 'Aperto',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: day.isClosed
+                                ? Colors.redAccent
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const Spacer(),
+                    if (!day.isClosed) ...[
+                      _buildTimePicker(
+                        context,
+                        label: 'Apertura',
+                        hour: day.openHour,
+                        minute: day.openMinute,
+                        onChanged: (h, m) => setState(() {
+                          _weeklySchedule[weekday] = day.copyWith(openHour: h, openMinute: m);
+                        }),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('–',
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.3))),
+                      ),
+                      _buildTimePicker(
+                        context,
+                        label: 'Chiusura',
+                        hour: day.closeHour,
+                        minute: day.closeMinute,
+                        onChanged: (h, m) => setState(() {
+                          _weeklySchedule[weekday] = day.copyWith(closeHour: h, closeMinute: m);
+                        }),
+                      ),
+                    ],
+                  ],
                 ),
-                const Spacer(),
                 if (!day.isClosed) ...[
-                  _buildHourPicker(
-                    context,
-                    label: 'Apertura',
-                    hour: day.openHour,
-                    onChanged: (h) => setState(() {
-                      _weeklySchedule[weekday] = day.copyWith(openHour: h);
-                    }),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('–',
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.3))),
-                  ),
-                  _buildHourPicker(
-                    context,
-                    label: 'Chiusura',
-                    hour: day.closeHour,
-                    onChanged: (h) => setState(() {
-                      _weeklySchedule[weekday] = day.copyWith(closeHour: h);
-                    }),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const SizedBox(width: 44),
+                      // Pausa toggle
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _weeklySchedule[weekday] = day.copyWith(hasBreak: !day.hasBreak);
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: day.hasBreak
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: day.hasBreak
+                                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
+                                  : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            'Pausa',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: day.hasBreak
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (day.hasBreak) ...[
+                        _buildTimePicker(
+                          context,
+                          label: 'Inizio',
+                          hour: day.breakStartHour,
+                          minute: day.breakStartMinute,
+                          onChanged: (h, m) => setState(() {
+                            _weeklySchedule[weekday] = day.copyWith(breakStartHour: h, breakStartMinute: m);
+                          }),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('–',
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.3))),
+                        ),
+                        _buildTimePicker(
+                          context,
+                          label: 'Fine',
+                          hour: day.breakEndHour,
+                          minute: day.breakEndMinute,
+                          onChanged: (h, m) => setState(() {
+                            _weeklySchedule[weekday] = day.copyWith(breakEndHour: h, breakEndMinute: m);
+                          }),
+                        ),
+                      ] else
+                        Text(
+                          'Nessuna pausa',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ],
@@ -647,18 +739,19 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
     );
   }
 
-  Widget _buildHourPicker(BuildContext context, {required String label, required int hour, required ValueChanged<int> onChanged}) {
+  Widget _buildTimePicker(BuildContext context, {required String label, required int hour, required int minute, required void Function(int h, int m) onChanged}) {
+    final display = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     return GestureDetector(
       onTap: () async {
         final picked = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay(hour: hour, minute: 0),
+          initialTime: TimeOfDay(hour: hour, minute: minute),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child!,
           ),
         );
-        if (picked != null) onChanged(picked.hour);
+        if (picked != null) onChanged(picked.hour, picked.minute);
       },
       child: Column(
         children: [
@@ -677,7 +770,7 @@ class _ShopManagementScreenState extends ConsumerState<ShopManagementScreen> {
               border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
             ),
             child: Text(
-              '${hour.toString().padLeft(2, '0')}:00',
+              display,
               style: GoogleFonts.montserrat(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,

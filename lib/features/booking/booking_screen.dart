@@ -43,11 +43,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   bool _bookingSuccess = false;
   bool _bookingBlocked = false;
   bool _isBooking = false;
+  final _slotsScrollController = ScrollController();
 
   @override
   void dispose() {
     _guestNameController.dispose();
     _guestPhoneController.dispose();
+    _slotsScrollController.dispose();
     super.dispose();
   }
 
@@ -801,11 +803,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       if (barber.availabilityStatus != BarberAvailability.available) return true;
       if (barber.daysOff.contains(day.weekday)) return true;
       if (barber.unavailableDates.any(
-          (u) => u.year == day.year && u.month == day.month && u.day == day.day)) return true;
+          (u) => u.year == day.year && u.month == day.month && u.day == day.day)) {
+        return true;
+      }
       if (shopSettings != null) {
         if (shopSettings.isShopClosedManually) return true;
         if (shopSettings.closures.any(
-            (c) => c.year == day.year && c.month == day.month && c.day == day.day)) return true;
+            (c) => c.year == day.year && c.month == day.month && c.day == day.day)) {
+          return true;
+        }
         final shopDay = shopSettings.weeklySchedule[day.weekday];
         if (shopDay != null && shopDay.isClosed) return true;
       }
@@ -819,6 +825,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     final selectedDayAppointments = appointmentsAsync.valueOrNull ?? [];
 
     return SingleChildScrollView(
+      controller: _slotsScrollController,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -827,7 +834,20 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               style: GoogleFonts.cinzel(
                   fontSize: 18, fontWeight: FontWeight.bold, color: onSurface)),
           const SizedBox(height: 16),
-          Container(
+          Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerMove: (event) {
+            if (!_slotsScrollController.hasClients) return;
+            final dy = event.delta.dy;
+            if (dy.abs() > event.delta.dx.abs()) {
+              final pos = _slotsScrollController.position;
+              final next = (pos.pixels - dy).clamp(0.0, pos.maxScrollExtent);
+              _slotsScrollController.jumpTo(next);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF111111)
@@ -927,7 +947,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               ),
             ),
           ),
-          const SizedBox(height: 32),
+        ),
+        ),
+          const SizedBox(height: 24),
           Row(
             children: [
               Icon(Icons.access_time, color: onSurface, size: 20),
@@ -1384,6 +1406,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
         body: 'Il tuo appuntamento per ${_selectedService!.name} è stato registrato per il ${DateFormat('dd/MM HH:mm').format(_selectedSlot!)}',
         payload: isPrivileged ? '/calendar' : '/profile',
       );
+
 
       if (!mounted) return;
 

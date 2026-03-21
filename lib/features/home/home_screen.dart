@@ -13,6 +13,7 @@ import '../../models/user_model.dart';
 import 'widgets/video_header.dart';
 import 'dart:async';
 import '../../services/firestore_service.dart';
+import '../../models/shop_settings_model.dart';
 import 'home_screen_widgets.dart';
 import '../../services/notification_service.dart';
 import '../../models/appointment_model.dart';
@@ -48,10 +49,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
+  List<Widget> _buildHoursRows(Map<int, ShopDaySchedule> schedule) {
+    const dayNames = ['', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+    String fmt(int h, int m) => '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    String hoursStr(ShopDaySchedule d) {
+      if (d.isClosed) return 'Chiuso';
+      if (d.hasBreak) return '${fmt(d.openHour, d.openMinute)} - ${fmt(d.breakStartHour, d.breakStartMinute)}\n${fmt(d.breakEndHour, d.breakEndMinute)} - ${fmt(d.closeHour, d.closeMinute)}';
+      return '${fmt(d.openHour, d.openMinute)} - ${fmt(d.closeHour, d.closeMinute)}';
+    }
+
+    final rows = <Widget>[];
+    int i = 1;
+    while (i <= 7) {
+      final day = schedule[i] ?? ShopDaySchedule(openHour: 10, closeHour: 20);
+      final str = hoursStr(day);
+      // Find consecutive days with the same schedule string
+      int j = i + 1;
+      while (j <= 7) {
+        final next = schedule[j] ?? ShopDaySchedule(openHour: 10, closeHour: 20);
+        if (hoursStr(next) != str) break;
+        j++;
+      }
+      final label = j - i > 1 ? '${dayNames[i]} - ${dayNames[j - 1]}' : dayNames[i];
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
+      rows.add(HoursRow(day: label, hours: str));
+      i = j;
+    }
+    return rows;
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
+    final shopSettings = ref.watch(shopSettingsProvider).valueOrNull;
 
     // Deliver any pending notifications queued by admin (confirmation, announcements, etc.)
     // Covers both: app already logged in on open, and fresh login transition
@@ -463,13 +494,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                       children: [
                                                         Text('ORARI DI APERTURA', style: GoogleFonts.montserrat(color: const Color(0xFFFAFAFA), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
                                                         const SizedBox(height: 16),
-                                                        const HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
-                                                        const SizedBox(height: 8),
-                                                        const HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
-                                                        const SizedBox(height: 8),
-                                                        const HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
-                                                        const SizedBox(height: 8),
-                                                        const HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
+                                                        ..._buildHoursRows(
+                                                          shopSettings?.weeklySchedule ?? ShopSettingsModel().weeklySchedule,
+                                                        ),
                                                       ],
                                                     ),
                                                   ),
@@ -509,13 +536,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                     children: [
                                                       Text('ORARI DI APERTURA', style: GoogleFonts.montserrat(color: const Color(0xFFFAFAFA), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
                                                       const SizedBox(height: 16),
-                                                      const HoursRow(day: 'Lun - Gio', hours: '10:00-12:30 | 14:30-20:00'),
-                                                      const SizedBox(height: 8),
-                                                      const HoursRow(day: 'Venerdì', hours: '10:00-12:30 | 14:00-20:30'),
-                                                      const SizedBox(height: 8),
-                                                      const HoursRow(day: 'Sabato', hours: '09:00 - 20:00'),
-                                                      const SizedBox(height: 8),
-                                                      const HoursRow(day: 'Domenica', hours: '10:00 - 18:00'),
+                                                      ..._buildHoursRows(
+                                                        shopSettings?.weeklySchedule ?? ShopSettingsModel().weeklySchedule,
+                                                      ),
                                                     ],
                                                   ),
                                                 ),

@@ -59,26 +59,31 @@ class SlotService {
       return [];
     }
 
-    // Start and End times: use per-day override if set, then clamp to shop hours
-    final int barberStart = barber.startHourFor(date.weekday);
-    final int barberEnd   = barber.endHourFor(date.weekday);
+    // Start and End times in total minutes from midnight
+    final int barberStartMin = barber.startHourFor(date.weekday) * 60;
+    final int barberEndMin   = barber.endHourFor(date.weekday) * 60;
 
-    final int effectiveStart = (shopDay != null)
-        ? barberStart.clamp(shopDay.openHour, shopDay.closeHour).toInt()
-        : barberStart;
-    final int effectiveEnd = (shopDay != null)
-        ? barberEnd.clamp(shopDay.openHour, shopDay.closeHour).toInt()
-        : barberEnd;
+    final int effectiveStartMin = (shopDay != null)
+        ? barberStartMin.clamp(shopDay.openTotalMinutes, shopDay.closeTotalMinutes)
+        : barberStartMin;
+    final int effectiveEndMin = (shopDay != null)
+        ? barberEndMin.clamp(shopDay.openTotalMinutes, shopDay.closeTotalMinutes)
+        : barberEndMin;
 
-    final DateTime startOfDay = DateTime(date.year, date.month, date.day, effectiveStart);
-    final DateTime endOfDay = DateTime(date.year, date.month, date.day, effectiveEnd);
+    final DateTime startOfDay = DateTime(date.year, date.month, date.day, effectiveStartMin ~/ 60, effectiveStartMin % 60);
+    final DateTime endOfDay   = DateTime(date.year, date.month, date.day, effectiveEndMin   ~/ 60, effectiveEndMin   % 60);
 
-    // Pausa del doppio turno (se attiva per questo giorno)
+    // Pausa del doppio turno — priorità: barbiere > negozio
     DateTime? breakStart;
     DateTime? breakEnd;
     if (barber.hasBreakOn(date.weekday)) {
       breakStart = DateTime(date.year, date.month, date.day, barber.breakStartHour);
-      breakEnd = DateTime(date.year, date.month, date.day, barber.breakEndHour);
+      breakEnd   = DateTime(date.year, date.month, date.day, barber.breakEndHour);
+    } else {
+      if (shopDay != null && shopDay.hasBreak) {
+        breakStart = DateTime(date.year, date.month, date.day, shopDay.breakStartHour, shopDay.breakStartMinute);
+        breakEnd   = DateTime(date.year, date.month, date.day, shopDay.breakEndHour,   shopDay.breakEndMinute);
+      }
     }
 
     // Interval step (every 30 mins)

@@ -94,6 +94,7 @@ class HoursRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           day,
@@ -105,10 +106,12 @@ class HoursRow extends StatelessWidget {
         ),
         Text(
           hours,
+          textAlign: TextAlign.end,
           style: GoogleFonts.montserrat(
             color: Theme.of(context).colorScheme.primary,
             fontSize: 13,
             fontWeight: FontWeight.w400,
+            height: 1.6,
           ),
         ),
       ],

@@ -10,7 +10,6 @@ import '../../models/appointment_model.dart';
 import '../../models/shop_settings_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/messaging_service.dart';
-import '../../services/notification_service.dart';
 import '../../services/seed_service.dart';
 
 class BarberManagementScreen extends ConsumerStatefulWidget {
@@ -530,7 +529,6 @@ class _BarberManagementCard extends ConsumerWidget {
                                       GestureDetector(
                                         onTap: () async {
                                           await ref.read(firestoreServiceProvider).updateAppointmentStatus(app.id, AppointmentStatus.cancelled);
-                                          await ref.read(notificationServiceProvider).cancelNotification(app.id.hashCode);
                                           setStateDialog(() { conflicts.removeAt(index); });
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Appuntamento di ${app.customerName} annullato.')));
@@ -969,7 +967,6 @@ class _BarberVacationDialogState extends State<_BarberVacationDialog> {
                                   );
                                 }
                                 await ref.read(firestoreServiceProvider).updateAppointmentStatus(app.id, AppointmentStatus.cancelled);
-                                await ref.read(notificationServiceProvider).cancelNotification(app.id.hashCode);
                               }
                               await _save(ref);
                             },
@@ -1637,77 +1634,75 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                             if (hasBreak) ...[
                               const SizedBox(height: 14),
                               Container(height: 0.5, color: Colors.white.withValues(alpha: 0.06)),
-                              const SizedBox(height: 14),
-                              // Day chips — which days have the break
-                              Wrap(
-                                spacing: 6,
-                                children: List.generate(7, (i) {
-                                  const labels = ['', 'L', 'M', 'M', 'G', 'V', 'S', 'D'];
-                                  final wd = i + 1;
-                                  final active = breakDays.contains(wd);
-                                  return GestureDetector(
-                                    onTap: () => setS(() {
-                                      if (active) { breakDays.remove(wd); }
-                                      else { breakDays.add(wd); }
-                                    }),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 180),
-                                      width: 32,
-                                      height: 32,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: active
-                                            ? Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.85)
-                                            : Colors.white.withValues(alpha: 0.06),
-                                        border: Border.all(
-                                          color: active
-                                              ? Theme.of(ctx).colorScheme.primary
-                                              : Colors.white.withValues(alpha: 0.1),
+                              const SizedBox(height: 10),
+                              ...List.generate(7, (i) {
+                                const names = ['', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
+                                final wd = i + 1;
+                                final isOff = daysOff.contains(wd);
+                                if (isOff) return const SizedBox.shrink();
+                                final active = breakDays.contains(wd);
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 5),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 38,
+                                        child: Text(
+                                          names[wd],
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                            color: active
+                                                ? Colors.white.withValues(alpha: 0.75)
+                                                : Colors.white.withValues(alpha: 0.25),
+                                          ),
                                         ),
                                       ),
-                                      child: Text(
-                                        labels[wd],
-                                        style: GoogleFonts.montserrat(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
+                                      const SizedBox(width: 8),
+                                      if (active) ...[
+                                        timeChip(breakStart, () => pickHour(
+                                          breakStart,
+                                          (h) => setS(() => breakStart = h),
+                                        )),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          child: Text('—', style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 16)),
                                         ),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Dalle',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.4),
-                                      fontSize: 12,
-                                    ),
+                                        timeChip(breakEnd, () => pickHour(
+                                          breakEnd,
+                                          (h) => setS(() => breakEnd = h),
+                                        )),
+                                        const Spacer(),
+                                      ] else
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.02),
+                                              borderRadius: BorderRadius.circular(10),
+                                              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+                                            ),
+                                            child: Text(
+                                              'NESSUNA PAUSA',
+                                              style: GoogleFonts.montserrat(
+                                                color: Colors.white.withValues(alpha: 0.15),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      const SizedBox(width: 10),
+                                      toggle(active, () => setS(() {
+                                        if (active) { breakDays.remove(wd); }
+                                        else { breakDays.add(wd); }
+                                      })),
+                                    ],
                                   ),
-                                  const SizedBox(width: 10),
-                                  timeChip(breakStart, () => pickHour(
-                                    breakStart,
-                                    (h) => setS(() => breakStart = h),
-                                  )),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'alle',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white.withValues(alpha: 0.4),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  timeChip(breakEnd, () => pickHour(
-                                    breakEnd,
-                                    (h) => setS(() => breakEnd = h),
-                                  )),
-                                ],
-                              ),
+                                );
+                              }),
                             ],
                           ],
                         ),
@@ -1891,7 +1886,6 @@ Future<void> _notifyAndCancelAllAppointments(
         await ref.read(messagingServiceProvider).sendWhatsAppMessage(phone, msg);
       }
       await ref.read(firestoreServiceProvider).updateAppointmentStatus(app.id, AppointmentStatus.cancelled);
-      await ref.read(notificationServiceProvider).cancelNotification(app.id.hashCode);
     }
 
     final updatedBarber = barber.copyWith(availabilityStatus: newStatus);

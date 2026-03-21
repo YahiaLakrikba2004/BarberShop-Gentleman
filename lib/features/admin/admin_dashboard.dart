@@ -41,17 +41,7 @@ class AdminDashboard extends ConsumerWidget {
         final prevAppointments = previous!.value!;
         final nextAppointments = next.value!;
         
-        // 1. Check for new appointments
-        if (nextAppointments.length > prevAppointments.length) {
-          final newApts = nextAppointments.where((n) => !prevAppointments.any((p) => p.id == n.id)).toList();
-          for (final apt in newApts) {
-            ref.read(notificationServiceProvider).showImmediateNotification(
-              title: 'Nuova Prenotazione',
-              body: '${apt.customerName} ha prenotato ${apt.serviceName} per il ${DateFormat('dd/MM HH:mm').format(apt.date)}',
-              payload: '/team-agenda',
-            );
-          }
-        }
+        // Nuove prenotazioni → già gestite da OneSignal in firestore_service
         
         // 2. Check for cancellations (status change to cancelled)
         for (final nextApt in nextAppointments) {

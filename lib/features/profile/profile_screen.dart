@@ -35,9 +35,10 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     final isDesktop = MediaQuery.of(context).size.width > 800;
+    final isAdmin = user.role == UserRole.admin;
 
     return DefaultTabController(
-      length: 2,
+      length: isAdmin ? 2 : 1,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
@@ -233,16 +234,16 @@ class ProfileScreen extends ConsumerWidget {
             // Tab Bar
             Container(
               color: Theme.of(context).scaffoldBackgroundColor,
-              child: const TabBar(
-                indicatorColor: Color(0xFFFFFFFF),
+              child: TabBar(
+                indicatorColor: const Color(0xFFFFFFFF),
                 indicatorSize: TabBarIndicatorSize.label,
-                labelColor: Color(0xFFFFFFFF),
+                labelColor: const Color(0xFFFFFFFF),
                 unselectedLabelColor: Colors.grey,
                 labelStyle:
-                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                    const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
                 tabs: [
-                  Tab(text: 'IN PROGRAMMA'),
-                  Tab(text: 'STORICO'),
+                  const Tab(text: 'IN PROGRAMMA'),
+                  if (isAdmin) const Tab(text: 'STORICO'),
                 ],
               ),
             ),
@@ -253,8 +254,9 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   _AppointmentsList(
                       userId: user.id, userRole: user.role, isHistory: false),
-                  _AppointmentsList(
-                      userId: user.id, userRole: user.role, isHistory: true),
+                  if (isAdmin)
+                    _AppointmentsList(
+                        userId: user.id, userRole: user.role, isHistory: true),
                 ],
               ),
             ),

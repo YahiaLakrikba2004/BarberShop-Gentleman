@@ -46,6 +46,8 @@ dependencies:
 
   path_provider: any
   web: any
+  onesignal_flutter: ^5.2.5
+  http: ^1.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

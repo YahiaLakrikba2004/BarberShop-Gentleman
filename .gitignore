@@ -47,6 +47,9 @@ app.*.map.json
 
 # Environment Variables
 .env
+
+# API Keys
+lib/config/onesignal_config.dart
 .dart_defines.json
 
 # Firebase Keys
