@@ -16,7 +16,6 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../firebase_options.dart';
 import '../models/appointment_model.dart';
-import '../config/onesignal_config.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
@@ -27,6 +26,9 @@ final notificationOpenProvider = StreamProvider<String?>((ref) {
 });
 
 class NotificationService {
+  static const String _oneSignalAppId = 'a0b6bf27-1895-4170-96a0-d2a89a889268';
+  static const String _oneSignalRestKey = 'os_v2_app_uc3l6jyysvaxbfva2kujvcesncudtfej7l3ufymh2hwinr2l3hbgxwqcmimukth5xdavyrprbd3xmm4adaqke4h6ew6xkq3h3sx6wua';
+
   FirebaseMessaging get _firebaseMessaging => FirebaseMessaging.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   FirebaseAuth get _auth => FirebaseAuth.instance;
@@ -178,7 +180,7 @@ class NotificationService {
       // 7. Initialize OneSignal
       if (!kIsWeb) {
         try {
-          OneSignal.initialize(OneSignalConfig.appId);
+          OneSignal.initialize(_oneSignalAppId);
           OneSignal.Notifications.requestPermission(false);
           final subId = OneSignal.User.pushSubscription.id;
           if (subId != null) await _saveOneSignalIdToFirestore(subId);
@@ -222,7 +224,7 @@ class NotificationService {
     String? externalId,
   }) async {
     if (kIsWeb) return;
-    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') {
+    if (_oneSignalRestKey == 'YOUR_ONESIGNAL_REST_API_KEY') {
       if (kDebugMode) debugPrint('OneSignal REST API key not configured, skipping push.');
       return;
     }
@@ -231,7 +233,7 @@ class NotificationService {
           scheduledDate.isAfter(DateTime.now().add(const Duration(seconds: 30)));
 
       final payload = <String, dynamic>{
-        'app_id': OneSignalConfig.appId,
+        'app_id': _oneSignalAppId,
         'include_subscription_ids': [oneSignalId],
         'headings': {'en': title, 'it': title},
         'contents': {'en': body, 'it': body},
@@ -241,7 +243,7 @@ class NotificationService {
       final response = await http.post(
         Uri.parse('https://onesignal.com/api/v1/notifications'),
         headers: {
-          'Authorization': 'Basic ${OneSignalConfig.restApiKey}',
+          'Authorization': 'Basic $_oneSignalRestKey',
           'Content-Type': 'application/json',
         },
         body: jsonEncode(payload),
@@ -259,11 +261,11 @@ class NotificationService {
   /// Cancella una notifica OneSignal schedulata tramite il suo external_id.
   Future<void> cancelOneSignalNotification(String externalId) async {
     if (kIsWeb) return;
-    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
+    if (_oneSignalRestKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
     try {
       await http.delete(
-        Uri.parse('https://onesignal.com/api/v1/notifications/$externalId?app_id=${OneSignalConfig.appId}'),
-        headers: {'Authorization': 'Basic ${OneSignalConfig.restApiKey}'},
+        Uri.parse('https://onesignal.com/api/v1/notifications/$externalId?app_id=$_oneSignalAppId'),
+        headers: {'Authorization': 'Basic $_oneSignalRestKey'},
       );
       if (kDebugMode) debugPrint('OneSignal notification cancelled: $externalId');
     } catch (e) {
@@ -278,10 +280,10 @@ class NotificationService {
     required String body,
   }) async {
     if (kIsWeb || oneSignalIds.isEmpty) return;
-    if (OneSignalConfig.restApiKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
+    if (_oneSignalRestKey == 'YOUR_ONESIGNAL_REST_API_KEY') return;
     try {
       final payload = {
-        'app_id': OneSignalConfig.appId,
+        'app_id': _oneSignalAppId,
         'include_subscription_ids': oneSignalIds,
         'headings': {'en': title, 'it': title},
         'contents': {'en': body, 'it': body},
@@ -289,7 +291,7 @@ class NotificationService {
       final response = await http.post(
         Uri.parse('https://onesignal.com/api/v1/notifications'),
         headers: {
-          'Authorization': 'Basic ${OneSignalConfig.restApiKey}',
+          'Authorization': 'Basic $_oneSignalRestKey',
           'Content-Type': 'application/json',
         },
         body: jsonEncode(payload),
