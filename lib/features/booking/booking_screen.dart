@@ -1403,7 +1403,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       // Trigger immediate local notification
       ref.read(notificationServiceProvider).showImmediateNotification(
         title: 'Prenotazione Confermata',
-        body: 'Il tuo appuntamento per ${_selectedService!.name} è stato registrato per il ${DateFormat('dd/MM HH:mm').format(_selectedSlot!)}',
+        body: '${_selectedService!.name} il ${DateFormat("dd/MM 'alle' HH:mm").format(_selectedSlot!)} — ci vediamo!',
         payload: isPrivileged ? '/calendar' : '/profile',
       );
 

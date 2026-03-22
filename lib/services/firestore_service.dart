@@ -201,7 +201,8 @@ class FirestoreService {
 
     try {
       final now = DateTime.now();
-      final dateLabel = DateFormat('dd/MM alle HH:mm').format(appointment.date);
+      final timeLabel = DateFormat('HH:mm').format(appointment.date);
+      final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(appointment.date);
       final customerOneSignalId = await _getOneSignalId(appointment.customerId);
 
       // 1h reminder → OneSignal schedulata
@@ -209,8 +210,8 @@ class FirestoreService {
       if (reminder1h.isAfter(now) && customerOneSignalId != null) {
         await _notificationService.scheduleOneSignalNotification(
           oneSignalId: customerOneSignalId,
-          title: 'Appuntamento tra 1 ora',
-          body: 'Tra poco hai ${appointment.serviceName} con ${appointment.barberName}!',
+          title: '${appointment.serviceName} tra 1 ora',
+          body: 'Alle $timeLabel con ${appointment.barberName}. Sei pronto?',
           scheduledDate: reminder1h,
           externalId: '${appointment.id}_1h',
         );
@@ -222,7 +223,7 @@ class FirestoreService {
         await _notificationService.scheduleOneSignalNotification(
           oneSignalId: customerOneSignalId,
           title: 'Appuntamento domani',
-          body: 'Domani $dateLabel hai ${appointment.serviceName} con ${appointment.barberName}.',
+          body: 'Domani alle $timeLabel — ${appointment.serviceName} con ${appointment.barberName}.',
           scheduledDate: reminder24h,
           externalId: '${appointment.id}_24h',
         );
@@ -230,11 +231,13 @@ class FirestoreService {
 
       // Notifica immediata all'admin → nuova prenotazione
       final adminIds = await _getAdminOneSignalIds();
+      final immediately = DateTime.now().add(const Duration(seconds: 5));
       for (final adminId in adminIds) {
         await _notificationService.scheduleOneSignalNotification(
           oneSignalId: adminId,
           title: 'Nuova prenotazione',
-          body: '${appointment.customerName} ha prenotato ${appointment.serviceName} il $dateLabel.',
+          body: '${appointment.customerName} — ${appointment.serviceName} il $dateLabel.',
+          scheduledDate: immediately,
         );
       }
 
@@ -267,7 +270,8 @@ class FirestoreService {
       final customerId = data['customerId'] as String?;
       final serviceName = data['serviceName'] as String? ?? 'appuntamento';
       final date = (data['date'] as Timestamp).toDate();
-      final dateLabel = DateFormat('dd/MM alle HH:mm').format(date);
+      final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(date);
+      final immediately = DateTime.now().add(const Duration(seconds: 5));
 
       if (customerId == null) return;
       final oneSignalId = await _getOneSignalId(customerId);
@@ -276,8 +280,9 @@ class FirestoreService {
       if (status == AppointmentStatus.confirmed) {
         await _notificationService.scheduleOneSignalNotification(
           oneSignalId: oneSignalId,
-          title: 'Prenotazione confermata',
-          body: 'Il tuo $serviceName del $dateLabel è confermato!',
+          title: 'Prenotazione confermata ✓',
+          body: '$serviceName il $dateLabel — ci vediamo!',
+          scheduledDate: immediately,
         );
       } else if (status == AppointmentStatus.cancelled) {
         await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
@@ -285,7 +290,8 @@ class FirestoreService {
         await _notificationService.scheduleOneSignalNotification(
           oneSignalId: oneSignalId,
           title: 'Appuntamento cancellato',
-          body: 'Il tuo $serviceName del $dateLabel è stato cancellato.',
+          body: '$serviceName del $dateLabel è stato cancellato.',
+          scheduledDate: immediately,
         );
       }
     } catch (e) {
@@ -362,7 +368,8 @@ class FirestoreService {
         final customerId = data['customerId'] as String?;
         final serviceName = data['serviceName'] as String? ?? 'appuntamento';
         final date = (data['date'] as Timestamp).toDate();
-        final dateLabel = DateFormat('dd/MM alle HH:mm').format(date);
+        final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(date);
+        final immediately = DateTime.now().add(const Duration(seconds: 5));
 
         // Cancella reminder schedulati
         await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
@@ -375,7 +382,8 @@ class FirestoreService {
             await _notificationService.scheduleOneSignalNotification(
               oneSignalId: oneSignalId,
               title: 'Appuntamento cancellato',
-              body: 'Il tuo $serviceName del $dateLabel è stato cancellato.',
+              body: '$serviceName del $dateLabel è stato cancellato.',
+              scheduledDate: immediately,
             );
           }
         }

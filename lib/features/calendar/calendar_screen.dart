@@ -1029,14 +1029,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     .read(firestoreServiceProvider)
                     .updateAppointmentStatus(
                         appointment.id, AppointmentStatus.cancelled);
-                
-                // Trigger immediate notification for cancellation
-                ref.read(notificationServiceProvider).showImmediateNotification(
-                  title: 'Appuntamento Annullato',
-                  body: 'L\'appuntamento per ${appointment.serviceName} del ${DateFormat('dd/MM HH:mm').format(appointment.date)} è stato annullato.',
-                );
-                
-                // Cancel scheduled local reminder
                 ref.read(notificationServiceProvider).cancelNotification(appointment.id.hashCode);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -61,12 +61,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final rows = <Widget>[];
     int i = 1;
     while (i <= 7) {
-      final day = schedule[i] ?? ShopDaySchedule(openHour: 10, closeHour: 20);
+      final day = schedule[i] ?? const ShopDaySchedule(openHour: 10, closeHour: 20);
       final str = hoursStr(day);
       // Find consecutive days with the same schedule string
       int j = i + 1;
       while (j <= 7) {
-        final next = schedule[j] ?? ShopDaySchedule(openHour: 10, closeHour: 20);
+        final next = schedule[j] ?? const ShopDaySchedule(openHour: 10, closeHour: 20);
         if (hoursStr(next) != str) break;
         j++;
       }
@@ -121,7 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                    if (oldApt.status != apt.status && apt.status == AppointmentStatus.cancelled) {
                      ref.read(notificationServiceProvider).showImmediateNotification(
                        title: 'Appuntamento Annullato',
-                       body: 'Il tuo appuntamento per ${apt.serviceName} del ${DateFormat('dd/MM HH:mm').format(apt.date)} è stato annullato dal salone.',
+                       body: '${apt.serviceName} del ${DateFormat("dd/MM 'alle' HH:mm").format(apt.date)} è stato annullato dal salone.',
                        payload: '/calendar',
                      );
                    }
@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                    else if (!oldApt.date.isAtSameMomentAs(apt.date)) {
                      ref.read(notificationServiceProvider).showImmediateNotification(
                        title: 'Orario Modificato',
-                       body: 'L\'orario del tuo appuntamento per ${apt.serviceName} è stato spostato al ${DateFormat('dd/MM HH:mm').format(apt.date)}.',
+                       body: '${apt.serviceName} spostato al ${DateFormat("dd/MM 'alle' HH:mm").format(apt.date)}.',
                        payload: '/calendar',
                      );
                    }
