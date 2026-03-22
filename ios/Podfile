@@ -42,6 +42,20 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+
+      # Fix gRPC-Core and BoringSSL compilation with Xcode 16
+      grpc_pods = ['gRPC-Core', 'gRPC-C++', 'BoringSSL-GRPC', 'abseil']
+      if grpc_pods.include?(target.name) || target.name.start_with?('grpc')
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
+        # Remove flags not recognized by Xcode 16 clang
+        flags = config.build_settings['OTHER_CFLAGS']
+        if flags
+          flags = flags.is_a?(Array) ? flags : flags.split
+          flags.reject! { |f| ['-Wno-comma', '-Wno-shorten-64-to-32'].include?(f) }
+          config.build_settings['OTHER_CFLAGS'] = flags
+        end
+      end
     end
   end
 end

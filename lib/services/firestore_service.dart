@@ -1,24 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../models/barber_model.dart';
 import '../models/service_model.dart';
 import '../models/appointment_model.dart';
-import 'notification_service.dart';
 import '../models/shop_settings_model.dart';
 
 final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  final notificationService = ref.watch(notificationServiceProvider);
-  return FirestoreService(FirebaseFirestore.instance, notificationService);
+  return FirestoreService(FirebaseFirestore.instance);
 });
 
 class FirestoreService {
   final FirebaseFirestore _firestore;
-  final NotificationService _notificationService;
 
-  FirestoreService(this._firestore, this._notificationService);
+  FirestoreService(this._firestore);
 
   // Users
   Future<void> createUser(UserModel user) async {
@@ -218,15 +214,8 @@ class FirestoreService {
   }
 
   Future<void> deleteAppointment(String appointmentId) async {
-    // Cancel scheduled reminders before deleting
-    try {
-      await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
-      await _notificationService.cancelOneSignalNotification('${appointmentId}_24h');
-    } catch (e) {
-      debugPrint('Error cancelling scheduled reminders: $e');
-    }
     await _firestore.collection('appointments').doc(appointmentId).delete();
-    // Customer notification → handled by Cloud Function onAppointmentDeleted
+    // Reminder cleanup + customer notification → handled by Cloud Function onAppointmentDeleted
   }
 
   Stream<List<AppointmentModel>> getAppointmentsForUser(String userId) {
