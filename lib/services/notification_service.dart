@@ -115,9 +115,13 @@ class NotificationService {
       }
 
       // 5. Foreground message handler
+      // iOS: setForegroundNotificationPresentationOptions already handles display natively.
+      // Android: we must show a local notification manually.
       FirebaseMessaging.onMessage.listen((message) {
         final notification = message.notification;
-        if (notification != null) _showForegroundNotification(notification);
+        if (notification != null && !Platform.isIOS) {
+          _showForegroundNotification(notification);
+        }
       });
 
       // 6. Background tap → navigation
