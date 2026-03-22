@@ -158,16 +158,20 @@ class NotificationService {
   Future<void> _showForegroundNotification(
       RemoteNotification notification) async {
     if (kIsWeb) return;
-    final details = await _buildNotificationDetails();
+    final body = notification.body ?? '';
+    final details = await _buildNotificationDetails(body: body);
+    // Use positive unique ID (hashCode can be negative on Android)
+    final id = notification.hashCode.abs() % 100000;
     await _localNotifications.show(
-      notification.hashCode,
+      id,
       notification.title,
-      notification.body,
+      body,
       details,
     );
   }
 
   Future<NotificationDetails> _buildNotificationDetails({
+    String body = '',
     String? imagePath,
   }) async {
     final largeIcon = await _getAssetBitmap('assets/images/logo.png');
@@ -183,7 +187,10 @@ class NotificationService {
         );
       }
     }
-    style ??= const BigTextStyleInformation('');
+    style ??= BigTextStyleInformation(
+      body,
+      htmlFormatBigText: false,
+    );
 
     List<DarwinNotificationAttachment>? iosAttachments;
     if (imagePath != null) {
@@ -202,8 +209,15 @@ class NotificationService {
         styleInformation: style,
         importance: Importance.max,
         priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
       ),
-      iOS: DarwinNotificationDetails(attachments: iosAttachments),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        attachments: iosAttachments,
+      ),
     );
   }
 
@@ -214,7 +228,7 @@ class NotificationService {
     String? imagePath,
   }) async {
     if (kIsWeb) return;
-    final details = await _buildNotificationDetails(imagePath: imagePath);
+    final details = await _buildNotificationDetails(body: body, imagePath: imagePath);
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
