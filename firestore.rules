@@ -92,9 +92,11 @@ service cloud.firestore {
 
       // Any authenticated user can create an appointment for themselves.
       // Privileged users (barbers/admins) can create for anyone.
+      // Unauthenticated users can create web bookings (source == 'web').
       allow create: if isAuthenticated()
                     && (request.resource.data.customerId == request.auth.uid
-                        || isBarberOrAdmin());
+                        || isBarberOrAdmin())
+                    || request.resource.data.source == 'web';
 
       // Clients can only update status (cancel). Barbers/admins can update freely.
       allow update: if isAuthenticated()
@@ -122,6 +124,21 @@ service cloud.firestore {
 
     match /guestClients/{guestId} {
       allow read, write: if isBarberOrAdmin();
+      allow create: if request.resource.data.source == 'web';
+    }
+
+    // ─── Announcements ────────────────────────────────────────────────────────
+    // Only admins can create (triggers Cloud Function for FCM broadcast).
+
+    match /announcements/{announcementId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── Scheduled Notifications ──────────────────────────────────────────────
+    // Managed exclusively by Cloud Functions. Block client-side access.
+
+    match /scheduledNotifications/{docId} {
+      allow read, write: if false;
     }
   }
 }

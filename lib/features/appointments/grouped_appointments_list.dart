@@ -268,6 +268,17 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
+                                                if (apt.source == 'web')
+                                                  Container(
+                                                    margin: const EdgeInsets.only(right: 6),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
+                                                    ),
+                                                    child: Text('WEB', style: GoogleFonts.montserrat(fontSize: 9, color: Colors.blueAccent, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                                  ),
                                                 _StatusBadge(apt.status),
                                               ],
                                             ),

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../models/barber_model.dart';
@@ -173,24 +172,6 @@ class FirestoreService {
     await _firestore.collection('services').doc(serviceId).delete();
   }
 
-  // ── OneSignal helpers ──────────────────────────────────────────────────────
-
-  Future<String?> _getOneSignalId(String userId) async {
-    final doc = await _firestore.collection('users').doc(userId).get();
-    return doc.data()?['oneSignalId'] as String?;
-  }
-
-  Future<List<String>> _getAdminOneSignalIds() async {
-    final snapshot = await _firestore
-        .collection('users')
-        .where('role', isEqualTo: 'admin')
-        .get();
-    return snapshot.docs
-        .map((d) => d.data()['oneSignalId'] as String?)
-        .whereType<String>()
-        .toList();
-  }
-
   // ── Appointments ────────────────────────────────────────────────────────────
 
   Future<void> createAppointment(AppointmentModel appointment) async {
@@ -198,105 +179,15 @@ class FirestoreService {
         .collection('appointments')
         .doc(appointment.id)
         .set(appointment.toMap());
-
-    try {
-      final now = DateTime.now();
-      final timeLabel = DateFormat('HH:mm').format(appointment.date);
-      final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(appointment.date);
-      final customerOneSignalId = await _getOneSignalId(appointment.customerId);
-
-      // 1h reminder → OneSignal schedulata
-      final reminder1h = appointment.date.subtract(const Duration(hours: 1));
-      if (reminder1h.isAfter(now) && customerOneSignalId != null) {
-        await _notificationService.scheduleOneSignalNotification(
-          oneSignalId: customerOneSignalId,
-          title: '${appointment.serviceName} tra 1 ora',
-          body: 'Alle $timeLabel con ${appointment.barberName}. Sei pronto?',
-          scheduledDate: reminder1h,
-          externalId: '${appointment.id}_1h',
-        );
-      }
-
-      // 24h reminder → OneSignal schedulata
-      final reminder24h = appointment.date.subtract(const Duration(hours: 24));
-      if (reminder24h.isAfter(now) && customerOneSignalId != null) {
-        await _notificationService.scheduleOneSignalNotification(
-          oneSignalId: customerOneSignalId,
-          title: 'Appuntamento domani',
-          body: 'Domani alle $timeLabel — ${appointment.serviceName} con ${appointment.barberName}.',
-          scheduledDate: reminder24h,
-          externalId: '${appointment.id}_24h',
-        );
-      }
-
-      // Notifica immediata all'admin → nuova prenotazione
-      final adminIds = await _getAdminOneSignalIds();
-      final immediately = DateTime.now().add(const Duration(seconds: 5));
-      for (final adminId in adminIds) {
-        await _notificationService.scheduleOneSignalNotification(
-          oneSignalId: adminId,
-          title: 'Nuova prenotazione',
-          body: '${appointment.customerName} — ${appointment.serviceName} il $dateLabel.',
-          scheduledDate: immediately,
-        );
-      }
-
-      // Re-engagement: 21 giorni dopo (locale va bene, è a lungo termine)
-      final reengageId = appointment.customerId.hashCode.abs() % 1000000 + 2000000;
-      await _notificationService.cancelNotification(reengageId);
-      final reengageTime = appointment.date.add(const Duration(days: 21));
-      if (reengageTime.isAfter(now)) {
-        await _notificationService.scheduleNotification(
-          id: reengageId,
-          title: 'È ora di tornare! 💈',
-          body: 'Sono passate 3 settimane. Prenota il prossimo appuntamento da The Gentlemen.',
-          scheduledDate: reengageTime,
-        );
-      }
-    } catch (e) {
-      debugPrint('Error scheduling notifications: $e');
-    }
+    // All notifications (immediate + scheduled reminders) handled by Cloud Functions
   }
 
-  Future<void> updateAppointmentStatus(String appointmentId, AppointmentStatus status) async {
+  Future<void> updateAppointmentStatus(
+      String appointmentId, AppointmentStatus status) async {
     await _firestore.collection('appointments').doc(appointmentId).update({
       'status': status.name,
     });
-
-    try {
-      final doc = await _firestore.collection('appointments').doc(appointmentId).get();
-      if (!doc.exists) return;
-      final data = doc.data()!;
-      final customerId = data['customerId'] as String?;
-      final serviceName = data['serviceName'] as String? ?? 'appuntamento';
-      final date = (data['date'] as Timestamp).toDate();
-      final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(date);
-      final immediately = DateTime.now().add(const Duration(seconds: 5));
-
-      if (customerId == null) return;
-      final oneSignalId = await _getOneSignalId(customerId);
-      if (oneSignalId == null) return;
-
-      if (status == AppointmentStatus.confirmed) {
-        await _notificationService.scheduleOneSignalNotification(
-          oneSignalId: oneSignalId,
-          title: 'Prenotazione confermata ✓',
-          body: '$serviceName il $dateLabel — ci vediamo!',
-          scheduledDate: immediately,
-        );
-      } else if (status == AppointmentStatus.cancelled) {
-        await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
-        await _notificationService.cancelOneSignalNotification('${appointmentId}_24h');
-        await _notificationService.scheduleOneSignalNotification(
-          oneSignalId: oneSignalId,
-          title: 'Appuntamento cancellato',
-          body: '$serviceName del $dateLabel è stato cancellato.',
-          scheduledDate: immediately,
-        );
-      }
-    } catch (e) {
-      debugPrint('Error sending status notification: $e');
-    }
+    // Notifications handled by Cloud Function onAppointmentUpdated
   }
 
   Future<void> queueNotificationForUser(
@@ -317,81 +208,25 @@ class FirestoreService {
     });
   }
 
+  /// Sends a push notification to all clients via Cloud Function trigger.
   Future<void> queueAnnouncementToAllClients(String announcementText) async {
-    final snapshot = await _firestore
-        .collection('users')
-        .where('role', isEqualTo: 'client')
-        .get();
-
-    final oneSignalIds = <String>[];
-    final batch = _firestore.batch();
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final oneSignalId = data['oneSignalId'] as String?;
-
-      if (oneSignalId != null) {
-        oneSignalIds.add(oneSignalId);
-      } else {
-        // Fallback pendingNotifications per chi non ha ancora OneSignal ID
-        final notifRef = _firestore
-            .collection('users')
-            .doc(doc.id)
-            .collection('pendingNotifications')
-            .doc();
-        batch.set(notifRef, {
-          'title': 'The Gentlemen',
-          'body': announcementText,
-          'path': '/',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-
-    // Push OneSignal a tutti in una sola chiamata
-    if (oneSignalIds.isNotEmpty) {
-      await _notificationService.sendOneSignalToMany(
-        oneSignalIds: oneSignalIds,
-        title: 'The Gentlemen',
-        body: announcementText,
-      );
-    }
-
-    if (snapshot.docs.isNotEmpty) await batch.commit();
+    await _firestore.collection('announcements').add({
+      'title': 'The Gentlemen',
+      'body': announcementText,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> deleteAppointment(String appointmentId) async {
+    // Cancel scheduled reminders before deleting
     try {
-      final doc = await _firestore.collection('appointments').doc(appointmentId).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        final customerId = data['customerId'] as String?;
-        final serviceName = data['serviceName'] as String? ?? 'appuntamento';
-        final date = (data['date'] as Timestamp).toDate();
-        final dateLabel = DateFormat("dd/MM 'alle' HH:mm").format(date);
-        final immediately = DateTime.now().add(const Duration(seconds: 5));
-
-        // Cancella reminder schedulati
-        await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
-        await _notificationService.cancelOneSignalNotification('${appointmentId}_24h');
-
-        // Notifica il cliente
-        if (customerId != null) {
-          final oneSignalId = await _getOneSignalId(customerId);
-          if (oneSignalId != null) {
-            await _notificationService.scheduleOneSignalNotification(
-              oneSignalId: oneSignalId,
-              title: 'Appuntamento cancellato',
-              body: '$serviceName del $dateLabel è stato cancellato.',
-              scheduledDate: immediately,
-            );
-          }
-        }
-      }
+      await _notificationService.cancelOneSignalNotification('${appointmentId}_1h');
+      await _notificationService.cancelOneSignalNotification('${appointmentId}_24h');
     } catch (e) {
-      debugPrint('Error notifying on delete: $e');
+      debugPrint('Error cancelling scheduled reminders: $e');
     }
     await _firestore.collection('appointments').doc(appointmentId).delete();
+    // Customer notification → handled by Cloud Function onAppointmentDeleted
   }
 
   Stream<List<AppointmentModel>> getAppointmentsForUser(String userId) {

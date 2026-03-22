@@ -16,6 +16,7 @@ class AppointmentModel extends Equatable {
   final int durationMinutes;
   final double price;
   final AppointmentStatus status;
+  final String source; // 'app' or 'web'
 
   const AppointmentModel({
     required this.id,
@@ -30,6 +31,7 @@ class AppointmentModel extends Equatable {
     required this.durationMinutes,
     required this.price,
     required this.status,
+    this.source = 'app',
   });
 
   factory AppointmentModel.fromMap(Map<String, dynamic> map, String id) {
@@ -49,6 +51,7 @@ class AppointmentModel extends Equatable {
         (e) => e.name == map['status'],
         orElse: () => AppointmentStatus.pending,
       ),
+      source: map['source'] ?? 'app',
     );
   }
 
@@ -65,6 +68,7 @@ class AppointmentModel extends Equatable {
       'durationMinutes': durationMinutes,
       'price': price,
       'status': status.name,
+      'source': source,
     };
   }
 
@@ -84,5 +88,6 @@ class AppointmentModel extends Equatable {
         durationMinutes,
         price,
         status,
+        source,
       ];
 }

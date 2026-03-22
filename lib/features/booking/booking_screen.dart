@@ -21,7 +21,8 @@ import 'steps/customer_selection_step.dart';
 import 'steps/barber_selection_step.dart';
 
 class BookingScreen extends ConsumerStatefulWidget {
-  const BookingScreen({super.key});
+  final bool isWebMode;
+  const BookingScreen({super.key, this.isWebMode = false});
 
   @override
   ConsumerState<BookingScreen> createState() => _BookingScreenState();
@@ -44,6 +45,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
   bool _bookingBlocked = false;
   bool _isBooking = false;
   final _slotsScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isWebMode) _isGuestBooking = true;
+  }
 
   @override
   void dispose() {
@@ -440,26 +447,57 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
               ),
               const SizedBox(height: 28),
 
-              // Home button
+              // Buttons
               FadeInUp(
                 delay: const Duration(milliseconds: 550),
                 duration: const Duration(milliseconds: 600),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () => context.go('/'),
-                    icon: const Icon(Icons.home_outlined),
-                    label: Text(
-                      'TORNA ALLA HOME',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                child: Column(
+                  children: [
+                    if (widget.isWebMode) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            final start = DateFormat("yyyyMMdd'T'HHmmss").format(_selectedSlot!);
+                            final end = DateFormat("yyyyMMdd'T'HHmmss").format(_selectedSlot!.add(Duration(minutes: _selectedService!.durationMinutes)));
+                            final title = Uri.encodeComponent('${_selectedService!.name} - The Gentleman');
+                            final url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=$title&dates=$start/$end';
+                            launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                          },
+                          icon: const Icon(Icons.calendar_today_outlined),
+                          label: Text('AGGIUNGI AL CALENDARIO', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                        ),
                       ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => launchUrl(Uri.parse('tel:+390000000000'), mode: LaunchMode.externalApplication),
+                          icon: const Icon(Icons.phone_outlined),
+                          label: Text('CHIAMA PER CANCELLARE', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                        ),
+                      ),
+                    ] else
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => context.go('/'),
+                          icon: const Icon(Icons.home_outlined),
+                          label: Text(
+                            'TORNA ALLA HOME',
+                            style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -1390,6 +1428,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
       durationMinutes: _selectedService!.durationMinutes,
       price: _selectedService!.price,
       status: AppointmentStatus.confirmed,
+      source: widget.isWebMode ? 'web' : 'app',
     );
 
     try {

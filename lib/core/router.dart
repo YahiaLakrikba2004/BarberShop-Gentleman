@@ -9,6 +9,7 @@ import '../features/calendar/calendar_screen.dart';
 import '../features/admin/admin_dashboard.dart';
 import '../features/admin/team_agenda_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/web/web_landing_screen.dart';
 import '../services/auth_service.dart';
 import 'main_layout.dart';
 
@@ -26,8 +27,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
       final isLoggingIn = state.matchedLocation == '/auth';
+      final isWebBooking = state.matchedLocation.startsWith('/book');
 
-      if (!isLoggedIn && !isLoggingIn) {
+      if (!isLoggedIn && !isLoggingIn && !isWebBooking) {
         return '/auth';
       }
       if (isLoggedIn && isLoggingIn) {
@@ -36,6 +38,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/book',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const WebLandingScreen(),
+        ),
+      ),
       GoRoute(
         path: '/auth',
         pageBuilder: (context, state) => _buildPageWithTransition(
