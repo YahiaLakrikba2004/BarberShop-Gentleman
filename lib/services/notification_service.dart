@@ -30,6 +30,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  static bool _tokenForcedRefresh = false;
+
   final _onNotificationOpenStr = StreamController<String?>.broadcast();
   Stream<String?> get onNotificationOpen => _onNotificationOpenStr.stream;
 
@@ -99,6 +101,13 @@ class NotificationService {
       // 4. Save FCM token
       try {
         if (!kIsWeb) {
+          // Force token refresh once per session to clear stale/sandbox tokens
+          if (Platform.isIOS && !_tokenForcedRefresh) {
+            _tokenForcedRefresh = true;
+            try {
+              await _firebaseMessaging.deleteToken();
+            } catch (_) {}
+          }
           final token = await _firebaseMessaging.getToken();
           if (kDebugMode) debugPrint('FCM TOKEN: $token');
 
