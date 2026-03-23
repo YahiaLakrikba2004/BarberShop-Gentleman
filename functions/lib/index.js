@@ -124,11 +124,11 @@ exports.onAppointmentCreated = (0, firestore_1.onDocumentCreated)("appointments/
     const sourceLabel = source === "web" ? " [WEB]" : "";
     const staffTokens = await getStaffTokens();
     await sendToTokens(staffTokens, `Nuova prenotazione${sourceLabel}`, `${customerName} — ${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)}`, { route: "/admin/appointments", appointmentId });
-    // 2. Notify customer immediately: booking received
+    // 2. Notify customer immediately: booking confirmed
     if (customerId) {
         const customerToken = await getUserToken(customerId);
         if (customerToken) {
-            await sendToTokens([customerToken], "Prenotazione ricevuta ✓", `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)}. Ti confermeremo a breve.`, { route: "/appointments" });
+            await sendToTokens([customerToken], "Prenotazione confermata ✓", `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)} — ci vediamo!`, { route: "/appointments" });
         }
     }
     // 3. Schedule reminders (only for registered users with a customerId)
@@ -165,13 +165,6 @@ exports.onAppointmentUpdated = (0, firestore_1.onDocumentUpdated)("appointments/
     const customerId = after.customerId;
     const customerName = after.customerName;
     const serviceName = after.serviceName;
-    const barberName = after.barberName;
-    if (newStatus === "confirmed") {
-        const token = await getUserToken(customerId);
-        if (token) {
-            await sendToTokens([token], "Appuntamento confermato ✓", `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)} — ci vediamo!`, { route: "/appointments" });
-        }
-    }
     if (newStatus === "cancelled") {
         // Cancel scheduled reminders
         await deleteReminders(appointmentId);

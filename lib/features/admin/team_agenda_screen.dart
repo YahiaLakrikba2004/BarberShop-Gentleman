@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../models/appointment_model.dart';
 import '../../models/user_model.dart';
 import 'widgets/barber_daily_column.dart';
+import '../calendar/calendar_screen.dart';
 
 class TeamAgendaScreen extends ConsumerStatefulWidget {
   const TeamAgendaScreen({super.key});
@@ -87,13 +88,32 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
         elevation: 0,
         actions: [
           Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              tooltip: 'Calendario',
+              icon: Icon(Icons.calendar_month_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CalendarScreen()),
+              ),
+            ),
+          ),
+          Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: Icon(Icons.calendar_today_rounded, 
+              tooltip: 'Oggi',
+              icon: Icon(Icons.calendar_today_rounded,
                 color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),

@@ -160,14 +160,14 @@ export const onAppointmentCreated = onDocumentCreated(
       {route: "/admin/appointments", appointmentId}
     );
 
-    // 2. Notify customer immediately: booking received
+    // 2. Notify customer immediately: booking confirmed
     if (customerId) {
       const customerToken = await getUserToken(customerId);
       if (customerToken) {
         await sendToTokens(
           [customerToken],
-          "Prenotazione ricevuta ✓",
-          `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)}. Ti confermeremo a breve.`,
+          "Prenotazione confermata ✓",
+          `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)} — ci vediamo!`,
           {route: "/appointments"}
         );
       }
@@ -239,19 +239,6 @@ export const onAppointmentUpdated = onDocumentUpdated(
     const customerId = after.customerId as string;
     const customerName = after.customerName as string;
     const serviceName = after.serviceName as string;
-    const barberName = after.barberName as string;
-
-    if (newStatus === "confirmed") {
-      const token = await getUserToken(customerId);
-      if (token) {
-        await sendToTokens(
-          [token],
-          "Appuntamento confermato ✓",
-          `${serviceName} con ${barberName} il ${formatDate(date)} alle ${formatTime(date)} — ci vediamo!`,
-          {route: "/appointments"}
-        );
-      }
-    }
 
     if (newStatus === "cancelled") {
       // Cancel scheduled reminders

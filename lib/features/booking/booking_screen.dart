@@ -837,7 +837,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
     bool isDayUnavailable(DateTime day) {
       final d = DateTime(day.year, day.month, day.day);
       if (d.isBefore(today) || d.isAfter(lastDay)) return true;
-      if (day.weekday == DateTime.sunday) return true;
       if (barber.availabilityStatus != BarberAvailability.available) return true;
       if (barber.daysOff.contains(day.weekday)) return true;
       if (barber.unavailableDates.any(
@@ -923,13 +922,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> with TickerProvid
                 weekdayStyle: GoogleFonts.montserrat(
                     color: onSurface.withValues(alpha: 0.5), fontSize: 11),
                 weekendStyle: GoogleFonts.montserrat(
-                    color: onSurface.withValues(alpha: 0.3), fontSize: 11),
+                    color: onSurface.withValues(alpha: 0.5), fontSize: 11),
               ),
               calendarStyle: CalendarStyle(
                 outsideDaysVisible: false,
                 defaultTextStyle: GoogleFonts.montserrat(color: onSurface, fontSize: 13),
-                weekendTextStyle:
-                    GoogleFonts.montserrat(color: onSurface.withValues(alpha: 0.4), fontSize: 13),
+                weekendTextStyle: GoogleFonts.montserrat(color: onSurface, fontSize: 13),
                 disabledTextStyle:
                     GoogleFonts.montserrat(color: onSurface.withValues(alpha: 0.18), fontSize: 13),
                 todayDecoration: BoxDecoration(

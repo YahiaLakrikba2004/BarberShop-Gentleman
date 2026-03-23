@@ -297,8 +297,12 @@ class _BarberInfoPanel extends ConsumerWidget {
         ? dayEnd.clamp(shopDay.openHour, shopDay.closeHour)
         : dayEnd;
     String h(int v) => '${v.toString().padLeft(2, '0')}:00';
-    if (barber.hasBreakOn(today)) {
-      return '${h(effStart)}–${h(barber.breakStartHour)} | ${h(barber.breakEndHour)}–${h(effEnd)}';
+    String hm(int v, int m) => '${v.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    if (barber.hasDoubleShift) {
+      final refDay = barber.hasBreakOn(today) ? today
+          : (barber.doubleShiftDays.isNotEmpty ? barber.doubleShiftDays.first : today);
+      final br = barber.breakForDay(refDay);
+      return '${h(effStart)}–${hm(br[0], br[1])} | ${hm(br[2], br[3])}–${h(effEnd)}';
     }
     return '${h(effStart)} – ${h(effEnd)}';
   }

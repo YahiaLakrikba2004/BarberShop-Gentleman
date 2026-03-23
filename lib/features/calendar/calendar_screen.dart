@@ -326,75 +326,72 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               (date, events, boundary, start, end) {
                             if (events.isEmpty) return const SizedBox();
                             final event = events.first;
+                            final apt = event.event as AppointmentModel?;
+                            final statusColor = _appointmentColor(apt?.status);
+                            final service = event.description?.split('\n').first ?? '';
                             return Container(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 2, vertical: 1),
+                              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFFFFF),
-                                borderRadius: BorderRadius.circular(8),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    statusColor.withValues(alpha: 0.92),
+                                    statusColor.withValues(alpha: 0.72),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
                                 boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  )
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 6, offset: const Offset(0, 3)),
                                 ],
                               ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  if (constraints.maxHeight < 20) {
-                                    return const SizedBox();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4, vertical: 2),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // Title
-                                        Text(
-                                          event.title.toUpperCase(),
-                                          style: GoogleFonts.cinzel(
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        // Show time if height allows (> 40)
-                                        if (constraints.maxHeight > 40)
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
                                           Text(
-                                            '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
+                                            event.title,
                                             style: GoogleFonts.montserrat(
-                                              color: Colors.black54,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        // Show description if height allows (> 50)
-                                        if (constraints.maxHeight > 50)
-                                          Expanded(
-                                            child: Text(
-                                              event.description
-                                                      ?.split('\n')
-                                                      .first ??
-                                                  '',
-                                              style: GoogleFonts.montserrat(
-                                                color: Colors.black87,
-                                                fontSize: 10,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.2,
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                                          const SizedBox(width: 5),
+                                          Icon(Icons.content_cut, size: 10, color: Colors.white.withValues(alpha: 0.65)),
+                                        ],
+                                      ),
+                                      if (service.isNotEmpty)
+                                        Text(
+                                          service.toUpperCase(),
+                                          style: GoogleFonts.montserrat(
+                                            color: Colors.white.withValues(alpha: 0.88),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.4,
+                                          ),
+                                        ),
+                                      Text(
+                                        '${DateFormat('HH:mm').format(start)} – ${DateFormat('HH:mm').format(end)}',
+                                        style: GoogleFonts.montserrat(
+                                          color: Colors.white.withValues(alpha: 0.65),
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             );
                           },
@@ -708,65 +705,72 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               eventTileBuilder:
                                   (date, events, boundary, start, end) {
                                 if (events.isEmpty) return const SizedBox();
-
                                 final event = events.first;
-
-                                // Handle very small events
-                                if (boundary.height < 15) {
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 2, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFFFFF),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  );
-                                }
-
+                                final apt = event.event as AppointmentModel?;
+                                final statusColor = _appointmentColor(apt?.status);
+                                final service = event.description?.split('\n').first ?? '';
                                 return Container(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 2, vertical: 1),
+                                  margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFFFFFF),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        statusColor.withValues(alpha: 0.92),
+                                        statusColor.withValues(alpha: 0.72),
+                                      ],
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
                                     boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      )
+                                      BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 5, offset: const Offset(0, 2)),
                                     ],
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4, vertical: 1),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          event.title.toUpperCase(),
-                                          style: GoogleFonts.cinzel(
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 9,
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                event.title,
+                                                style: GoogleFonts.montserrat(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(Icons.content_cut, size: 9, color: Colors.white.withValues(alpha: 0.65)),
+                                            ],
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        if (boundary.height > 22)
-                                          Text(
-                                            '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}',
-                                            style: GoogleFonts.montserrat(
-                                              color: Colors.black87,
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w600,
+                                          if (service.isNotEmpty)
+                                            Text(
+                                              service.toUpperCase(),
+                                              style: GoogleFonts.montserrat(
+                                                color: Colors.white.withValues(alpha: 0.88),
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.4,
+                                              ),
                                             ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
+                                          Text(
+                                            '${DateFormat('HH:mm').format(start)} – ${DateFormat('HH:mm').format(end)}',
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.white.withValues(alpha: 0.65),
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );
@@ -796,6 +800,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ),
     );
+  }
+
+  Color _appointmentColor(AppointmentStatus? status) {
+    switch (status) {
+      case AppointmentStatus.confirmed:  return const Color(0xFF1B4332);
+      case AppointmentStatus.pending:    return const Color(0xFF9E6B08);
+      case AppointmentStatus.completed:  return const Color(0xFF2B2B2B);
+      case AppointmentStatus.cancelled:  return const Color(0xFF7A0909);
+      case AppointmentStatus.noShow:     return const Color(0xFF4A0A4A);
+      default:                           return const Color(0xFF1B4332);
+    }
   }
 
   void _showAppointmentDetails(BuildContext context, CalendarEventData event) {

@@ -77,8 +77,9 @@ class SlotService {
     DateTime? breakStart;
     DateTime? breakEnd;
     if (barber.hasBreakOn(date.weekday)) {
-      breakStart = DateTime(date.year, date.month, date.day, barber.breakStartHour);
-      breakEnd   = DateTime(date.year, date.month, date.day, barber.breakEndHour);
+      final br = barber.breakForDay(date.weekday);
+      breakStart = DateTime(date.year, date.month, date.day, br[0], br[1]);
+      breakEnd   = DateTime(date.year, date.month, date.day, br[2], br[3]);
     } else {
       if (shopDay != null && shopDay.hasBreak) {
         breakStart = DateTime(date.year, date.month, date.day, shopDay.breakStartHour, shopDay.breakStartMinute);

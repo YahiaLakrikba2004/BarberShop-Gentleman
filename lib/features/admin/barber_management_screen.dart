@@ -99,6 +99,7 @@ class _BarberManagementCard extends ConsumerWidget {
 
   String _effectiveHours(BarberModel b, ShopDaySchedule? shopDay) {
     String h(int v) => '${v.toString().padLeft(2, '0')}:00';
+    String hm(int v, int m) => '${v.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
     final today = DateTime.now().weekday;
     final dayStart = b.startHourFor(today);
     final dayEnd   = b.endHourFor(today);
@@ -108,8 +109,12 @@ class _BarberManagementCard extends ConsumerWidget {
     final effEnd = shopDay != null && !shopDay.isClosed
         ? dayEnd.clamp(shopDay.openHour, shopDay.closeHour)
         : dayEnd;
-    if (b.hasBreakOn(today)) {
-      return '${h(effStart)}–${h(b.breakStartHour)}  |  ${h(b.breakEndHour)}–${h(effEnd)}';
+    if (b.hasDoubleShift) {
+      // Usa il giorno corrente se ha la pausa, altrimenti il primo giorno attivo
+      final refDay = b.hasBreakOn(today) ? today
+          : (b.doubleShiftDays.isNotEmpty ? b.doubleShiftDays.first : today);
+      final br = b.breakForDay(refDay);
+      return '${h(effStart)}–${hm(br[0], br[1])}  |  ${hm(br[2], br[3])}–${h(effEnd)}';
     }
     return '${h(effStart)} — ${h(effEnd)}';
   }
@@ -1104,8 +1109,10 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
   };
   final Set<int> daysOff = Set.from(barber.daysOff);
   bool hasBreak = barber.hasDoubleShift;
-  int breakStart = barber.breakStartHour;
-  int breakEnd = barber.breakEndHour;
+  // Pausa pranzo per-giorno: key=weekday, value=[startH, startM, endH, endM]
+  final Map<int, List<int>> breakPerDay = {
+    for (var i = 1; i <= 7; i++) i: barber.breakForDay(i),
+  };
   // Se doubleShiftDays è vuoto su un barbiere esistente con hasDoubleShift=true,
   // default a Lun–Ven (retrocompatibilità: il sabato di solito non ha pausa)
   final Set<int> breakDays = barber.doubleShiftDays.isNotEmpty
@@ -1121,7 +1128,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
     barrierColor: Colors.black.withValues(alpha: 0.88),
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setS) {
-        String fmtH(int h) => '${h.toString().padLeft(2, '0')}:00';
+        String fmtH(int h, [int m = 0]) => '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
 
         Future<void> pickHour(int current, void Function(int) onPicked) async {
           final t = await showTimePicker(
@@ -1135,7 +1142,19 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
           if (t != null) onPicked(t.hour);
         }
 
-        Widget timeChip(int hour, VoidCallback onTap) => GestureDetector(
+        Future<void> pickTime(int currentH, int currentM, void Function(int h, int m) onPicked) async {
+          final t = await showTimePicker(
+            context: ctx,
+            initialTime: TimeOfDay(hour: currentH, minute: currentM),
+            builder: (c, child) => MediaQuery(
+              data: MediaQuery.of(c).copyWith(alwaysUse24HourFormat: true),
+              child: child!,
+            ),
+          );
+          if (t != null) onPicked(t.hour, t.minute);
+        }
+
+        Widget timeChip(int hour, int minute, VoidCallback onTap) => GestureDetector(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -1147,7 +1166,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
               ),
             ),
             child: Text(
-              fmtH(hour),
+              fmtH(hour, minute),
               style: GoogleFonts.montserrat(
                 color: Colors.white,
                 fontSize: 13,
@@ -1229,7 +1248,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                     ),
                   )
                 else ...[
-                  timeChip(dayStart[weekday]!, () => pickHour(
+                  timeChip(dayStart[weekday]!, 0, () => pickHour(
                     dayStart[weekday]!,
                     (h) => setS(() => dayStart[weekday] = h),
                   )),
@@ -1240,7 +1259,7 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 16),
                     ),
                   ),
-                  timeChip(dayEnd[weekday]!, () => pickHour(
+                  timeChip(dayEnd[weekday]!, 0, () => pickHour(
                     dayEnd[weekday]!,
                     (h) => setS(() => dayEnd[weekday] = h),
                   )),
@@ -1661,17 +1680,17 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                                       ),
                                       const SizedBox(width: 8),
                                       if (active) ...[
-                                        timeChip(breakStart, () => pickHour(
-                                          breakStart,
-                                          (h) => setS(() => breakStart = h),
+                                        timeChip(breakPerDay[wd]![0], breakPerDay[wd]![1], () => pickTime(
+                                          breakPerDay[wd]![0], breakPerDay[wd]![1],
+                                          (h, m) => setS(() { breakPerDay[wd] = [h, m, breakPerDay[wd]![2], breakPerDay[wd]![3]]; }),
                                         )),
                                         Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 8),
                                           child: Text('—', style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 16)),
                                         ),
-                                        timeChip(breakEnd, () => pickHour(
-                                          breakEnd,
-                                          (h) => setS(() => breakEnd = h),
+                                        timeChip(breakPerDay[wd]![2], breakPerDay[wd]![3], () => pickTime(
+                                          breakPerDay[wd]![2], breakPerDay[wd]![3],
+                                          (h, m) => setS(() { breakPerDay[wd] = [breakPerDay[wd]![0], breakPerDay[wd]![1], h, m]; }),
                                         )),
                                         const Spacer(),
                                       ] else
@@ -1779,8 +1798,11 @@ Future<void> _showEditBarberDialog(BuildContext context, WidgetRef ref, BarberMo
                               imageUrl: newImageBase64 ?? barber.imageUrl,
                               specialties: specialties,
                               hasDoubleShift: hasBreak,
-                              breakStartHour: breakStart,
-                              breakEndHour: breakEnd,
+                              breakStartHour: breakDays.isNotEmpty ? breakPerDay[breakDays.first]![0] : 12,
+                              breakStartMinute: breakDays.isNotEmpty ? breakPerDay[breakDays.first]![1] : 0,
+                              breakEndHour: breakDays.isNotEmpty ? breakPerDay[breakDays.first]![2] : 14,
+                              breakEndMinute: breakDays.isNotEmpty ? breakPerDay[breakDays.first]![3] : 0,
+                              breakSchedule: Map.from(breakPerDay),
                               doubleShiftDays: breakDays.toList(),
                               daysOff: daysOff.toList(),
                               isBookable: isBookable,

@@ -18,7 +18,7 @@ class FirestoreService {
 
   // Users
   Future<void> createUser(UserModel user) async {
-    await _firestore.collection('users').doc(user.id).set(user.toMap());
+    await _firestore.collection('users').doc(user.id).set(user.toMap(), SetOptions(merge: true));
   }
 
   Future<void> createBarberProfile(UserModel user, {bool isBookable = true}) async { // Add parameter

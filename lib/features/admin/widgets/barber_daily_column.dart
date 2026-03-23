@@ -15,7 +15,7 @@ class BarberDailyColumn extends StatelessWidget {
 
   // Fixed header height used to align the time column in TeamAgendaScreen.
   // Keep in sync with the actual header content below.
-  static const double headerHeight = 155.0;
+  static const double headerHeight = 182.0;
 
   const BarberDailyColumn({
     super.key,
@@ -155,6 +155,32 @@ class BarberDailyColumn extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 5),
+                Builder(builder: (context) {
+                  final info = _getUnavailableInfo(date);
+                  return Visibility(
+                    visible: info != null,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: info == null ? const SizedBox(height: 20) : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(info.icon, size: 9, color: info.color),
+                        const SizedBox(width: 3),
+                        Text(
+                          info.label,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 7,
+                            fontWeight: FontWeight.w700,
+                            color: info.color,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -182,43 +208,65 @@ class BarberDailyColumn extends StatelessWidget {
                     }),
                   ),
 
-                  // Break / Pausa overlay (double shift)
-                  if (barber.hasBreakOn(date.weekday))
-                    Positioned(
-                      top: (barber.breakStartHour - startHour) * hourHeight,
-                      left: 0,
-                      right: 0,
-                      height: (barber.breakEndHour - barber.breakStartHour) * hourHeight,
+                  // Break / Pausa overlay — solo se il barbiere è disponibile
+                  Builder(builder: (context) {
+                    if (_getUnavailableInfo(date) != null) return const SizedBox.shrink();
+                    if (!barber.hasBreakOn(date.weekday)) return const SizedBox.shrink();
+                    final br = barber.breakForDay(date.weekday);
+                    final top = ((br[0] * 60 + br[1]) - startHour * 60) / 60 * hourHeight;
+                    final height = ((br[2] * 60 + br[3]) - (br[0] * 60 + br[1])) / 60 * hourHeight;
+                    return Positioned(
+                      top: top, left: 0, right: 0, height: height,
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.03),
                           border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              width: 0.5,
-                            ),
+                            horizontal: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
                           ),
                         ),
                         child: ClipRect(
                           child: CustomPaint(
-                            painter: DiagonalStripesPainter(
-                              color: Colors.white.withValues(alpha: 0.05),
-                            ),
+                            painter: DiagonalStripesPainter(color: Colors.white.withValues(alpha: 0.05)),
                             child: Center(
-                              child: Text(
-                                'PAUSA',
+                              child: Text('PAUSA',
                                 style: GoogleFonts.montserrat(
                                   color: Colors.white.withValues(alpha: 0.15),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 3,
+                                  fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 3,
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    );
+                  }),
+
+                  // Unavailability overlay — colore + icona + label centrati, niente conflitti
+                  Builder(builder: (context) {
+                    final info = _getUnavailableInfo(date);
+                    if (info == null) return const SizedBox.shrink();
+                    return Positioned.fill(
+                      child: Container(
+                        color: info.color.withValues(alpha: 0.07),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(info.icon, size: 26, color: info.color.withValues(alpha: 0.45)),
+                            const SizedBox(height: 10),
+                            Text(
+                              info.label,
+                              style: GoogleFonts.montserrat(
+                                color: info.color.withValues(alpha: 0.55),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
 
                   // Appointments Overlay
                   if (myAppointments.isEmpty)
@@ -297,66 +345,42 @@ class BarberDailyColumn extends StatelessWidget {
                                   ),
                                 Positioned.fill(
                                   child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.0, 
-                                      vertical: height <= 40 ? 0.5 : 4.0,
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: height <= 40 ? MainAxisAlignment.center : MainAxisAlignment.start,
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        // Nome + forbici
                                         Row(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Expanded(
-                                              child: height <= 40
-                                                  ? FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      alignment: Alignment.centerLeft,
-                                                      child: Text(
-                                                        apt.customerName,
-                                                        style: GoogleFonts.montserrat(
-                                                          color: Colors.white,
-                                                          fontSize: 11,
-                                                          fontWeight: FontWeight.w700,
-                                                          letterSpacing: 0.3,
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : Text(
-                                                      apt.customerName,
-                                                      style: GoogleFonts.montserrat(
-                                                        color: Colors.white,
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w700,
-                                                        letterSpacing: 0.3,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                            ),
-                                            if (height > 45)
-                                              Icon(
-                                                Icons.content_cut,
-                                                size: 10,
-                                                color: Colors.white.withValues(alpha: 0.6),
+                                            Text(
+                                              apt.customerName,
+                                              style: GoogleFonts.montserrat(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.2,
                                               ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Icon(Icons.content_cut, size: 9,
+                                                color: Colors.white.withValues(alpha: 0.7)),
                                           ],
                                         ),
-                                        if (height > 40) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            apt.serviceName.toUpperCase(),
-                                            style: GoogleFonts.montserrat(
-                                              color: Colors.white.withValues(alpha: 0.9),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: 0.5,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                        // Servizio
+                                        Text(
+                                          apt.serviceName.toUpperCase(),
+                                          style: GoogleFonts.montserrat(
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.4,
                                           ),
-                                        ],
+                                        ),
                                         if (height > 70) ...[
                                           const Spacer(),
                                           Container(
@@ -377,6 +401,7 @@ class BarberDailyColumn extends StatelessWidget {
                                           ),
                                         ],
                                       ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -393,6 +418,33 @@ class BarberDailyColumn extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Returns (label, color, icon) if barber is unavailable on [date], else null.
+  ({String label, Color color, IconData icon})? _getUnavailableInfo(DateTime date) {
+    // 1. Specific unavailable date
+    final isUnavailableDate = barber.unavailableDates.any((d) =>
+        d.year == date.year && d.month == date.month && d.day == date.day);
+    if (isUnavailableDate) {
+      return (label: 'NON DISPONIBILE', color: const Color(0xFF757575), icon: Icons.event_busy_outlined);
+    }
+    // 2. Day off (weekly rest)
+    if (barber.daysOff.contains(date.weekday)) {
+      return (label: 'RIPOSO', color: const Color(0xFF757575), icon: Icons.bed_outlined);
+    }
+    // 3. Availability status
+    switch (barber.availabilityStatus) {
+      case BarberAvailability.sick:
+        return (label: 'MALATTIA', color: const Color(0xFFE53935), icon: Icons.medical_services_outlined);
+      case BarberAvailability.vacation:
+        return (label: 'IN FERIE', color: const Color(0xFF1565C0), icon: Icons.beach_access_outlined);
+      case BarberAvailability.dayOff:
+        return (label: 'RIPOSO', color: const Color(0xFF757575), icon: Icons.bed_outlined);
+      case BarberAvailability.absence:
+        return (label: 'ASSENZA', color: const Color(0xFFE65100), icon: Icons.person_off_outlined);
+      case BarberAvailability.available:
+        return null;
+    }
   }
 
   Color _getStatusColor(AppointmentStatus status) {
