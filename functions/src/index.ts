@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions/v2";
+import {auth} from "firebase-functions/v1";
 import {
   onDocumentCreated,
   onDocumentUpdated,
@@ -232,13 +233,67 @@ export const onAppointmentUpdated = onDocumentUpdated(
 
     const prevStatus = before.status as string;
     const newStatus = after.status as string;
-    if (prevStatus === newStatus) return;
+    const statusChanged = prevStatus !== newStatus;
 
     const appointmentId = event.params.appointmentId;
     const date = after.date as admin.firestore.Timestamp;
+    const prevDate = before.date as admin.firestore.Timestamp;
     const customerId = after.customerId as string;
     const customerName = after.customerName as string;
     const serviceName = after.serviceName as string;
+    const barberName = after.barberName as string;
+    const barberId = after.barberId as string;
+
+    const dateChanged =
+      prevDate.toMillis() !== date.toMillis() && newStatus !== "cancelled";
+
+    // ── Rescheduled ──────────────────────────────────────────────────────────
+    if (dateChanged) {
+      const token = await getUserToken(customerId);
+      if (token) {
+        await sendToTokens(
+          [token],
+          "Appuntamento spostato 📅",
+          `Il tuo ${serviceName} è stato spostato al ${formatDate(date)} alle ${formatTime(date)}.`,
+          {route: "/appointments", appointmentId}
+        );
+      }
+
+      // Replace old reminders with new ones based on updated date
+      await deleteReminders(appointmentId);
+      const dateMs = date.toDate().getTime();
+
+      await scheduleReminder(
+        `${appointmentId}_24h`,
+        customerId,
+        admin.firestore.Timestamp.fromMillis(dateMs - 24 * 60 * 60 * 1000),
+        "Appuntamento domani",
+        `Domani alle ${formatTime(date)} — ${serviceName} con ${barberName}.`
+      );
+      await scheduleReminder(
+        `${appointmentId}_1h`,
+        customerId,
+        admin.firestore.Timestamp.fromMillis(dateMs - 60 * 60 * 1000),
+        `${serviceName} tra 1 ora`,
+        `Alle ${formatTime(date)} con ${barberName}. Sei pronto?`
+      );
+      await scheduleReminder(
+        `${appointmentId}_barber30m`,
+        barberId,
+        admin.firestore.Timestamp.fromMillis(dateMs - 30 * 60 * 1000),
+        "Appuntamento tra 30 minuti",
+        `${customerName} — ${serviceName} alle ${formatTime(date)}.`
+      );
+      await scheduleReminder(
+        `${appointmentId}_reengage`,
+        customerId,
+        admin.firestore.Timestamp.fromMillis(dateMs + 21 * 24 * 60 * 60 * 1000),
+        "È ora di tornare! ✂️",
+        "Sono passate 3 settimane. Prenota il prossimo appuntamento da The Gentlemen."
+      );
+    }
+
+    if (!statusChanged) return;
 
     if (newStatus === "cancelled") {
       // Cancel scheduled reminders
@@ -364,6 +419,146 @@ export const onBarberUnavailable = onDocumentUpdated(
     }
   }
 );
+
+// ─── Trigger: barber becomes available again ──────────────────────────────────
+
+export const onBarberAvailable = onDocumentUpdated(
+  "barbers/{barberId}",
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
+
+    const prevStatus = (before.availabilityStatus as string | undefined) ?? "available";
+    const newStatus = (after.availabilityStatus as string | undefined) ?? "available";
+
+    if (newStatus !== "available" || prevStatus === "available") return;
+
+    const barberId = event.params.barberId;
+    const barberName = after.name as string;
+    const now = new Date();
+
+    // Notify customers who had future appointments cancelled with this barber
+    const snap = await db
+      .collection("appointments")
+      .where("barberId", "==", barberId)
+      .where("status", "==", "cancelled")
+      .where("date", ">=", admin.firestore.Timestamp.fromDate(now))
+      .get();
+
+    if (snap.empty) return;
+
+    const customerIds = [...new Set(snap.docs.map((d) => d.data().customerId as string))];
+    for (const customerId of customerIds) {
+      const token = await getUserToken(customerId);
+      if (!token) continue;
+      await sendToTokens(
+        [token],
+        `${barberName} è di nuovo disponibile! ✂️`,
+        "Puoi prenotare il tuo prossimo appuntamento.",
+        {route: "/booking"}
+      );
+    }
+  }
+);
+
+// ─── Trigger: new client registered ──────────────────────────────────────────
+
+export const onClientRegistered = onDocumentCreated(
+  "users/{userId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    if ((data.role as string) !== "client") return;
+
+    const name = (data.name as string | undefined) ?? "Nuovo utente";
+    const staffTokens = await getStaffTokens();
+    await sendToTokens(
+      staffTokens,
+      "Nuovo cliente registrato 👤",
+      `${name} si è appena registrato sull'app.`,
+      {route: "/admin/users"}
+    );
+  }
+);
+
+// ─── Scheduled: weekly summary to each barber on Sunday at 19:00 Rome ─────────
+
+export const weeklyBarberSummary = onSchedule(
+  {schedule: "0 19 * * 0", timeZone: "Europe/Rome"},
+  async () => {
+    const now = new Date();
+    const daysUntilMonday = ((8 - now.getDay()) % 7) || 7;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + daysUntilMonday);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const barbersSnap = await db.collection("barbers").get();
+
+    for (const barberDoc of barbersSnap.docs) {
+      const barberId = barberDoc.id;
+      const barberName = barberDoc.data().name as string;
+
+      const aptsSnap = await db
+        .collection("appointments")
+        .where("barberId", "==", barberId)
+        .where("status", "in", ["pending", "confirmed"])
+        .where("date", ">=", admin.firestore.Timestamp.fromDate(monday))
+        .where("date", "<=", admin.firestore.Timestamp.fromDate(sunday))
+        .get();
+
+      const token = await getUserToken(barberId);
+      if (!token) continue;
+
+      const count = aptsSnap.size;
+      await sendToTokens(
+        [token],
+        "La prossima settimana 📅",
+        count > 0
+          ? `Ciao ${barberName}! La prossima settimana hai ${count} appuntament${count === 1 ? "o" : "i"}.`
+          : `Ciao ${barberName}! Nessun appuntamento per la prossima settimana, per ora.`,
+        {route: "/calendar"}
+      );
+    }
+  }
+);
+
+// ─── Trigger: Firebase Auth user deleted → clean up all user data ────────────
+
+export const onAuthUserDeleted = auth.user().onDelete(async (user) => {
+  const userId = user.uid;
+
+  // Delete user profiles
+  await db.collection("users").doc(userId).delete();
+  await db.collection("barbers").doc(userId).delete();
+
+  // Delete appointments where user was the customer
+  const aptsSnap = await db
+    .collection("appointments")
+    .where("customerId", "==", userId)
+    .get();
+  if (!aptsSnap.empty) {
+    const batch = db.batch();
+    aptsSnap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  }
+
+  // Delete scheduled notifications for this user
+  const notifSnap = await db
+    .collection("scheduledNotifications")
+    .where("customerId", "==", userId)
+    .get();
+  if (!notifSnap.empty) {
+    const batch = db.batch();
+    notifSnap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  }
+
+  functions.logger.info(`Cleaned up all data for deleted user: ${userId}`);
+});
 
 // ─── Trigger: announcement → notify all clients ───────────────────────────────
 // Admin writes to announcements/{id} → FCM sent to all clients

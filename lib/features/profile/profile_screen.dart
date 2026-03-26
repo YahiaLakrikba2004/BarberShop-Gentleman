@@ -36,9 +36,10 @@ class ProfileScreen extends ConsumerWidget {
 
     final isDesktop = MediaQuery.of(context).size.width > 800;
     final isAdmin = user.role == UserRole.admin;
+    final showHistory = isAdmin || user.role == UserRole.client;
 
     return DefaultTabController(
-      length: isAdmin ? 2 : 1,
+      length: showHistory ? 2 : 1,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
@@ -97,8 +98,8 @@ class ProfileScreen extends ConsumerWidget {
                       child: Stack(
                         children: [
                           Container(
-                            height: 100,
-                            width: 100,
+                            height: 120,
+                            width: 120,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFF1A1A1A),
@@ -122,7 +123,7 @@ class ProfileScreen extends ConsumerWidget {
                                               ? user.name[0].toUpperCase()
                                               : 'U',
                                           style: GoogleFonts.cinzel(
-                                            fontSize: 40,
+                                            fontSize: 48,
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFFFFFFFF),
                                           ),
@@ -243,7 +244,7 @@ class ProfileScreen extends ConsumerWidget {
                     const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
                 tabs: [
                   const Tab(text: 'IN PROGRAMMA'),
-                  if (isAdmin) const Tab(text: 'STORICO'),
+                  if (showHistory) const Tab(text: 'STORICO'),
                 ],
               ),
             ),
@@ -254,7 +255,7 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   _AppointmentsList(
                       userId: user.id, userRole: user.role, isHistory: false),
-                  if (isAdmin)
+                  if (showHistory)
                     _AppointmentsList(
                         userId: user.id, userRole: user.role, isHistory: true),
                 ],
@@ -1120,6 +1121,7 @@ class _ChangePinSheetState extends State<_ChangePinSheet> {
 
 void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
     final outerCtx = context;
+    final pinController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => BackdropFilter(
@@ -1140,14 +1142,45 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
             ),
             textAlign: TextAlign.center,
           ),
-          content: Text(
-            'Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati e appuntamenti.',
-            style: GoogleFonts.montserrat(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 14,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Questa azione è irreversibile. Inserisci il tuo PIN per confermare.',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: pinController,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, letterSpacing: 8),
+                decoration: InputDecoration(
+                  hintText: '••••••',
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2), letterSpacing: 8),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: const Color(0xFFFF453A).withValues(alpha: 0.5)),
+                  ),
+                ),
+              ),
+            ],
           ),
           actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           actions: [
@@ -1163,9 +1196,9 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                           side: BorderSide(color: Colors.white.withValues(alpha: 0.1))
                       ),
                     ),
-                    child: Text('ANNULLA', 
+                    child: Text('ANNULLA',
                         style: GoogleFonts.montserrat(
-                            color: Colors.white.withValues(alpha: 0.6), 
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.0
                         )
@@ -1176,9 +1209,12 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      Navigator.pop(context); // Close dialog
+                      final pin = pinController.text.trim();
+                      Navigator.pop(context);
                       try {
-                        await ref.read(authServiceProvider).deleteAccount();
+                        await ref.read(authServiceProvider).deleteAccount(
+                          password: pin.isNotEmpty ? pin : null,
+                        );
                         if (outerCtx.mounted) outerCtx.go('/auth');
                       } catch (e) {
                         if (outerCtx.mounted) {
@@ -1188,8 +1224,8 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                         }
                       }
                     },
-                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2A1010), // Dark Red Background
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2A1010),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -1197,9 +1233,9 @@ void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
                         side: BorderSide(color: const Color(0xFFFF453A).withValues(alpha: 0.5)),
                       ),
                     ),
-                    child: Text('ELIMINA', 
+                    child: Text('ELIMINA',
                         style: GoogleFonts.montserrat(
-                            color: const Color(0xFFFF453A), 
+                            color: const Color(0xFFFF453A),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.0
                         )
@@ -1301,6 +1337,7 @@ class _AppointmentsList extends ConsumerWidget {
         return GroupedAppointmentsList(
           appointments: filteredAppointments,
           showBarber: userRole == UserRole.client,
+          initiallyExpanded: true,
           onAppointmentTap: (apt) {
             // Optional: Show details
           },

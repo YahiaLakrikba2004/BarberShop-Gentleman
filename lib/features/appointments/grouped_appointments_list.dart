@@ -9,6 +9,7 @@ class GroupedAppointmentsList extends StatefulWidget {
   final Function(AppointmentModel) onAppointmentTap;
   final Function(AppointmentModel)? onAppointmentCancel;
   final bool showBarber;
+  final bool initiallyExpanded;
   /// Number of day-groups shown per page. Defaults to 10.
   final int pageSize;
 
@@ -18,6 +19,7 @@ class GroupedAppointmentsList extends StatefulWidget {
     required this.onAppointmentTap,
     this.onAppointmentCancel,
     this.showBarber = false,
+    this.initiallyExpanded = false,
     this.pageSize = 10,
   });
 
@@ -101,6 +103,7 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
+              initiallyExpanded: widget.initiallyExpanded,
               tilePadding: const EdgeInsets.all(16),
               childrenPadding:
                   const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -110,14 +113,18 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFFFFF).withValues(alpha: 0.1),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       children: [
                         Text(
                           DateFormat('d').format(date),
-                          style: const TextStyle(
+                          style: GoogleFonts.cinzel(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -125,9 +132,11 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
                         ),
                         Text(
                           DateFormat('MMM', 'it').format(date).toUpperCase(),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -282,7 +291,7 @@ class _GroupedAppointmentsListState extends State<GroupedAppointmentsList> {
                                                 _StatusBadge(apt.status),
                                               ],
                                             ),
-                                            if (apt.customerPhoneNumber != null) ...[
+                                            if (!widget.showBarber && apt.customerPhoneNumber != null) ...[
                                               const SizedBox(height: 4),
                                               Row(
                                                 children: [

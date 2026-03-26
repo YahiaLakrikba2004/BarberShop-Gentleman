@@ -117,14 +117,21 @@ class AuthService {
     }
   }
 
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount({String? password}) async {
     final user = _auth.currentUser;
-    if (user != null) {
-      // Delete from Firestore first
-      await _firestoreService.deleteUser(user.uid);
-      // Delete from Firebase Auth
-      await user.delete();
+    if (user == null) return;
+
+    // Re-authenticate first if credentials are available
+    if (password != null && user.email != null && user.email!.isNotEmpty) {
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
     }
+
+    await user.delete();
+    await _firestoreService.deleteUser(user.uid);
   }
   Future<void> verifyPhoneNumber({
     required String phoneNumber,

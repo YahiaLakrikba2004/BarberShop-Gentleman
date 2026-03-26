@@ -366,7 +366,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   Text('THE GENTLEMEN',
                     style: GoogleFonts.cinzel(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 5)),
                   const SizedBox(height: 10),
-                  Text('BARBER SHOP',
+                  Text('BARBERSTYLE',
                     style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white38, letterSpacing: 8)),
                   const SizedBox(height: 40),
                   Container(
@@ -431,10 +431,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ),
             ),
             const SizedBox(height: 30),
-            Text('GENTLEMAN', style: GoogleFonts.cinzel(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4)),
+            Text('THE GENTLEMEN', style: GoogleFonts.cinzel(fontSize: 27, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4)),
             const SizedBox(height: 8),
-            Text('BARBER SHOP', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54, letterSpacing: 6)),
-            const SizedBox(height: 50),
+            Text('BARBERSTYLE', style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white38, letterSpacing: 7, fontWeight: FontWeight.w300)),
+            const SizedBox(height: 14),
+            const ColoredBox(color: Colors.white24, child: SizedBox(width: 40, height: 0.5)),
+            const SizedBox(height: 36),
             _buildFormContent(inputFill),
           ],
         ),
@@ -785,11 +787,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
+          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: _isLoading
           ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5))
-          : Text(label, style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 13)),
+          : Text(label, style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, letterSpacing: 2, fontSize: 13)),
       ),
     );
   }

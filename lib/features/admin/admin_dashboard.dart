@@ -74,11 +74,16 @@ class AdminDashboard extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.white70),
-            onPressed: () {
-              ref.read(authServiceProvider).signOut();
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.white60, size: 20),
+              onPressed: () => ref.read(authServiceProvider).signOut(),
+            ),
           ),
         ],
       ),
@@ -115,7 +120,7 @@ class AdminDashboard extends ConsumerWidget {
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Text(
                         'PANORAMICA',
                         style: GoogleFonts.cinzel(
@@ -220,7 +225,7 @@ class AdminDashboard extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 56),
 
                 // Recent Appointments
                 FadeInUp(
@@ -413,24 +418,26 @@ class _TodayCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
-                      child: Row(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'SETT. ',
+                            'QUESTA SETTIMANA',
                             style: GoogleFonts.montserrat(
-                              color: Colors.white38,
-                              fontSize: 9,
-                              letterSpacing: 1,
+                              color: Colors.white30,
+                              fontSize: 8,
+                              letterSpacing: 0.8,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             '€${stats['weekRevenue']}',
                             style: GoogleFonts.cinzel(
-                              color: Colors.white54,
-                              fontSize: 13,
+                              color: Colors.white60,
+                              fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              height: 1.2,
                             ),
                           ),
                         ],
@@ -443,9 +450,19 @@ class _TodayCard extends StatelessWidget {
               // ── Big Revenue ──────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(22, 10, 22, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'INCASSO ODIERNO',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white38,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       '€${stats['todayRevenue']}',
                       style: GoogleFonts.cinzel(
@@ -453,19 +470,6 @@ class _TodayCard extends StatelessWidget {
                         fontSize: 52,
                         fontWeight: FontWeight.bold,
                         height: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        'INCASSATI',
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white24,
-                          fontSize: 10,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
                     ),
                   ],
@@ -554,10 +558,10 @@ class _TodayCard extends StatelessWidget {
     );
   }
 
-  Widget _dividerV() => Container(
+  Widget _dividerV() => const SizedBox(
     width: 1,
     height: 48,
-    color: Colors.white.withValues(alpha: 0.07),
+    child: ColoredBox(color: Color(0xFF242424)),
   );
 }
 

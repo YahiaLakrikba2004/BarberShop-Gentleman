@@ -95,7 +95,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
             ),
             child: IconButton(
               tooltip: 'Calendario',
-              icon: Icon(Icons.calendar_month_outlined,
+              icon: Icon(Icons.view_week_outlined,
                 color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
@@ -151,7 +151,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                   child: GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -233,12 +233,20 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                     const totalHours = endHour - startHour;
 
                     return LayoutBuilder(builder: (context, constraints) {
-                      // On desktop: fill available height; on mobile: keep 60px min
                       final availH = constraints.maxHeight;
+                      final availW = constraints.maxWidth;
                       final rawHourHeight = (availH - BarberDailyColumn.headerHeight - 16) / totalHours;
-                      final hourHeight = rawHourHeight.clamp(55.0, 120.0);
+                      final hourHeight = rawHourHeight.clamp(70.0, 120.0);
                       final slotHeight = hourHeight / 2;
                       final timeColWidth = isDesktop ? 60.0 : 50.0;
+
+                      // Scroll orizzontale solo con 4+ barbieri
+                      const minBarberColWidth = 140.0;
+                      final naturalColWidth = (availW - timeColWidth) / barbers.length;
+                      final needsHScroll = barbers.length > 3;
+                      final colWidth = needsHScroll
+                          ? (naturalColWidth < minBarberColWidth ? minBarberColWidth : naturalColWidth)
+                          : naturalColWidth;
 
                       Widget agendaContent = Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +256,7 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                             width: timeColWidth,
                             child: Column(
                               children: [
-                                const SizedBox(height: BarberDailyColumn.headerHeight),
+                                const SizedBox(height: BarberDailyColumn.headerHeight + BarberDailyColumn.headerGap),
                                 ...List.generate(totalHours * 2, (index) {
                                   final totalMinutes = startHour * 60 + index * 30;
                                   final hour = totalMinutes ~/ 60;
@@ -256,26 +264,32 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                                   final isHour = minute == 0;
                                   return SizedBox(
                                     height: slotHeight,
-                                    child: Align(
-                                      alignment: Alignment.topCenter,
-                                      child: Text(
-                                        isHour ? '$hour:00' : '',
-                                        style: GoogleFonts.montserrat(
-                                          color: Colors.white38,
-                                          fontSize: isDesktop ? 11 : 9,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
+                                    child: isHour
+                                        ? Transform.translate(
+                                            offset: const Offset(0, -7),
+                                            child: Align(
+                                              alignment: Alignment.topCenter,
+                                              child: Text(
+                                                '$hour:00',
+                                                style: GoogleFonts.montserrat(
+                                                  color: Colors.white60,
+                                                  fontSize: isDesktop ? 11 : 10,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
                                   );
                                 }),
                               ],
                             ),
                           ),
 
-                          // Barber Columns
+                          // Barber Columns — larghezza fissa, scroll orizzontale se 4+
                           ...barbers.map((barber) {
-                            return Expanded(
+                            return SizedBox(
+                              width: colWidth,
                               child: BarberDailyColumn(
                                 barber: barber,
                                 date: _selectedDate,
@@ -291,7 +305,15 @@ class _TeamAgendaScreenState extends ConsumerState<TeamAgendaScreen> {
                         ],
                       );
 
-                      // On desktop: no scroll if fits; on mobile: always scrollable
+                      // Scroll orizzontale automatico con 4+ barbieri
+                      if (needsHScroll) {
+                        agendaContent = SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: agendaContent,
+                        );
+                      }
+
+                      // Scroll verticale per la timeline
                       final totalTimelineH = BarberDailyColumn.headerHeight + totalHours * hourHeight;
                       if (!isDesktop || totalTimelineH > availH) {
                         agendaContent = SingleChildScrollView(child: agendaContent);

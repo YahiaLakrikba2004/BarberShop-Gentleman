@@ -1,1 +1,29 @@
-{"indexes":[],"fieldOverrides":[]}
+{
+  "indexes": [
+    {
+      "collectionGroup": "scheduledNotifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "sent", "order": "ASCENDING"},
+        {"fieldPath": "scheduledFor", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "customerId", "order": "ASCENDING"},
+        {"fieldPath": "date", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "barberId", "order": "ASCENDING"},
+        {"fieldPath": "date", "order": "ASCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

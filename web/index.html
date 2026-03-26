@@ -2,19 +2,6 @@
 <html>
 
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -25,7 +12,7 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BarberShop">
+  <meta name="apple-mobile-web-app-title" content="The Gentlemen">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -33,67 +20,193 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png" />
 
-  <title>BarberShop Gentlemen</title>
+  <title>The Gentlemen — Barberstyle</title>
   <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
 </head>
+
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
-    background-color: #0A0A0A;
-    margin: 0;
-    height: 100vh;
+    background: radial-gradient(ellipse at center, #1C1C1C 0%, #000000 100%);
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-family: 'Cinzel', serif;
+    overflow: hidden;
   }
 
-  .loading-container {
+  .splash {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
     opacity: 0;
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.9s ease-out 0.1s forwards;
   }
 
-  .logo-text {
-    color: #FFFFFF;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
+  /* Logo con arco oro rotante */
+  .logo-ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 52px;
   }
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
+  .logo-ring svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    animation: rotate 2.4s linear infinite;
+  }
+
+  .logo-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
-    border-top-color: #FFFFFF;
-    animation: spin 1s ease-in-out infinite;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 0 32px rgba(255, 255, 255, 0.07);
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  .title {
+    font-family: 'Cinzel', serif;
+    color: #FFFFFF;
+    font-size: clamp(18px, 5vw, 26px);
+    font-weight: 600;
+    letter-spacing: 5px;
+    margin-bottom: 9px;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-family: 'Montserrat', sans-serif;
+    color: rgba(255, 255, 255, 0.50);
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 7px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .divider {
+    width: 56px;
+    height: 0.5px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .est {
+    position: fixed;
+    bottom: 36px;
+    font-family: 'Cinzel', serif;
+    color: rgba(212, 168, 83, 0.55);
+    font-size: 9px;
+    letter-spacing: 4px;
+    opacity: 0;
+    animation: fadeIn 0.9s ease-out 0.4s forwards;
+  }
+
+  /* Particelle di sfondo */
+  .particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    animation: float linear infinite;
+  }
+
+  @keyframes rotate {
+    to { transform: rotate(360deg); }
   }
 
   @keyframes fadeIn {
-    to {
-      opacity: 1;
-    }
+    to { opacity: 1; }
+  }
+
+  @keyframes float {
+    from { transform: translateY(0px); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    to   { transform: translateY(-100vh); opacity: 0; }
   }
 </style>
-</head>
 
 <body>
-  <div class="loading-container">
-    <div class="logo-text">BarberShop</div>
-    <div class="loading-spinner"></div>
+
+  <!-- Particelle ambientali -->
+  <div class="particles" id="particles"></div>
+
+  <div class="splash">
+    <!-- Logo con arco oro SVG -->
+    <div class="logo-ring">
+      <svg viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Track sottile -->
+        <circle cx="65" cy="65" r="63" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+        <!-- Arco oro: 270° sweep (~3/4 di cerchio) con gradiente -->
+        <defs>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#D4A853" stop-opacity="0.4"/>
+            <stop offset="60%"  stop-color="#D4A853" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#F5D17A" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <circle
+          cx="65" cy="65" r="63"
+          stroke="url(#goldGrad)"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-dasharray="298 99"
+          fill="none"
+          transform="rotate(-90 65 65)"
+        />
+      </svg>
+      <img class="logo-img" src="icons/Icon-192.png" alt="The Gentlemen">
+    </div>
+
+    <div class="title">THE GENTLEMEN</div>
+    <div class="subtitle">BARBERSTYLE</div>
+    <div class="divider"></div>
   </div>
+
+  <div class="est">EST. MMXXVI</div>
+
+  <script>
+    // Genera particelle ambientali
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 28; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 1 + Math.random() * 2.5;
+      const left = Math.random() * 100;
+      const delay = Math.random() * 10;
+      const duration = 8 + Math.random() * 6;
+      const top = 20 + Math.random() * 80; // distribuite su tutto lo schermo
+      p.style.cssText = `
+        width: ${size}px;
+        height: ${size}px;
+        left: ${left}%;
+        top: ${top}%;
+        animation-duration: ${duration}s;
+        animation-delay: -${delay}s;
+        opacity: ${0.02 + Math.random() * 0.05};
+      `;
+      container.appendChild(p);
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 

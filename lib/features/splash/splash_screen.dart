@@ -1,5 +1,8 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+const Color _kGold = Color(0xFFD4A853);
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -13,94 +16,99 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
 
-  late AnimationController _mainController;
-  late Animation<double> _mainFade;
-  late Animation<double> _mainScale;
+  // Phase 1 — fade in tutto
+  late AnimationController _fadeInCtrl;
+  late Animation<double> _fadeIn;
+  late Animation<double> _scaleIn;
 
-  late AnimationController _fadeOutController;
-  late Animation<double> _screenOpacity;
+  // Phase 2 — testo esce, logo si ingrandisce
+  late AnimationController _transitionCtrl;
+  late Animation<double> _textFade;
+  late Animation<double> _logoGrow;
 
-  // Rotating arc around logo
-  late AnimationController _ringController;
- 
-  // Ambient dust/particles
-  late AnimationController _particleController;
- 
-  // Pulsing glow on logo
-  late AnimationController _glowController;
+  // Phase 3 — arco oro si riempie, loading text entra
+  late AnimationController _goldArcCtrl;
+  late AnimationController _loadingTextCtrl;
+  late Animation<double> _loadingTextFade;
+
+  // Uscita
+  late AnimationController _exitCtrl;
+  late Animation<double> _exitOpacity;
+
+  // Effetti ambientali (continui)
+  late AnimationController _particleCtrl;
+  late AnimationController _glowCtrl;
   late Animation<double> _glowRadius;
 
   @override
   void initState() {
     super.initState();
 
-    // Main scene: fade in + imperceptible scale-down (1.03 → 1.0)
-    _mainController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    _mainFade = CurvedAnimation(
-      parent: _mainController,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-    );
-    _mainScale = Tween<double>(begin: 1.03, end: 1.0).animate(
-      CurvedAnimation(parent: _mainController, curve: Curves.easeOut),
-    );
+    _fadeInCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _fadeIn = CurvedAnimation(parent: _fadeInCtrl, curve: const Interval(0.0, 0.75, curve: Curves.easeOut));
+    _scaleIn = Tween<double>(begin: 1.04, end: 1.0)
+        .animate(CurvedAnimation(parent: _fadeInCtrl, curve: Curves.easeOut));
 
-    // Fade out
-    _fadeOutController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 550),
-    );
-    _screenOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _fadeOutController, curve: Curves.easeIn),
-    );
+    _transitionCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _textFade = Tween<double>(begin: 1.0, end: 0.0)
+        .animate(CurvedAnimation(parent: _transitionCtrl, curve: Curves.easeIn));
+    _logoGrow = Tween<double>(begin: 1.0, end: 1.09)
+        .animate(CurvedAnimation(parent: _transitionCtrl, curve: Curves.easeOut));
 
-    // Rotating arc — very slow continuous rotation
-    _ringController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat();
+    _goldArcCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+    _loadingTextCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _loadingTextFade = CurvedAnimation(parent: _loadingTextCtrl, curve: Curves.easeIn);
 
-    // Pulsing glow — breathes in and out
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2800),
-    )..repeat(reverse: true);
-    _glowRadius = Tween<double>(begin: 28.0, end: 52.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
- 
-    // Particles movement
-    _particleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat();
+    _exitCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 550));
+    _exitOpacity = Tween<double>(begin: 1.0, end: 0.0)
+        .animate(CurvedAnimation(parent: _exitCtrl, curve: Curves.easeIn));
+
+    _particleCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2800))
+      ..repeat(reverse: true);
+    _glowRadius = Tween<double>(begin: 26.0, end: 50.0)
+        .animate(CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _runSequence());
   }
 
   Future<void> _runSequence() async {
+    // Fase 1: fade in
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
+    await _fadeInCtrl.forward();
 
-    await _mainController.forward();
-    await Future.delayed(const Duration(milliseconds: 1400));
+    // Display statico lussuoso
+    await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
 
-    await _fadeOutController.forward();
+    // Fase 2: testo esce, logo cresce
+    await _transitionCtrl.forward();
     if (!mounted) return;
 
+    // Fase 3: arco oro + loading text
+    _loadingTextCtrl.forward();
+    await _goldArcCtrl.forward();
+    if (!mounted) return;
+
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    // Uscita
+    await _exitCtrl.forward();
+    if (!mounted) return;
     widget.onComplete?.call();
   }
 
   @override
   void dispose() {
-    _mainController.dispose();
-    _fadeOutController.dispose();
-    _ringController.dispose();
-    _glowController.dispose();
-    _particleController.dispose();
+    _fadeInCtrl.dispose();
+    _transitionCtrl.dispose();
+    _goldArcCtrl.dispose();
+    _loadingTextCtrl.dispose();
+    _exitCtrl.dispose();
+    _particleCtrl.dispose();
+    _glowCtrl.dispose();
     super.dispose();
   }
 
@@ -112,158 +120,190 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Colors.black,
       body: SizedBox.expand(
         child: AnimatedBuilder(
-          animation: _fadeOutController,
+          animation: _exitCtrl,
           builder: (context, child) => Opacity(
-            opacity: _screenOpacity.value,
+            opacity: _exitOpacity.value,
             child: child,
           ),
           child: Stack(
             children: [
-              // --- RADIAL GRADIENT BACKGROUND ---
+              // Sfondo radiale
               const Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
                       center: Alignment.center,
                       radius: 0.85,
-                      colors: [
-                        Color(0xFF1C1C1C), // near-black warm center
-                        Color(0xFF000000), // pure black edges
-                      ],
-                      stops: [0.0, 1.0],
+                      colors: [Color(0xFF1C1C1C), Color(0xFF000000)],
                     ),
                   ),
                 ),
               ),
-  
-              // --- ATMOSPHERIC PARTICLES ---
+
+              // Particelle ambientali
               Positioned.fill(
                 child: AnimatedBuilder(
-                  animation: _particleController,
+                  animation: _particleCtrl,
                   builder: (context, _) => CustomPaint(
-                    painter: _ParticlePainter(
-                      progress: _particleController.value,
-                    ),
+                    painter: _ParticlePainter(progress: _particleCtrl.value),
                   ),
                 ),
               ),
-  
-              // --- MAIN CONTENT ---
+
+              // Contenuto principale
               Positioned.fill(
                 child: AnimatedBuilder(
-                  animation: _mainController,
+                  animation: _fadeInCtrl,
                   builder: (context, child) => FadeTransition(
-                    opacity: _mainFade,
-                    child: ScaleTransition(
-                      scale: _mainScale,
-                      child: child,
-                    ),
+                    opacity: _fadeIn,
+                    child: ScaleTransition(scale: _scaleIn, child: child),
                   ),
                   child: SafeArea(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                    // Top spacer — Increased for Dynamic Island safety (~28% from top)
-                    SizedBox(height: size.height * 0.28),
+                        SizedBox(height: size.height * 0.28),
 
-                    // --- LOGO with pulsing glow + rotating arc ---
-                    SizedBox(
-                      width: 130,
-                      height: 130,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Rotating arc
-                          Positioned.fill(
-                            child: AnimatedBuilder(
-                              animation: _ringController,
-                              builder: (context, _) => CustomPaint(
-                                painter: _ArcPainter(
-                                  progress: _ringController.value,
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Logo with pulsing glow
-                          AnimatedBuilder(
-                            animation: _glowController,
-                            builder: (context, child) => Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.10),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withValues(alpha: 0.07),
-                                    blurRadius: _glowRadius.value,
-                                    spreadRadius: 4,
+                        // Logo con arco oro
+                        AnimatedBuilder(
+                          animation: Listenable.merge([_glowCtrl, _goldArcCtrl, _transitionCtrl]),
+                          builder: (context, child) => ScaleTransition(
+                            scale: _logoGrow,
+                            child: SizedBox(
+                              width: 130,
+                              height: 130,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Arco oro (si riempie in Phase 3)
+                                  Positioned.fill(
+                                    child: CustomPaint(
+                                      painter: _GoldArcFillPainter(
+                                        progress: _goldArcCtrl.value,
+                                      ),
+                                    ),
+                                  ),
+                                  // Logo con glow
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.10),
+                                        width: 1,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.white.withValues(alpha: 0.07),
+                                          blurRadius: _glowRadius.value,
+                                          spreadRadius: 4,
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/icon_premium_v2.png',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: child,
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/icon_premium_v2.png',
-                                fit: BoxFit.cover,
-                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(height: 52),
+
+                        // Area testo: Phase 1 esce, Phase 3 loading text entra — stessa area
+                        SizedBox(
+                          height: 72,
+                          child: Stack(
+                            alignment: Alignment.topCenter,
+                            children: [
+                              // Testo principale (esce in Phase 2)
+                              AnimatedBuilder(
+                                animation: _transitionCtrl,
+                                builder: (context, child) => Opacity(
+                                  opacity: _textFade.value,
+                                  child: child,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'THE GENTLEMEN',
+                                      style: GoogleFonts.cinzel(
+                                        color: Colors.white,
+                                        fontSize: 27,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 5,
+                                        height: 1,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 9),
+                                    Text(
+                                      'BARBERSTYLE',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white.withValues(alpha: 0.50),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w300,
+                                        letterSpacing: 7,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Linea argentata sottile
+                                    Container(
+                                      width: 56,
+                                      height: 0.5,
+                                      color: Colors.white.withValues(alpha: 0.22),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Loading text (entra in Phase 3)
+                              Positioned(
+                                bottom: 0,
+                                child: AnimatedBuilder(
+                                  animation: _loadingTextFade,
+                                  builder: (context, _) => Opacity(
+                                    opacity: _loadingTextFade.value,
+                                    child: Text(
+                                      'IN ATTESA DEI MIGLIORI BARBIERI',
+                                      style: GoogleFonts.montserrat(
+                                        color: Colors.white.withValues(alpha: 0.28),
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w300,
+                                        letterSpacing: 2.5,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        // EST. in oro
+                        Text(
+                          'EST. MMXXVI',
+                          style: GoogleFonts.cinzel(
+                            color: _kGold.withValues(alpha: 0.55),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                      ],
                     ),
-
-                    const SizedBox(height: 60),
- 
-                    // --- TITLE ---
-                    Text(
-                      'THE GENTLEMEN',
-                      style: GoogleFonts.cinzel(
-                        color: Colors.white,
-                        fontSize: 27,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 5,
-                        height: 1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // --- SUBTITLE ---
-                    Text(
-                      'BARBERSTYLE',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 7,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const Spacer(),
-
-                    // --- EST. TAGLINE at bottom ---
-                    Text(
-                      'EST. MMXXVI',
-                      style: GoogleFonts.cinzel(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 36),
-                  ],
-                ),
-              ),
+                  ),
                 ),
               ),
             ],
@@ -274,83 +314,91 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-class _ParticlePainter extends CustomPainter {
-  final double progress;
- 
-  _ParticlePainter({required this.progress});
- 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
- 
-    for (int i = 0; i < 30; i++) {
-      // Deterministic "pseudorandom" based on index
-      double xBase = ((i * 13.7) % 1.0) * size.width;
-      double yBase = ((i * 7.3) % 1.0) * size.height;
-      
-      // Floating movement upwards and slightly sideways
-      double x = xBase + (size.width * 0.1 * (progress + (i / 30.0) % 1.0));
-      double y = yBase - (size.height * 0.2 * (progress + (i / 30.0) % 1.0));
- 
-      // Loop y and x coordinates within bounds
-      if (y < 0) y += size.height;
-      if (x > size.width) x -= size.width;
- 
-      double pSize = (i % 3) + 0.6;
-      double pOpacity = 0.04 + (0.08 * ((i % 5) / 5.0));
- 
-      canvas.drawCircle(
-        Offset(x, y), 
-        pSize, 
-        paint..color = Colors.white.withValues(alpha: pOpacity),
-      );
-    }
-  }
- 
-  @override
-  bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
-}
- 
+// Arco oro che si riempie progressivamente
+class _GoldArcFillPainter extends CustomPainter {
+  final double progress; // 0.0 → 1.0
 
-class _ArcPainter extends CustomPainter {
-  final double progress; // 0.0 → 1.0 full rotation
-  final Color color;
-
-  const _ArcPainter({required this.progress, required this.color});
+  const _GoldArcFillPainter({required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 2;
+    const startAngle = -pi / 2; // parte dall'alto
 
-    // Arc spans ~240°, leaving a 120° gap
-    const double arcSweep = 4.19; // ~240° in radians
-    final double startAngle = progress * 6.283; // full rotation offset
+    // Track di sfondo (appena percettibile)
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withValues(alpha: 0.06),
+    );
+
+    if (progress <= 0) return;
+
+    final sweep = progress * 2 * pi;
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
+      ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round
       ..shader = SweepGradient(
         startAngle: startAngle,
-        endAngle: startAngle + arcSweep,
+        endAngle: startAngle + sweep,
         colors: [
-          Colors.white.withValues(alpha: 0.0),
-          Colors.white.withValues(alpha: 0.22),
-          Colors.white.withValues(alpha: 0.0),
+          _kGold.withValues(alpha: 0.5),
+          _kGold,
+          const Color(0xFFF5D17A),
         ],
-        stops: const [0.0, 0.5, 1.0],
+        stops: const [0.0, 0.65, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       startAngle,
-      arcSweep,
+      sweep,
       false,
       paint,
     );
   }
 
   @override
-  bool shouldRepaint(_ArcPainter old) => old.progress != progress;
+  bool shouldRepaint(_GoldArcFillPainter old) => old.progress != progress;
+}
+
+// Particelle ambientali — movimento verticale con lieve ondeggiamento
+class _ParticlePainter extends CustomPainter {
+  final double progress;
+
+  _ParticlePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 32; i++) {
+      // Posizione base distribuita su tutto lo schermo
+      final xBase = ((i * 17.3) % 1.0) * size.width;
+      final yBase = ((i * 11.7) % 1.0) * size.height;
+
+      // Movimento: sale lentamente con oscillazione orizzontale minima
+      final phase = (progress + i / 32.0) % 1.0;
+      final x = xBase + size.width * 0.015 * sin(phase * 2 * pi + i);
+      final y = (yBase - size.height * 0.18 * phase + size.height) % size.height;
+
+      final pSize = 0.7 + (i % 3) * 0.5;
+      final pOpacity = 0.03 + 0.06 * ((i % 5) / 5.0);
+
+      canvas.drawCircle(
+        Offset(x, y),
+        pSize,
+        paint..color = Colors.white.withValues(alpha: pOpacity),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ParticlePainter old) => old.progress != progress;
 }
