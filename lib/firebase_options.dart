@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
         messagingSenderId: '635305520200',
         projectId: 'barbershop-gentleman',
         storageBucket: 'barbershop-gentleman.firebasestorage.app',
-        iosBundleId: 'com.example.barberShopApp',
+        iosBundleId: 'com.gentleman.barber',
       );
 
   static FirebaseOptions get macos => FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
         messagingSenderId: '635305520200',
         projectId: 'barbershop-gentleman',
         storageBucket: 'barbershop-gentleman.firebasestorage.app',
-        iosBundleId: 'com.example.barberShopApp',
+        iosBundleId: 'com.gentleman.barber',
       );
 
   static FirebaseOptions get windows => FirebaseOptions(

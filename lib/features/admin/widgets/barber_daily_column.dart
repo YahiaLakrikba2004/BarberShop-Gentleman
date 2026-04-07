@@ -188,8 +188,13 @@ class BarberDailyColumn extends StatelessWidget {
 
           // Timeline
           SizedBox(
-             height: (endHour - startHour) * hourHeight, // Fixed total height
-             child: Stack(
+             height: (endHour - startHour) * hourHeight,
+             child: LayoutBuilder(builder: (context, timelineConstraints) {
+               final colW = timelineConstraints.maxWidth;
+               // Desktop: colonne larghe → cappare la card e aggiungere più contenuto
+               final isWideCol = colW > 220;
+               final aptHPad = isWideCol ? 10.0 : 2.0;
+             return Stack(
                 children: [
                   // Grid Lines (Hours)
                   Column(
@@ -278,8 +283,8 @@ class BarberDailyColumn extends StatelessWidget {
 
                     return Positioned(
                       top: topOffset,
-                      left: 4,
-                      right: 4,
+                      left: aptHPad,
+                      right: aptHPad,
                       height: height > 0 ? height : 30, // Safety height
                       child: GestureDetector(
                         onTap: () => onAppointmentTap(apt),
@@ -330,64 +335,132 @@ class BarberDailyColumn extends StatelessWidget {
                                   ),
                                 Positioned.fill(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // Nome + forbici
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              apt.customerName,
-                                              style: GoogleFonts.montserrat(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 0.2,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(Icons.content_cut, size: 9,
-                                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.85)),
-                                          ],
-                                        ),
-                                        // Servizio
-                                        Text(
-                                          apt.serviceName.toUpperCase(),
-                                          style: GoogleFonts.montserrat(
-                                            color: Colors.white.withValues(alpha: 0.9),
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.4,
-                                          ),
-                                        ),
-                                        if (height > 70) ...[
-                                          const Spacer(),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.2),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              "${apt.durationMinutes} MIN",
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: 8,
-                                                color: Colors.white.withValues(alpha: 0.8),
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 1,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                      ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isWideCol ? 12 : 7,
+                                      vertical: 4,
                                     ),
+                                    child: isWideCol
+                                        // ── Desktop: layout orizzontale, più info ──
+                                        ? Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              // Accent border sinistra stile Google Calendar
+                                              Container(
+                                                width: 3,
+                                                height: double.infinity,
+                                                margin: const EdgeInsets.only(right: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.6),
+                                                  borderRadius: BorderRadius.circular(2),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          apt.customerName,
+                                                          style: GoogleFonts.montserrat(
+                                                            color: Colors.white,
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w700,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 6),
+                                                        Icon(Icons.content_cut, size: 10,
+                                                            color: Colors.white.withValues(alpha: 0.7)),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      apt.serviceName.toUpperCase(),
+                                                      style: GoogleFonts.montserrat(
+                                                        color: Colors.white.withValues(alpha: 0.85),
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w600,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              // Durata pill a destra
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withValues(alpha: 0.25),
+                                                  borderRadius: BorderRadius.circular(5),
+                                                ),
+                                                child: Text(
+                                                  '${apt.durationMinutes} min',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 9,
+                                                    color: Colors.white.withValues(alpha: 0.85),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        // ── Mobile: layout verticale compatto ──
+                                        : FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      apt.customerName,
+                                                      style: GoogleFonts.montserrat(
+                                                        color: Colors.white,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 0.2,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(Icons.content_cut, size: 9,
+                                                        color: Colors.white.withValues(alpha: 0.7)),
+                                                  ],
+                                                ),
+                                                Text(
+                                                  apt.serviceName.toUpperCase(),
+                                                  style: GoogleFonts.montserrat(
+                                                    color: Colors.white.withValues(alpha: 0.9),
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 0.4,
+                                                  ),
+                                                ),
+                                                if (height > 70) ...[
+                                                  const Spacer(),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black.withValues(alpha: 0.2),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      '${apt.durationMinutes} MIN',
+                                                      style: GoogleFonts.montserrat(
+                                                        fontSize: 8,
+                                                        color: Colors.white.withValues(alpha: 0.8),
+                                                        fontWeight: FontWeight.w700,
+                                                        letterSpacing: 1,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ],
@@ -398,7 +471,8 @@ class BarberDailyColumn extends StatelessWidget {
                     );
                   }),
                 ],
-              ),
+              );
+             }),
           ),
         ],
       ),

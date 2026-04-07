@@ -26,10 +26,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
-      final isLoggingIn = state.matchedLocation == '/auth';
-      final isWebBooking = state.matchedLocation.startsWith('/book');
+      final location = state.matchedLocation;
+      final isLoggingIn = location == '/auth';
+      final isWebBooking = location.startsWith('/book');
+      final isHome = location == '/';
+      final isProfile = location == '/profile';
 
-      if (!isLoggedIn && !isLoggingIn && !isWebBooking) {
+      // Home screen and Profile screen are accessible without login.
+      // Profile shows a guest/login prompt when unauthenticated.
+      // Per Apple Guideline 5.1.1(v) - non-account features must be freely accessible.
+      if (!isLoggedIn && !isLoggingIn && !isWebBooking && !isHome && !isProfile) {
         return '/auth';
       }
       if (isLoggedIn && isLoggingIn) {

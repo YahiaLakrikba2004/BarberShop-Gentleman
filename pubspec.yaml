@@ -48,6 +48,7 @@ dependencies:
 
   path_provider: any
   web: any
+  image: ^4.8.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

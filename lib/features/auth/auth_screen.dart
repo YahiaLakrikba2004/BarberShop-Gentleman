@@ -462,6 +462,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               style: const TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ),
+        const SizedBox(height: 16),
+        _buildLegalLinks(),
+      ],
+    );
+  }
+
+  Widget _buildLegalLinks() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () async {
+            final url = Uri.parse('https://barbershop-gentleman.web.app/privacy.html');
+            if (await canLaunchUrl(url)) launchUrl(url, mode: LaunchMode.externalApplication);
+          },
+          child: Text(
+            'Privacy Policy',
+            style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white24, letterSpacing: 0.5),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text('·', style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white12)),
+        ),
+        GestureDetector(
+          onTap: () async {
+            final url = Uri.parse('https://barbershop-gentleman.web.app/terms.html');
+            if (await canLaunchUrl(url)) launchUrl(url, mode: LaunchMode.externalApplication);
+          },
+          child: Text(
+            'Termini di Servizio',
+            style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white24, letterSpacing: 0.5),
+          ),
+        ),
       ],
     );
   }

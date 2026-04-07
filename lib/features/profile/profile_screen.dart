@@ -22,16 +22,29 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
     final userAsync = ref.watch(currentUserProfileProvider);
     final user = userAsync.value;
 
-    // If user is null, we can return a simple loading indicator or empty widget.
-    // The redirect logic is handled by the AuthState listener in the app router.
+    // Still determining auth state
+    if (authState.isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0A0A0A),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      );
+    }
+
+    // Not logged in: show guest screen with login CTA
+    if (authState.value == null) {
+      return _GuestProfileScreen();
+    }
+
+    // Logged in but profile still loading
     if (user == null) {
-        return const Scaffold(
-          backgroundColor: Color(0xFF0A0A0A),
-          body: Center(child: CircularProgressIndicator(color: Colors.white)),
-        );
+      return const Scaffold(
+        backgroundColor: Color(0xFF0A0A0A),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      );
     }
 
     final isDesktop = MediaQuery.of(context).size.width > 800;
@@ -1734,4 +1747,194 @@ DecorationImage? _getUserImage(String? imageUrl) {
     image: imageProvider,
     fit: BoxFit.cover,
   );
+}
+
+class _GuestProfileScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 36),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.8),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/icon_premium_v2.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 36),
+
+                Text(
+                  'IL TUO PROFILO',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 4,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                // Divider line like home screen
+                Container(
+                  width: 60,
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+
+                const SizedBox(height: 16),
+
+                Text(
+                  'Accedi per gestire i tuoi appuntamenti\ne vedere la cronologia.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    color: Colors.white38,
+                    height: 1.7,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+
+                const SizedBox(height: 52),
+
+                // Primary button - same dark metallic style as home "PRENOTA ORA"
+                GestureDetector(
+                  onTap: () => context.go('/auth'),
+                  child: Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF222222),
+                          Color(0xFF111111),
+                          Color(0xFF222222),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(1.5),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(27),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFF2A2A2A), Color(0xFF000000)],
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'ACCEDI',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 3,
+                              color: const Color(0xFFFAFAFA),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Secondary - subtle text link
+                GestureDetector(
+                  onTap: () => context.go('/auth'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Non hai un account?  REGISTRATI',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.white38,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Legal links - accessible before login per Apple guideline 5.1.1
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        final url = Uri.parse('https://barbershop-gentleman.web.app/privacy.html');
+                        if (await canLaunchUrl(url)) launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      child: Text(
+                        'Privacy Policy',
+                        style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white24, letterSpacing: 0.5),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('·', style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white12)),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final url = Uri.parse('https://barbershop-gentleman.web.app/terms.html');
+                        if (await canLaunchUrl(url)) launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      child: Text(
+                        'Termini di Servizio',
+                        style: GoogleFonts.montserrat(fontSize: 11, color: Colors.white24, letterSpacing: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
